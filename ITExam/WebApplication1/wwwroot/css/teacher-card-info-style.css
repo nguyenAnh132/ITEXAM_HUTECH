@@ -1,0 +1,70 @@
+﻿/* Cấu trúc chung */
+.card-info-item,
+.card-info-list-item {
+    position: relative;
+    overflow: hidden;
+}
+
+/* Ảnh trong card */
+.card-info-item img,
+.card-info-list-item img {
+    position: relative;
+    transition: 0.5s;
+}
+
+.card-info-item img {
+    margin-top: 40px;
+}
+
+/* Lớp phủ nội dung */
+.card-info-item .card-info-text,
+.card-info-list-item .card-info-text {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: calc(100% + 86px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    background: linear-gradient(to bottom, rgba(18, 15, 45, 0), #120f2d);
+    transition: all 0.5s ease;
+    z-index: 1;
+}
+
+/* Danh sách không có hiệu ứng kéo lên */
+.card-info-list-item .card-info-text {
+    height: 100%;
+}
+
+/* Hover hiệu ứng đẩy ảnh lên và kéo lớp phủ */
+.card-info-item:hover img {
+    margin-top: 0;
+}
+
+.card-info-list-item:hover img {
+    transform: scale(1.2);
+}
+
+.card-info-item:hover .card-info-text {
+    height: calc(100% + 35px);
+}
+
+/* Vô hiệu hover khi mở modal (chỉ dùng CSS) */
+body.modal-open .card-info-item:hover img {
+    margin-top: 40px !important;
+}
+
+body.modal-open .card-info-item:hover .card-info-text {
+    top: 0 !important;
+    height: 100% !important;
+    transition: none !important;
+}
+
+.inner-outer-shadow {
+    box-shadow: inset 0 4px 8px rgba(0, 0, 0, 0.15), 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+
+

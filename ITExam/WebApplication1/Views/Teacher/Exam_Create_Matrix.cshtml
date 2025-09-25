@@ -1,0 +1,512 @@
+﻿@using ITExam.ViewModels.Exam
+@using Newtonsoft.Json
+@model ExamMatrixVM
+@{
+    Layout = "_TeacherLayout";
+    ViewData["Title"] = "Tạo đề thi";
+}
+@section Style {
+    <link rel="stylesheet" href="~/css/teacher-create-exam-matrix.css" />
+}
+<div class="container-fluid pt-2 px-0">
+    <div class="pt-3 py-lg-0 px-lg-5">
+        <div class="row mx-0 justify-content-center pt-2">
+            <div class="col-lg-6">
+                <div class="section-title text-center position-relative mb-4">
+                    <h2 class="display-4 fz-3">Ma trận đề thi</h2>
+                </div>
+            </div>
+        </div>
+        <div class="pt-3 py-lg-0 px-lg-5 px-3">
+            <div class="d-flex justify-content-end mb-3">
+                <a class="btn btn-danger" asp-controller="Teacher" asp-action="Exam">Trở về</a>
+            </div>
+
+            <form id="editExamForm" method="post" asp-action="EditExam" asp-controller="Teacher" class="m-1">
+                <div class="bg-white p-3 rounded shadow mb-3">
+                    <input type="hidden" name="MaDe" value="@Model.ExamId" />
+
+                    <div class="modal-body row">
+                        <div class="mb-2 col-lg-9">
+                            <label class="form-label fw-bold">Tên đề thi</label>
+                            <input name="TenDeThi" class="form-control fs-6"
+                                   id="tenDeThiInput"
+                                   value="@Model.ExamName"
+                                   data-original="@Model.ExamName" />
+                        </div>
+                        <div class="mb-2 col-lg-3">
+                            <label class="form-label fw-bold">Thời gian làm bài</label>
+                            <input type="number" name="ThoiGianLamBai"
+                                   class="form-control fs-6"
+                                   id="thoiGianInput"
+                                   value="@Model.Duration"
+                                   data-original="@Model.Duration" />
+                        </div>
+                    </div>
+
+                    <div class="modal-footer row p-2">
+                        <button type="submit" class="btn btn-primary" id="submitBtn" disabled>
+                            Cập nhật thông tin đề thi
+                        </button>
+                    </div>
+                </div>
+            </form>
+            <div class="">
+                <div class="tab-content mt-3">
+                    <div class="tab-pane active" id="create" role="tabpanel" aria-labelledby="create-tab">
+                        <div class="row">
+                            <div class="col-12 col-xl-9 mb-2">
+                                <div class="bg-white p-3 rounded shadow">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <button class="rounded-circle btn btn-primary my-2" id="btn-add-chuong"
+                                        style="width: 50px; height: 50px">
+                                            <i class="fa-solid fa-plus"></i>
+                                        </button>
+                                        <button class="btn btn-primary" style="width: 50px; height: 50px">
+                                            <i class="fa-solid fa-info"></i>
+                                        </button>
+                                    </div>
+                                    <div id="chuong-container" class="my-3">
+                            
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-12 col-xl-3 mb-3 mb-md-0">
+                                <div class="bg-white p-3 rounded shadow">
+                                    <h5 class="fw-bold">Thông tin đề thi</h5>
+                                    <div id="summary-chuong-cauhoi" class="mt-3"></div>
+                                    <hr />
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="fw-semibold">Tổng số câu hỏi:</span>
+                                        <span class="fw-bold text-primary" id="tong-so-cau">0</span>
+                                    </div>
+                                    <button class="btn btn-primary w-100 mt-3" onclick="submitMatrix()">
+                                        <i class="fa-solid fa-check me-1"></i> Lưu ma trận
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@section Script {
+
+    <script>
+        const chuongData = @Html.Raw(ViewData["ChuongJson"]);
+        console.log(chuongData);
+        let index = 0;
+
+        document.getElementById('btn-add-chuong').addEventListener('click', function () {
+            const container = document.getElementById('chuong-container');
+            const rowId = `row-${index++}`;
+
+            let html = `
+                <div class="border p-3 rounded mb-3" id="${rowId}">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <select class="form-select chuong-select" style="width: 70%">
+                            <option value="" disabled selected hidden>-- Chọn chương --</option>
+                        </select>
+                        <button class="btn btn-danger" onclick="xoaDongChuong('${rowId}')">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </div>
+                    <div class="clo-list"></div>
+                </div>`;
+
+            container.insertAdjacentHTML('beforeend', html);
+            capNhatDanhSachChuongComboBox();
+        });
+
+        document.addEventListener('change', function (e) {
+            if (e.target.classList.contains('chuong-select')) {
+                const ChapterId = e.target.value;
+                const Chapter = chuongData.find(c => c.ChuongId == ChapterId);
+                const cloListContainer = e.target.closest('.border').querySelector('.clo-list');
+
+                if (!Chapter) return;
+
+                        let cloHTML = '';
+            Chapter.Clos.forEach(clo => {
+                    console.log(`CLO: ${clo.CLOTitle} | MaxQuestionCount: ${clo.MaxQuestionCount}`);
+                cloHTML += `
+                        <div class="row g-2 my-2">
+                      <!-- Input CLO -->
+                      <div class="col-12 col-md-7">
+                        <input value="${clo.CLO}" disabled type="text" class="form-control" />
+                      </div>
+
+                      <!-- Input số lượng -->
+                      <div class="col-6 col-md-3">
+                        <input type="number" value="0" class="form-control"
+                               placeholder="Số lượng"
+                               max="${clo.MaxQuestionCount}"
+                               title="Tối đa ${clo.MaxQuestionCount} câu hỏi" />
+                      </div>
+
+                      <!-- Ghi chú -->
+                      <div class="col-6 col-md-2 d-flex align-items-center">
+                        <span class="text-muted small">(Tối đa ${clo.MaxQuestionCount} câu hỏi)</span>
+                      </div>
+
+                      <!-- Hidden input -->
+                      <input type="hidden" value="${clo.CLO}" class="clo-id" />
+                    </div>
+                `;
+            });
+
+
+                cloListContainer.innerHTML = cloHTML;
+                capNhatThongTinCauHoi();
+                capNhatDanhSachChuongComboBox();
+            }
+        });
+
+        document.addEventListener('input', function (e) {
+            if (e.target.matches('.clo-list input[type="number"]')) {
+                capNhatThongTinCauHoi();
+            }
+        });
+
+        function xoaDongChuong(rowId) {
+            document.getElementById(rowId).remove();
+            capNhatDanhSachChuongComboBox();
+            capNhatThongTinCauHoi();
+        }
+
+            function capNhatDanhSachChuongComboBox() {
+            const daChon = Array.from(document.querySelectorAll('.chuong-select'))
+                .map(sel => sel.value)
+                .filter(val => val && val !== '-- Chọn chương --');
+
+            document.querySelectorAll('.chuong-select').forEach(select => {
+                const current = select.value;
+                const parent = select.closest('.border');
+                const cloListContainer = parent.querySelector('.clo-list');
+
+
+                const cloDataTam = [];
+                cloListContainer.querySelectorAll('.d-flex').forEach(div => {
+                    const label = div.querySelector('input[type="text"]')?.value;
+                    const value = div.querySelector('input[type="number"]')?.value;
+                    if (label) cloDataTam.push({ label, value });
+                });
+
+
+                select.innerHTML = '<option value="" disabled selected hidden>-- Chọn chương --</option>';
+                chuongData.forEach(c => {
+                    if (!daChon.includes(c.ChuongId.toString()) || c.ChuongId.toString() === current) {
+                        const opt = document.createElement('option');
+                        opt.value = c.ChuongId;
+                        opt.textContent = c.TenChuong;
+                        if (current === c.ChuongId.toString()) {
+                            opt.selected = true;
+                        }
+                        select.appendChild(opt);
+                    }
+                });
+
+                const chuong = chuongData.find(c => c.ChuongId.toString() === current);
+                if (chuong) {
+                    let cloHTML = '';
+                    chuong.Clos.forEach((clo, i) => {
+                        const giaTri = cloDataTam[i]?.value || 0;
+                              cloHTML += `
+                    <div class="row g-2 my-2">
+                      <!-- Input CLO -->
+                      <div class="col-12 col-md-7">
+                        <input value="${clo.CLO}" disabled type="text" class="form-control" />
+                      </div>
+
+                      <!-- Input số lượng -->
+                      <div class="col-6 col-md-3">
+                        <input type="number" value="0" class="form-control"
+                               placeholder="Số lượng"
+                               max="${clo.MaxQuestionCount}"
+                               title="Tối đa ${clo.MaxQuestionCount} câu hỏi" />
+                      </div>
+
+                      <!-- Ghi chú -->
+                      <div class="col-6 col-md-2 d-flex align-items-center">
+                        <span class="text-muted small">(Tối đa ${clo.MaxQuestionCount} câu hỏi)</span>
+                      </div>
+
+                      <!-- Hidden input -->
+                      <input type="hidden" value="${clo.CLO}" class="clo-id" />
+                    </div>
+                    `;
+
+                    });
+                    cloListContainer.innerHTML = cloHTML;
+                }
+            });
+        }
+
+
+        function capNhatThongTinCauHoi() {
+            const chuongContainers = document.querySelectorAll('#chuong-container > .border');
+            const thongTinContainer = document.getElementById('summary-chuong-cauhoi');
+            const tongSoCauSpan = document.getElementById('tong-so-cau');
+            thongTinContainer.innerHTML = '';
+
+            let tongSoCau = 0;
+
+            chuongContainers.forEach(chuongDiv => {
+                const chuongTen = chuongDiv.querySelector('.chuong-select option:checked')?.textContent;
+                const cloInputs = chuongDiv.querySelectorAll('.clo-list input[type="number"]');
+
+                let tongChuong = 0;
+                cloInputs.forEach(input => {
+                    const so = parseInt(input.value) || 0;
+                    tongChuong += so;
+                });
+
+                if (chuongTen && tongChuong > 0) {
+                    const row = `<div class="d-flex justify-content-between mb-2">
+                                    <span>${chuongTen}</span>
+                                    <span class="fw-bold">${tongChuong} câu</span>
+                                 </div>`;
+                    thongTinContainer.insertAdjacentHTML('beforeend', row);
+                }
+
+                tongSoCau += tongChuong;
+            });
+
+            tongSoCauSpan.textContent = tongSoCau;
+        }
+
+            function showToast(message, color) {
+                Toastify({
+                    text: message,
+                    duration: 4000,
+                    close: true,
+                    gravity: "bottom",
+                    position: "right",
+                    stopOnFocus: true,
+                    style: { background: color }
+                }).showToast();
+            }
+
+            function submitMatrix() {
+                const chuongContainers = document.querySelectorAll('#chuong-container > .border');
+                const matrix = [];
+
+                let hasError = false;
+
+                chuongContainers.forEach(ch => {
+                    const chuongSelect = ch.querySelector('.chuong-select');
+                    const ChapterId = parseInt(chuongSelect.value || 0);
+                    const ChapterTitle = chuongSelect.options[chuongSelect.selectedIndex]?.textContent || "";
+                    const cloInputs = ch.querySelectorAll('.clo-list .d-flex');
+
+                    const cloData = Array.from(cloInputs).map(div => {
+                        const CLO = div.querySelector('input[type="text"]').value;
+                        const CLOId = parseInt(div.querySelector('.clo-id').value || 0);
+                        const count = parseInt(div.querySelector('input[type="number"]').value || 0);
+                        const max = parseInt(div.querySelector('input[type="number"]').getAttribute('max'));
+
+                        // Kiểm tra nếu nhập vượt
+                        if (count > max) {
+                            showToast(`"${CLO}" trong "${ChapterTitle}" vượt quá ${max}`, "#dc3545");
+                            hasError = true;
+                        }
+
+                            // Kiểm tra nếu nhập vượt
+                            if (count < 0) {
+                                    showToast("Số lượng câu hỏi không được âm", "#dc3545");
+                                hasError = true;
+                            }
+                        return {
+                            CLOId: CLOId,
+                            CLO: CLO,
+                            QuestionCount: count
+                        };
+                    }).filter(c => c.QuestionCount > 0);
+
+                    if (ChapterId > 0 && cloData.length > 0) {
+                        matrix.push({
+                            ChapterId: ChapterId,
+                            Chuong: ChapterTitle,
+                            CLOs: cloData
+                        });
+                    }
+                });
+
+                if (hasError) return; // Ngăn không gửi nếu có lỗi
+
+                const data = {
+                    ExamId: @Model.ExamId,
+                    Chapters: matrix
+                };
+
+                fetch('/Teacher/Save_Exam_Matrix', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast("Đã lưu ma trận đề!", "#28a745");
+                        setTimeout(() => {
+                            window.location.href = "/Teacher/Exam_Create_Matrix/" + data.deThiId;
+                        }, 1000);
+                    } else {
+                        showToast("❌ Có lỗi xảy ra khi lưu ma trận.", "#dc3545");
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                        showToast("Lỗi kết nối máy chủ.", "#dc3545");
+                });
+            }
+
+
+
+            window.addEventListener('DOMContentLoaded', () => {
+                const danhSachChuong = @Html.Raw(JsonConvert.SerializeObject(Model.Chapters));
+                const container = document.getElementById('chuong-container');
+
+                danhSachChuong.forEach(chuong => {
+                    if (!chuong) return;
+
+                    // Bước 1: Check điều kiện load chương
+                    const cloCoSoLuong = chuong.CLOs.filter(c => c.QuestionCount > 0);
+                    if (cloCoSoLuong.length === 0) return; // Nếu không có CLO nào có số lượng > 0 thì bỏ qua chương
+
+                    // Bước 2: Luôn render tất cả CLO của chương đó
+                    const rowId = `row-${index++}`;
+                    let html = `
+                        <div class="border p-3 rounded mb-3" id="${rowId}">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <select class="form-select chuong-select" style="width: 70%">
+                                    <option value="" disabled hidden>-- Chọn chương --</option>
+                                </select>
+                                <button class="btn btn-danger" onclick="xoaDongChuong('${rowId}')">
+                                    <i class="fa fa-trash"></i>
+                                </button>
+                            </div>
+                            <div class="clo-list">`;
+
+                    // KHÔNG lọc CLO, render hết toàn bộ
+                    chuong.CLOs.forEach(clo => {
+                        html += `
+                     <div class="row g-2 my-2">
+                          <!-- Input CLO -->
+                          <div class="col-12 col-md-7">
+                            <input value="${clo.CLO}" disabled type="text" class="form-control" />
+                          </div>
+
+                          <!-- Input số lượng -->
+                          <div class="col-6 col-md-3">
+                            <input type="number" value="0" class="form-control"
+                                   placeholder="Số lượng"
+                                   max="${clo.MaxQuestionCount}"
+                                   title="Tối đa ${clo.MaxQuestionCount} câu hỏi" />
+                          </div>
+
+                          <!-- Ghi chú -->
+                          <div class="col-6 col-md-2 d-flex align-items-center">
+                            <span class="text-muted small">(Tối đa ${clo.MaxQuestionCount} câu hỏi)</span>
+                          </div>
+                            
+                          <!-- Hidden input -->
+                          <input type="hidden" value="${clo.CLO}" class="clo-id" />
+                        </div>
+                    `;
+                    });
+
+                    html += `</div></div>`;
+
+                    container.insertAdjacentHTML('beforeend', html);
+
+                    capNhatDanhSachChuongComboBox();
+
+                    const select = document.getElementById(rowId).querySelector('.chuong-select');
+                    select.value = chuong.ChapterId;
+                });
+
+                capNhatThongTinCauHoi();
+            });
+
+
+            function luuThongTinDeThi() {
+                const soLuongMaDe = parseInt(document.getElementById("soLuongMaDeInput").value || 1);
+                const thoiGianLamBai = parseInt(document.getElementById("thoiGianLamBaiInput").value || 0);
+
+                fetch('/Teacher/UpdateExam', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        ExamId: @Model.ExamId,
+                        SoLuongMaDe: soLuongMaDe,
+                        Duration: Duration
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast("Đã cập nhật thông tin đề thi!", "#28a745");
+                    } else {
+                        showToast("❌ Lỗi khi cập nhật.", "#dc3545");
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    showToast("❌ Lỗi kết nối máy chủ.", "#dc3545");
+                });
+            }
+
+            document.addEventListener("DOMContentLoaded", function () {
+                    const message = @Html.Raw(Json.Serialize(TempData["SuccessMessage"]));
+                    if (message) {
+                        Toastify({
+                            text: message,
+                            duration: 3000,
+                            close: true,
+                            gravity: "bottom",
+                            position: "right",
+                            stopOnFocus: true,
+                            style: {
+                                background: "#28a745"
+                            }
+                        }).showToast();
+                    }
+                });
+
+    </script>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const submitBtn = document.getElementById("submitBtn");
+            const inputs = document.querySelectorAll("#editExamForm input");
+
+            function checkChanges() {
+                let changed = false;
+
+                inputs.forEach(input => {
+                    const original = input.getAttribute("data-original");
+                    if (original !== null && input.value !== original) {
+                        changed = true;
+                    }
+                });
+
+                submitBtn.disabled = !changed;
+            }
+
+            inputs.forEach(input => {
+                input.addEventListener("input", checkChanges);
+            });
+
+            checkChanges();
+        });
+    </script>
+
+}

@@ -1,0 +1,102 @@
+﻿ @using ITExam.ViewModels.ExamBank 
+  @model ITExam.Models.ExamBank 
+  @{  
+      Layout = "_TeacherLayout";  
+      <!-- Nhap title -->  
+      ViewData["Title"] = "Tạo ngân hàng đề";  
+  }  
+  @section Style {  
+      <!-- FontAwesome 6.2.0 CSS -->  
+      <link rel="stylesheet"  
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css"  
+            integrity="sha512-xh6O/CkQoPOWDdYTDqeRdPCVd1SpvCA9XXcUnZS2FmJNp1coAFzvtCN9BmamE+4aHK8yyUHUSCcJHgXloTyT2A=="  
+            crossorigin="anonymous"  
+            referrerpolicy="no-referrer" />  
+      <link rel="stylesheet" href="~/css/teacher-exam-bank-create.css" />  
+  } 
+
+ <div class="container-fluid p-0"> 
+     <div class="pt-3 py-lg-0 px-lg-5 px-3"> 
+          <h2 class="my-2">Tạo ngân hàng đề mới</h2>  nb 
+          <div class="p-2">  
+              <!-- Nav tabs -->  
+              <ul class="nav nav-tabs d-flex justify-content-between px-2 pt-3 border-bottom-0" id="myTab" role="tablist">  
+                  <li class="nav-item" role="presentation"> 
+                     <button class="nav-link active border rounded fw-bold" style="color:#646cff ;box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;" id="info-tab" data-bs-toggle="tab" data-bs-target="#info" type="button" 
+                             role="tab" aria-controls="info" aria-selected="true">  
+                          Thông tin ngân hàng đề  
+                      </button>  
+                  </li> 
+                     <a class="btn btn-danger asp-controller="Teacher" asp-action="ExamBank">Trở về</a> 
+              </ul>  
+          </div>  
+
+          <div class="">  
+              <!-- Tab panes -->  
+              <div class="tab-content mt-3">  
+                  <div class="tab-pane active" id="info" role="tabpanel" aria-labelledby="info-tab">  
+                      <div class="row justify-content-center">  
+
+                          <div class="col-lg-6 d-flex justify-content-center">  
+                              <div class="bg-white p-3 rounded" style="  
+                                box-shadow: rgba(50, 50, 93, 0.25) 0px 6px 12px -2px,  
+                                  rgba(0, 0, 0, 0.3) 0px 3px 7px -3px;  
+                              ">  
+                                  <h3 class="fs-5 fw-semibold">Thông tin cơ bản</h3>  
+                                  <form  asp-action="Exam_Bank_Create"  method="post">  
+                                      <div class="row">  
+                                          <div class="mb-3 col-12">  
+                                              <label for="" class="form-label">Tên ngân hàng đề</label>  
+                                              <input asp-for="ExamBankName" type="text" class="form-control"  aria-describedby="helpId"  
+                                                     placeholder="Ví dụ: Lập trình hướng đối tượng" />  
+                                          </div> 
+
+                                         <div class="mb-3 col-12"> 
+                                             <label for="" class="form-label">Trạng thái</label> 
+                                             <select asp-for="Status" class="form-select my-2" 
+                                                     aria-label="Default select example"> 
+                                                 <option selected value=true>Công khai</option> 
+                                                 <option value=false>Riêng tư</option> 
+                                             </select> 
+                                         </div> 
+
+                                         <div class="mb-3 col-12">  
+                                              <label for="" class="form-label">Loại đề</label>  
+                                              <select asp-for="ExamType" class="form-select my-2"  
+                                                      aria-label="Default select example">  
+                                                  <option selected value="Trắc nghiệm">Trắc nghiệm</option>  
+                                                  <option value="Tự luận">Tự luận</option>  
+                                              </select>  
+                                          </div> 
+                                         <div class="mb-3 col-12"> 
+                                             <label for="MaMonHoc" class="form-label">Môn học</label> 
+                                             <select asp-for="SubjectId" class="form-select"> 
+                                                 @foreach (var subject in (List<CreateExamBankVM>)ViewBag.Subjects) 
+                                                 { 
+                                                     <option value="@subject.SubjectId">@subject.SubjectCode - @subject.SubjectName</option> 
+                                                 } 
+                                             </select> 
+                                             <span class="text-danger" asp-validation-for="SubjectId"></span> 
+                                         </div> 
+                                      </div> 
+                                    
+
+
+                                      <div class="my-3 d-flex justify-content-end">  
+                                          <button data-bs-toggle="modal"  
+                                                  data-bs-placement="top"  
+                                                  data-bs-target="#staticBackdrop-create-exam" type="submit" class="btn btn-primary">  
+                                              Tạo ngân hàng đề  
+                                          </button>  
+                                      </div>  
+                                  </form>  
+
+                              </div>  
+                          </div>  
+                      </div>  
+                  </div>  
+              </div> 
+         </div> 
+     </div> 
+ </div> 
+

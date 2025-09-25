@@ -1,0 +1,60 @@
+body {
+    font-family: 'Rubik', sans-serif;
+    background: linear-gradient(to right, #dfe9f3, #ffffff);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.card-result {
+    background: #fff;
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    max-width: 550px;
+    width: 100%;
+    text-align: center;
+}
+
+    .card-result h2 {
+        font-weight: 600;
+        color: #343a40;
+        margin-bottom: 10px;
+    }
+
+.score-display {
+    font-size: 42px;
+    font-weight: 700;
+    color: #0d6efd;
+    margin: 10px 0;
+}
+
+.info p {
+    font-size: 16px;
+    margin: 8px 0;
+    color: #555;
+}
+
+.info i {
+    color: #0d6efd;
+    margin-right: 8px;
+}
+
+.btn-back {
+    margin-top: 25px;
+    padding: 12px 30px;
+    font-size: 16px;
+    border-radius: 10px;
+}
+
+.progress {
+    height: 20px;
+    border-radius: 10px;
+    background-color: #eee;
+    overflow: hidden;
+}
+
+.progress-bar {
+    background-color: #0d6efd;
+}

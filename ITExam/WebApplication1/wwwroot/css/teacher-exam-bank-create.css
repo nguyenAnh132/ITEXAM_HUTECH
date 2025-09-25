@@ -1,0 +1,92 @@
+﻿* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    outline: none;
+}
+
+input {
+    outline: none;
+}
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
+::after,
+::before {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+li {
+    list-style: none;
+}
+
+h1 {
+    font-weight: 600;
+    font-size: 1.5rem;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+}
+
+
+.main {
+    min-height: 100vh;
+    width: 100%;
+    overflow: hidden;
+    transition: all 0.35s ease-in-out;
+    background-color: #fafbfe;
+}
+
+.toggle-btn {
+    background-color: transparent;
+    cursor: pointer;
+    border: 0;
+    padding: 1rem 1.5rem;
+}
+
+    .toggle-btn i {
+        font-size: 1.5rem;
+        color: #FFF;
+    }
+
+.offcanvas-logo a {
+    color: #FFF;
+    font-size: 1.15rem;
+    font-weight: 600;
+}
+
+.test_item {
+    box-shadow: rgba(50, 50, 93, 0.25) 0px 2px 5px -1px, rgba(0, 0, 0, 0.3) 0px 1px 3px -1px;
+}
+
+    .test_item .test_item_info img {
+        height: 180px;
+        width: 100%;
+        object-fit: cover;
+    }
+
+
+.avatar {
+    height: 40px;
+    width: 40px;
+}
+
+.modal-backdrop {
+    z-index: 1040 !important;
+}
+
+
+#confirmEditModal {
+    z-index: 1050 !important;
+}
+
+#staticBackdrop-edit-class {
+    z-index: 1045 !important;
+}
+
+/* Chỉnh sửa chiều rộng của offcanvas khi mở theo chiều ngang */
+.offcanvas {
+    width: 300px !important; /* Thay đổi 400px theo ý muốn */
+}

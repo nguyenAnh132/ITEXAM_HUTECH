@@ -1,0 +1,198 @@
+﻿@model ITExam.ViewModels.StudentSubmissionList
+ @{ 
+     Layout = "_TeacherLayout"; 
+     <!-- Nhap title --> 
+     ViewData["Title"] = "Danh sách sinh viên làm bài"; 
+ } 
+ @section Style { 
+     <!-- FontAwesome 6.2.0 CSS --> 
+     <link rel="stylesheet" 
+           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css" 
+           integrity="sha512-xh6O/CkQoPOWDdYTDqeRdPCVd1SpvCA9XXcUnZS2FmJNp1coAFzvtCN9BmamE+4aHK8yyUHUSCcJHgXloTyT2A==" 
+           crossorigin="anonymous" 
+           referrerpolicy="no-referrer" /> 
+
+     <link rel="stylesheet" href="~/css/main-style.css" /> 
+     <link rel="stylesheet" href="~/css/reset.css" /> 
+     <link rel="stylesheet" href="~/css/manage-exam.css" /> 
+     <link rel="stylesheet" href="~/css/teacher-classDetail-style.css" /> 
+
+  } 
+ <div class="container-fluid p-0"> 
+     <div class="pt-3 py-lg-0 px-lg-5 px-3"> 
+         <h2 class="my-2">@Model.ClassInfo.ClassName</h2> 
+         <h5 class="my-2 text-muted">@Model.ClassInfo.Description</h5> 
+         <div> 
+             <div class="d-flex justify-content-between pt-3  border-0 my-2"> 
+                 <!-- Nav tabs --> 
+                 <ul class="nav nav-tabs" id="myTab" role="tablist"> 
+                     <li class="nav-item" role="presentation"> 
+                         <button class="nav-link active border rounded fw-bold" 
+                                 style="color:#646cff ;box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;" 
+                                 id="thanhVien-tab" 
+                                 data-bs-toggle="tab" 
+                                 data-bs-target="#thanhVien" 
+                                 type="button" 
+                                 role="tab" 
+                                 aria-controls="thanhVien" 
+                                 aria-selected="true"> 
+                             Sinh viên đã làm bài 
+                         </button> 
+                     </li> 
+                 </ul> 
+                 <div class=""> 
+                     <a asp-controller="Teacher" asp-action="ClassDetail" asp-route-id="@(Model.ClassInfo.ClassId)"> 
+                         <button class="btn btn-danger">Trở về</button> 
+                     </a> 
+                 </div> 
+             </div> 
+             <!-- Tab panes --> 
+             <div class="tab-content"> 
+                 <!-- Thành viên lớp học --> 
+                 <div class="tab-pane active" id="thanhVien" role="tabpanel" aria-labelledby="thanhVien-tab"> 
+                     <div class="px-3 py-3  d-flex align-items-center border my-2 rounded justify-content-between"> 
+                         <div class="d-flex align-items-center gap-3"> 
+                             <h3 class="fs-6 mb-0 me-3">Số lượng sinh viên: @Model.Students.Count</h3> 
+                             <form action="#" class="d-inline-block"> 
+                                 <div class="input-group input-group-navbar"> 
+                                     <input type="text" 
+                                            id="searchStudentInput" 
+                                            onkeyup="searchItems('searchStudentInput', '#table-body tr')" 
+                                            class="form-control border-1 rounded-2" 
+                                            placeholder="Tìm kiếm . . . " /> 
+                                 </div> 
+                             </form> 
+                         </div> 
+                     </div> 
+
+                     <div class="table-responsive  shadow-sm "> 
+                         <table class="table table-hover align-middle text-center"> 
+                             <thead class="table-primary"> 
+                                 <tr> 
+                                     <th scope="col">MSSV</th> 
+                                     <th scope="col">Họ và tên</th> 
+                                     <th scope="col">Thời gian bắt đầu làm bài</th> 
+                                     <th scope="col">Thời gian nộp</th> 
+                                     <th scope="col">Thời gian làm bài </th> 
+                                     <th scope="col">Điểm </th> 
+                                     <th scope="col">Hành động</th> 
+                                 </tr> 
+                             </thead> 
+                             <tbody id="table-body"> 
+                                 @if (Model.Students != null && Model.Students.Any()) 
+                                 { 
+                                     @foreach (var sv in Model.Students) 
+                                     { 
+                                         <tr> 
+                                             <td>@sv.StudentId</td> 
+                                             <td>@sv.FullName</td> 
+                                             <td>@sv.StartTime</td> 
+                                             <td>@sv.SubmitTime</td> 
+                                             <td> 
+                                                 @{ 
+                                                     var timeSpan = TimeSpan.FromSeconds(sv.Duration); 
+                                                 } 
+                                                 @($"{timeSpan.Minutes} phút {timeSpan.Seconds} giây") 
+                                             </td> 
+
+
+                                             <td>@sv.Score</td> 
+                                             <td> 
+                                                 <a asp-controller="Teacher" asp-action="Exam_History_Detail" asp-route-id="@sv.ExamHistoryId" class="btn btn-outline-primary">Chi tiết làm bài</a> 
+                                                 <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteLichSuModal" 
+                                                         onclick="setExamHistoryIdToDelete(@sv.ExamHistoryId)"> 
+                                                     Xóa lịch sử làm bài 
+                                                 </button> 
+
+
+                                             </td> 
+                                         </tr> 
+                                     } 
+                                 } 
+                                 else 
+                                 { 
+                                     <tr> 
+                                         <td colspan="7" class="text-muted">🚫 Chưa có sinh viên nào làm đề thi.</td> 
+                                     </tr> 
+                                 } 
+                             </tbody> 
+                         </table> 
+                     </div> 
+                 </div> 
+             </div> 
+         </div> 
+     </div> 
+ </div> 
+ <!-- Modal xác nhận xóa lịch sử làm bài --> 
+ <div class="modal fade" id="deleteLichSuModal" tabindex="-1" aria-labelledby="deleteLichSuModalLabel" aria-hidden="true"> 
+     <div class="modal-dialog modal-dialog-centered"> 
+         <div class="modal-content"> 
+             <form method="post" asp-action="Delete_History_Exam" asp-controller="Teacher"> 
+                 <div class="modal-header bg-danger text-white"> 
+                     <h5 class="modal-title" id="deleteLichSuModalLabel">Xác nhận xóa lịch sử làm bài</h5> 
+                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button> 
+                 </div> 
+                 <div class="modal-body"> 
+                     <input type="hidden" name="id" id="ExamHistoryIdToDelete" /> 
+                     <p>Bạn có chắc chắn muốn xóa lịch sử làm bài này? Mọi dữ liệu liên quan sẽ bị mất.</p> 
+                 </div> 
+                 <div class="modal-footer"> 
+                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button> 
+                     <button type="submit" class="btn btn-danger">Xóa</button> 
+                 </div> 
+             </form> 
+         </div> 
+     </div> 
+ </div> 
+
+ @section Script { 
+     <script> 
+        document.addEventListener("DOMContentLoaded", function () { 
+                 const message = @Html.Raw(Json.Serialize(TempData["SuccessMessage"])); 
+                 if (message) { 
+                     Toastify({ 
+                         text: message, 
+                         duration: 4000, 
+                         close: true, 
+                         gravity: "bottom", 
+                         position: "right", 
+                         stopOnFocus: true, 
+                         style: { 
+                             background: "#28a745" 
+                         } 
+                     }).showToast(); 
+                 } 
+             }); 
+             // Hàm tìm kiếm bằng javascript 
+                     function searchItems(inputId, selector) { 
+                 const keyword = document.getElementById(inputId).value.toLowerCase(); 
+                 const elements = document.querySelectorAll(selector); 
+
+                 elements.forEach(el => { 
+                     const text = el.innerText.toLowerCase(); 
+                     el.style.display = text.includes(keyword) ? "" : "none"; 
+                 }); 
+             } 
+
+             document.getElementById('deThi-tab').addEventListener('shown.bs.tab', function () { 
+                 const input = document.getElementById('searchExamInput'); 
+                 if (input) { 
+                     input.addEventListener("keyup", () => { 
+                         searchItems('searchExamInput', '#deThi .card'); 
+                     }); 
+                 } 
+             }); 
+
+             document.getElementById('deOnTap-tab').addEventListener('shown.bs.tab', function () { 
+                 const input = document.getElementById('searchReviewInput'); 
+                 if (input) { 
+                     input.addEventListener("keyup", () => { 
+                         searchItems('searchReviewInput', '#deOnTap .card'); 
+                     }); 
+                 } 
+             }); 
+             function setExamHistoryIdToDelete(id) { 
+                 document.getElementById("ExamHistoryIdToDelete").value = id; 
+             } 
+     </script> 
+  } 

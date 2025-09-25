@@ -1,0 +1,81 @@
+﻿  @model ITExam.Models.Exam  
+  @{  
+      Layout = "_TeacherLayout";  
+      <!-- Nhap title -->  
+      ViewData["Title"] = "Tạo đề thi";  
+  }  
+  @section Style {   
+      <link rel="stylesheet" href="~/css/teacher-create-exam.css" />  
+  } 
+
+ <div class="container-fluid p-0"> 
+     <div class="pt-3 py-lg-0 px-lg-5 px-3"> 
+          <h2 class="my-2">Tạo đề thi mới</h2>  
+          <div class="">  
+              <!-- Nav tabs --> 
+             <ul class="nav nav-tabs d-flex justify-content-between px-2 pt-3 border-0" id="myTab" role="tablist"> 
+                 <li class="nav-item" role="presentation"> 
+                     <button class="nav-link active border rounded fw-bold" style="color:#646cff ;box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;" id="info-tab" data-bs-toggle="tab" data-bs-target="#info" type="button" 
+                             role="tab" aria-controls="info" aria-selected="true">  
+                          Thông tin đề thi  
+                      </button>  
+                  </li> 
+                     <a class="btn btn-danger asp-controller="Teacher" asp-action="Exam">Trở về</a> 
+              </ul>  
+          </div> 
+
+         <div class="tab-content mt-3"> 
+             <div class="tab-pane active" id="info" role="tabpanel" aria-labelledby="info-tab"> 
+                 <div class="d-flex justify-content-center"> 
+                         <div class="bg-white p-3 rounded" style="box-shadow: rgba(50, 50, 93, 0.25) 0px 6px 12px -2px, rgba(0, 0, 0, 0.3) 0px 3px 7px -3px;"> 
+                             <h3 class="fs-4 fw-semibold">Thông tin cơ bản</h3> 
+                             <form asp-action="Exam_Create" method="post"> 
+                                 <div class="row"> 
+                                     <div class="mb-3 col-12"> 
+                                         <label for="" class="form-label fw-bold">Tên đề thi</label> 
+                                         <input asp-for="ExamName" type="text" class="form-control" aria-describedby="helpId" placeholder="Ví dụ: Lập trình hướng đối tượng" required/> 
+                                     </div> 
+                                     <div class="mb-3 col-12"> 
+                                         <label for="timeInput" class="form-label fw-bold">Thời gian làm bài</label> 
+                                         <div class="input-group"> 
+                                             <input asp-for="Duration" type="number" class="form-control" id="timeInput" placeholder="Ví dụ: 60" required> 
+                                             <span class="input-group-text">phút</span> 
+                                         </div> 
+                                     </div> 
+
+                                     <!-- Dropdown Ngân hàng đề --> 
+                                     <div class="mb-3 col-12"> 
+                                         <label for="" class="form-label fw-bold">Ngân hàng đề</label> 
+                                         <select asp-for="ExamBankId" class="form-select" aria-label="Ngân hàng đề" required> 
+                                             <option value="">Chọn ngân hàng đề</option> 
+
+                                             <!-- Ngân hàng đề của tôi --> 
+                                             <optgroup label="Ngân hàng đề của tôi"> 
+                                                 @foreach (var nganHangDe in ViewData["NganHangDeListCuaToi"] as List<ITExam.Models.ExamBank>) 
+                                                 { 
+                                                     <option value="@nganHangDe.ExamBankId">@nganHangDe.ExamBankName - @nganHangDe.ExamType</option> 
+                                                 } 
+                                             </optgroup> 
+
+                                             <!-- Ngân hàng đề công khai --> 
+                                             <optgroup label="Ngân hàng đề công khai"> 
+                                                 @foreach (var nganHangDe in ViewData["NganHangDeListCongKhai"] as List<ITExam.Models.ExamBank>) 
+                                                 { 
+                                                     <option value="@nganHangDe.ExamBankId">@nganHangDe.ExamBankName - @nganHangDe.ExamType</option> 
+                                                 } 
+                                             </optgroup> 
+                                         </select> 
+                                     </div> 
+                                 </div> 
+                                 <div class="my-3 d-flex justify-content-end"> 
+                                     <button type="submit" class="btn btn-primary">Tạo đề thi</button> 
+                                 </div> 
+                             </form> 
+                     </div> 
+                 </div> 
+             </div> 
+         </div> 
+     </div> 
+ </div> 
+
+

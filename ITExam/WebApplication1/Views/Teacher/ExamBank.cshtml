@@ -1,0 +1,388 @@
+﻿@using System.Text
+@using ITExam.ViewModels.ExamBank
+@model ExamBankListVM
+@{
+    Layout = "_TeacherLayout";
+    <!-- NhRiengTuap title -->
+    ViewData["Title"] = "Ngân hàng đề thi";
+}
+@section Style {
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css"
+          integrity="sha512-xh6O/CkQoPOWDdYTDqeRdPCVd1SpvCA9XXcUnZS2FmJNp1coAFzvtCN9BmamE+4aHK8yyUHUSCcJHgXloTyT2A=="
+          crossorigin="anonymous"
+          referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="~/css/teacher-card-info-style.css" />
+    <link rel="stylesheet" href="~/css/teacher-exam-bank-style.css" />
+}
+<div class="container-fluid p-0">
+    <div class="pt-3 py-lg-0 px-lg-5 px-3">
+        <div class="row mx-0 justify-content-center pt-2">
+            <div class="col-lg-6">
+                <div class="section-title text-center position-relative mb-4">
+                    <h2 class="display-4 fz-3">Danh sách ngân hàng đề</h2>
+                </div>
+            </div>
+        </div>
+        <div>
+            <div class="px-3 pt-2 pb-3">
+                <div class="row g-2">
+                    <!-- Tìm kiếm -->
+                    <div class="col-12 col-md-8">
+                        <div class="input-group h-100">
+                            <input type="text" id="searchBankInput" class="form-control h-100" placeholder="Tìm kiếm ngân hàng đề..." />
+                        </div>
+                    </div>
+
+                    <!-- Nút tạo mới -->
+                    <div class="col-12 col-md-4">
+                        <a class="btn btn-primary w-100 h-100 d-flex justify-content-center align-items-center"
+                           data-bs-toggle="modal"
+                           href="#exampleModalToggle"
+                           role="button">
+                            Tạo ngân hàng đề thi mới
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <!-- Nav tabs -->
+            <ul class="nav nav-tabs mx-3 pt-2 pb-3 border-bottom-0" id="myTab" role="tablist">
+                <li class="nav-item mr-2" role="presentation">
+                    <button class="nav-link active border rounded fw-bold"
+                            style="color:#646cff ;box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;"
+                            id="public-tab"
+                            data-bs-toggle="tab"
+                            data-bs-target="#public"
+                            type="button"
+                            role="tab"
+                            aria-controls="public"
+                            aria-selected="true">
+                        Ngân hàng đề của tôi
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link border rounded fw-bold"
+                            style="color:#646cff ;box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;"
+                            id="private-tab"
+                            data-bs-toggle="tab"
+                            data-bs-target="#private"
+                            type="button"
+                            role="tab"
+                            aria-controls="private"
+                            aria-selected="false">
+                        Ngân hàng đề chung
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content">
+                <div class="tab-pane active" id="public" role="tabpanel" aria-labelledby="public-tab">
+                    <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4 px-4 pt-2 pb-4">
+                        @foreach (var nh in Model.PrivateExamBanks)
+                        {
+                            var ExamBankName = nh.ExamBankName.Length > 30 ? nh.ExamBankName.Substring(0, 30) + "..." : nh.ExamBankName;
+                            <div class="col-12 col-sm-6 col-lg-4">
+                                <div class="card-info-item position-relative overflow-hidden rounded shadow-sm bg-black" data-ten="@nh.ExamBankName">
+                                    <img class="img-fluid w-100" src="~/img/exam-bank-avatar.png" alt="Ảnh bài thi" style="height: 265px; object-fit: cover;">
+                                    <div class="card-info-text p-4 text-white">
+                                        <h5 class="text-center fw-semibold mb-2 text-white" title="@nh.ExamBankName">@ExamBankName</h5>
+                                        <div class="d-flex justify-content-between small border-top border-light pt-2 mt-2 px-1">
+                                            <div class=" text-white small">
+                                                <div class="mb-1">
+                                                    <i class="fa fa-book me-2"></i>@nh.ExamType
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="w-100 bg-transparent rounded mt-3 mb-3 text-center p-2">
+                                            <div class="d-flex justify-content-center flex-wrap gap-2">
+                                                <a asp-controller="Teacher"
+                                                   asp-action="@((nh.ExamType == "Trắc nghiệm") ? "Exam_Bank_Add_Question_MultipleChoice" : "Exam_Bank_Add_Question_Essay")"
+                                                   asp-route-id="@nh.ExamBankId"
+                                                   class="btn border-white text-white btn-sm">
+                                                    <i class="fa-regular fa-pen-to-square me-1"></i>Sửa
+                                                </a>
+
+                                                <button type="button"
+                                                        class="btn border-white text-white btn-sm btn-xoa-nhd"
+                                                        data-id="@nh.ExamBankId">
+                                                    <i class="fa-solid fa-trash-can me-1"></i>Xóa
+                                                </button>
+
+                                                <a asp-controller="Teacher"
+                                                   asp-action="Exam_Bank_Detail"
+                                                   asp-route-id="@nh.ExamBankId"
+                                                   class="btn border-white text-white btn-sm">
+                                                    <i class="fa-solid fa-arrow-right-to-bracket me-1"></i> Chi tiết
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="tab-content">
+                <div class="tab-pane"
+                     id="private"
+                     role="tabpanel"
+                     aria-labelledby="private-tab">
+                    <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4 px-4 pt-2 pb-4">
+                        @foreach (var nh in Model.PublicExamBanks)
+                        {
+                            var ExamBankName = nh.ExamBankName.Length > 30 ? nh.ExamBankName.Substring(0, 30) + "..." : nh.ExamBankName;
+                            <div class="col-12 col-sm-6 col-lg-4">
+                                <div class="card-info-item position-relative overflow-hidden rounded shadow-sm bg-black" data-ten="@nh.ExamBankName">
+                                    <img class="img-fluid w-100" src="~/img/exam-bank-avatar.png" alt="Ảnh bài thi" style="height: 265px; object-fit: cover;">
+                                    <div class="card-info-text p-4 text-white">
+                                        <h5 class="text-center fw-semibold mb-2 text-white" title="@nh.ExamBankName">@ExamBankName</h5>
+                                        <div class="d-flex justify-content-between small border-top border-light pt-2 mt-2 px-1">
+                                            <div class=" text-white small">
+                                                <div class="mb-1">
+                                                    <i class="fa fa-book me-2"></i>@nh.ExamType
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="w-100 bg-transparent rounded mt-3 mb-3 text-center p-2">
+                                            <div class="d-flex justify-content-center flex-wrap gap-2">
+                                                <a asp-controller="Teacher"
+                                                   asp-action="@((nh.ExamType == "Trắc nghiệm") ? "Exam_Bank_Add_Question_MultipleChoice" : "Exam_Bank_Add_Question_Essay")"
+                                                   asp-route-id="@nh.ExamBankId"
+                                                   class="btn border-white text-white btn-sm">
+                                                    <i class="fa-regular fa-pen-to-square me-1"></i>Sửa
+                                                </a>
+
+                                                <button type="button"
+                                                        class="btn border-white text-white btn-sm btn-xoa-nhd"
+                                                        data-id="@nh.ExamBankId">
+                                                    <i class="fa-solid fa-trash-can me-1"></i>Xóa
+                                                </button>
+
+                                                <a asp-controller="Teacher"
+                                                   asp-action="Exam_Bank_Detail"
+                                                   asp-route-id="@nh.ExamBankId"
+                                                   class="btn border-white text-white btn-sm">
+                                                    <i class="fa-solid fa-arrow-right-to-bracket me-1"></i> Chi tiết
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@section Modal {
+
+    <div class="modal fade"
+         id="exampleModalToggle"
+         aria-hidden="true"
+         aria-labelledby="exampleModalToggleLabel"
+         tabindex="10">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title text-uppercase text-white fs-6 " id="exampleModalToggleLabel">
+                        Vui lòng chọn cách tạo ngân hàng đề
+                    </h5>
+                    <button type="button"
+                            class="btn-close bg-white"
+                            data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                </div>
+                <div class="modal-body d-flex justify-content-center gap-3">
+                    <a asp-controller="Teacher" asp-action="Exam_Bank_Create">
+                        <button type="button" class="btn btn-primary">
+                            Soạn thủ công
+                        </button>
+                    </a>
+                    @*<a href="./teacher-upload-file-exam.html">
+                        <button type="button" class="btn btn-secondary">
+                            Upload File
+                        </button>
+                    </a>*@
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal xác nhận xóa ngân hàng đề 
+    <div class="modal fade" id="deleteNHDModal" tabindex="-1" aria-labelledby="deleteNHDModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form method="post" asp-action="XoaNganHangDe" asp-controller="Teacher">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title text-white" id="deleteNHDModalLabel">Xác nhận xóa</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="MaNHD" id="deleteExamBankIdInput" />
+                        <p>
+                            ⚠️ Bạn có chắc chắn muốn xóa ngân hàng đề này không?<br />
+                            <span class="text-danger">Toàn bộ câu hỏi, đáp án và đề thi liên quan sẽ bị xóa.</span>
+                        </p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-danger">Xác nhận xóa</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>-->
+    <!-- Modal xác nhận xóa ngân hàng đề -->
+    <div class="modal fade" id="deleteNHDModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Xác nhận xóa ngân hàng đề</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="deleteNHDModalBody">
+                    <!-- Nội dung động sẽ được JS đổ vào -->
+                </div>
+                <div class="modal-footer" id="deleteNHDModalFooter">
+                    <!-- Footer động -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+}
+
+@section Script {
+    <script>
+        
+        document.addEventListener("DOMContentLoaded", function () {
+            const message = @Html.Raw(Json.Serialize(TempData["SuccessMessage"]));
+            if (message) {
+                Toastify({
+                    text: message,
+                    duration: 4000,
+                    close: true,
+                    gravity: "bottom",
+                    position: "right",
+                    stopOnFocus: true,
+                    style: {
+                        background: "#28a745"
+                    }
+                }).showToast();
+            }
+        });
+    </script>
+
+    <script>
+       function searchItems(inputId, containerSelector) {
+        const keyword = document.getElementById(inputId).value
+            .toLowerCase()
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+
+        const container = document.querySelector(containerSelector);
+        if (!container) return;
+
+        const items = Array.from(container.children);
+        const scored = items.map(el => {
+            const text = el.innerText
+                .toLowerCase()
+                .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            const score = text.includes(keyword) ? 1 : 0;
+            return { el, score };
+        });
+
+        scored.sort((a, b) => b.score - a.score);
+        scored.forEach(({ el, score }) => {
+            el.style.display = keyword === '' || score > 0 ? '' : 'none';
+            container.appendChild(el);
+        });
+    }
+
+            function showDeleteModal(maNHD) {
+            fetch(`/Teacher/GetExamsByExamBank?maNHD=${maNHD}`)
+                .then(res => res.json())
+                .then(data => {
+                    let body = document.getElementById("deleteNHDModalBody");
+                    let footer = document.getElementById("deleteNHDModalFooter");
+
+                    if (data.length === 0) {
+                        // Không có đề thi => modal bình thường
+                        body.innerHTML = `
+                            <p>
+                                ⚠️ Bạn có chắc chắn muốn xóa ngân hàng đề này không?<br/>
+                                <span class="text-danger">Toàn bộ câu hỏi, đáp án liên quan sẽ bị xóa.</span>
+                            </p>
+                            <form method="post" action="/Teacher/XoaNganHangDe">
+                                <input type="hidden" name="maNHD" value="${maNHD}" />
+                                <div class="d-flex justify-content-end">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                                    <button type="submit" class="btn btn-danger ms-2">Xác nhận xóa</button>
+                                </div>
+                            </form>
+                        `;
+                        footer.innerHTML = "";
+                    } else {
+                        // Có đề thi => hiển thị danh sách + nút xóa từng đề
+                        let list = "<ul class='list-group'>";
+                        data.forEach(e => {
+                            list += `
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span>${e.examName} (Ngày tạo: ${new Date(e.createdDate).toLocaleDateString()})</span>
+                                    <button class="btn btn-sm btn-danger" onclick="deleteExam(${e.examId}, ${maNHD})">Xóa đề</button>
+                                </li>`;
+                        });
+                        list += "</ul>";
+
+                        body.innerHTML = `
+                            <p class="text-danger">Ngân hàng đề này vẫn còn các đề thi sau, hãy xóa hết đề thì mới xóa được ngân hàng:</p>
+                            ${list}
+                        `;
+                        footer.innerHTML = `
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                        `;
+                    }
+
+                    // Hiển thị modal
+                    new bootstrap.Modal(document.getElementById("deleteNHDModal")).show();
+                });
+        }
+
+        function deleteExam(examId, maNHD) {
+            if (!confirm("Bạn có chắc chắn muốn xóa đề thi này không?")) return;
+            fetch('/Teacher/DeleteExamByExamBank', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `examId=${examId}`
+            }).then(res => {
+                if (res.ok) {
+                    alert("Đã xóa đề thi!");
+                    showDeleteModal(maNHD); // load lại danh sách
+                } else {
+                    alert("Xóa đề thi thất bại!");
+                }
+            });
+        }
+                    document.addEventListener("DOMContentLoaded", function () {
+            const buttons = document.querySelectorAll(".btn-xoa-nhd");
+            buttons.forEach(function (button) {
+                button.addEventListener("click", function () {
+                    const ExamBankId = button.getAttribute("data-id");
+                    showDeleteModal(ExamBankId); // ✅ Gọi hàm load modal động
+                });
+            });
+        });
+
+
+    </script>
+}
+
+
+
+

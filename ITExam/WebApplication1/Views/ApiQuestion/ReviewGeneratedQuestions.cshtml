@@ -1,0 +1,291 @@
+﻿@using ITExam.ViewModels.ExamBank
+@model ReviewQuestionsVM
+@{
+    Layout = "_TeacherLayout";
+    ViewData["Title"] = "Xem lại câu hỏi đã tạo";
+}
+
+@section Style {
+    <style>
+        .card-footer {
+            background-color: #f8f9fa;
+        }
+        .ck-editor__editable {
+            min-height: 150px; 
+        }
+
+        .choice-editor .ck-editor__editable {
+            min-height: 50px; 
+        }
+
+        .custom-radio-label {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            cursor: pointer;
+            user-select: none; 
+            padding-left: 30px; 
+            height: 22px; 
+        }
+
+        .custom-radio-label .visually-hidden {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            height: 0;
+            width: 0;
+        }
+
+        .custom-radio {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
+            height: 22px;
+            width: 22px;
+            background-color: #eee;
+            border: 1px solid #ccc;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+        }
+
+        .custom-radio::after {
+            content: "";
+            position: absolute;
+            display: none;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: white;
+            transition: all 0.2s ease;
+        }
+
+
+        .custom-radio-label input:checked ~ .custom-radio {
+            background-color: #0d6efd; 
+            border-color: #0d6efd;
+        }
+
+        .custom-radio-label input:checked ~ .custom-radio::after {
+            display: block;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .custom-radio-label:hover .custom-radio {
+            border-color: #86b7fe;
+        }
+
+        .ck-powered-by {
+            display: none !important;
+        }
+    </style>
+}
+
+<div class="container py-4">
+    <form id="review-form" asp-action="SaveGeneratedQuestions" asp-controller="ApiQuestion" method="post">
+        <input type="hidden" name="examBankId" value="@Model.ExamBankId" />
+
+        <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
+            <div>
+                <h2 class="display-6">Xem lại & Chỉnh sửa câu hỏi</h2>
+                <p class="text-muted mb-0">
+                    Đã tạo được <strong id="question-count-display">@Model.GeneratedQuestions.Count() câu hỏi</strong>. Vui lòng kiểm tra và chỉnh sửa trước khi lưu.
+                </p>
+            </div>
+            <div class="d-flex gap-2">
+                <a asp-action="Index" asp-route-id="@Model.ExamBankId" class="btn btn-secondary">
+                    Tạo lại
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    Lưu tất cả vào Ngân hàng đề
+                </button>
+            </div>
+        </div>
+
+        @if (Model.GeneratedQuestions != null && Model.GeneratedQuestions.Any())
+        {
+            <div id="questions-list">
+                @for (int i = 0; i < Model.GeneratedQuestions.Count; i++)
+                {
+                    var question = Model.GeneratedQuestions[i];
+                    var chapter = Model.SubjectData.Chapters.FirstOrDefault(c => c.Id == question.ChapterId);
+                    var clo = chapter?.Clos.FirstOrDefault(c => c.Id == question.CloId);
+
+                    <div class="card mb-4 question-card" id="question-card-@i">
+                        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong class="fs-5">Câu hỏi @(i + 1)</strong>
+                                <div class="small text-muted mt-1">
+                                    <span class="badge bg-primary bg-opacity-10 text-primary-emphasis me-2">@chapter?.Title</span>
+                                    <span class="badge bg-info bg-opacity-10 text-info-emphasis">@clo?.Title</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body p-4">
+                            <input type="hidden" name="questions[@i].ChapterId" value="@question.ChapterId" />
+                            <input type="hidden" name="questions[@i].CloId" value="@question.CloId" />
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Nội dung câu hỏi:</label>
+                
+                                <textarea id="editor-question-@i" class="form-control ck-editor" name="questions[@i].QuestionContent">@question.QuestionContent</textarea>
+                            </div>
+
+                            <h6 class="fw-bold">Các lựa chọn:</h6>
+                            @for (int j = 0; j < question.Choices.Count; j++)
+                            {
+                                var choice = question.Choices[j];
+                            
+                                <div class="choice-row d-flex align-items-center mb-2">
+                             
+                                    <label class="custom-radio-label me-3">
+                                        <input class="visually-hidden" type="radio" name="questions[@i].CorrectChoiceId" value="@choice.Id" checked="@choice.LaDapAn" />
+                                        <span class="custom-radio"></span>
+                                    </label>
+
+                               
+                                    <input type="hidden" name="questions[@i].Choices[@j].Id" value="@choice.Id" />
+                                    <div class="w-100 choice-editor">
+                                        <textarea id="editor-choice-@i-@j" class="form-control ck-editor" name="questions[@i].Choices[@j].NoiDung">@choice.NoiDung</textarea>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                        <div class="card-footer text-end">
+                            <button type="button" class="btn btn-sm btn-danger" onclick="deleteQuestionCard(@i)">
+                                <i class="fa-solid fa-trash-alt me-1"></i> Xóa câu hỏi này
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-warning text-center">
+                <h4><i class="fa-solid fa-circle-info me-2"></i>Không có câu hỏi</h4>
+                <p>Không có câu hỏi nào được tạo ra. Vui lòng quay lại và thử lại.</p>
+            </div>
+        }
+    </form>
+</div>
+
+@section Script {
+    <script src="~/lib/build/ckeditor.js"></script>
+    <script>
+        let editors = {};
+        function initializeCKEditor(element) {
+            if (!element) return;
+
+            ClassicEditor
+                .create(element, {
+                    simpleUpload: {
+                        uploadUrl: '/Upload/UploadImage'
+                    }
+                })
+                .then(editor => {
+                    editors[element.id] = editor;
+                })
+                .catch(error => {
+                    console.error(`Lỗi khi khởi tạo CKEditor cho #${element.id}:`, error);
+                });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.ck-editor').forEach(element => {
+                initializeCKEditor(element);
+            });
+
+            const reviewForm = document.getElementById('review-form');
+            if(reviewForm) {
+                reviewForm.addEventListener('submit', function(e) {
+                    for (const editorId in editors) {
+                        if (editors[editorId]) {
+                            editors[editorId].updateSourceElement();
+                        }
+                    }
+                });
+            }
+        });
+
+        function deleteQuestionCard(index) {
+            if (confirm('Bạn có chắc chắn muốn xóa câu hỏi này không?')) {
+                const card = document.getElementById(`question-card-${index}`);
+                if (card) {
+                    const textareas = card.querySelectorAll('.ck-editor');
+
+                    textareas.forEach(area => {
+                        const editorId = area.id;
+                        if (editors[editorId]) {
+                            editors[editorId].destroy();
+                            delete editors[editorId];
+                        }
+                    });
+                    card.remove();
+                    reindexQuestionForms();
+                    updateQuestionCountDisplay();
+                }
+            }
+        }
+
+        function reindexQuestionForms() {
+            const questionCards = document.querySelectorAll('.question-card');
+
+            questionCards.forEach((card, newIndex) => {
+                card.id = `question-card-${newIndex}`;
+
+                const deleteButton = card.querySelector('button[onclick^="deleteQuestionCard"]');
+                if (deleteButton) {
+                    deleteButton.setAttribute('onclick', `deleteQuestionCard(${newIndex})`);
+                }
+
+                const cardHeader = card.querySelector('.card-header strong');
+                if (cardHeader) {
+                    cardHeader.textContent = `Câu hỏi ${newIndex + 1}`;
+                }
+
+                const inputsAndTextareas = card.querySelectorAll('input, textarea');
+
+                inputsAndTextareas.forEach(element => {
+                    const oldName = element.getAttribute('name');
+                    if (oldName) {
+                        const newName = oldName.replace(/questions\[\d+\]/, `questions[${newIndex}]`);
+                        element.setAttribute('name', newName);
+                    }
+
+                    if (element.classList.contains('ck-editor')) {
+                         const oldId = element.id;
+                         let newId = '';
+                         if(oldId.includes('question')) {
+                            newId = `editor-question-${newIndex}`;
+                         } else if (oldId.includes('choice')) {
+                            const choiceIndex = oldId.split('-').pop();
+                            newId = `editor-choice-${newIndex}-${choiceIndex}`;
+                         }
+
+                         if(newId && editors[oldId] && oldId !== newId) {
+                            editors[newId] = editors[oldId]; 
+                            delete editors[oldId]; 
+                            element.id = newId;
+                         }
+                    }
+                });
+            });
+        }
+
+        function updateQuestionCountDisplay() {
+            const count = document.querySelectorAll('.question-card').length;
+            const display = document.getElementById('question-count-display');
+            if(display) {
+                display.textContent = count;
+            }
+            if(count === 0) {
+                 document.getElementById('questions-list').innerHTML =
+                    '<div class="alert alert-info text-center">Bạn đã xóa hết các câu hỏi. Hãy bấm "Lưu" để hoàn tất hoặc "Tạo lại" để bắt đầu lại.</div>';
+            }
+        }
+    </script>
+}

@@ -1,0 +1,670 @@
+﻿/* =========================
+   ITExam Monitoring - Modern Responsive Layout
+   ========================= */
+
+/* ---------- Root tokens ---------- */
+:root {
+    --hdr: 128px; /* sẽ được cập nhật bằng JS (đo header) */
+    --bg: #f7f8fb;
+    --card: #fff;
+    --bd: #eaeef4;
+    --text: #0f172a;
+    --muted: #6b7280;
+    --primary: #2563eb;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --info: #06b6d4;
+    /* Kích thước co giãn theo màn hình */
+    --fs-base: clamp(14px, 1.6vw, 16px);
+    --fs-sm: clamp(12px, 1.3vw, 14px);
+    --r-sm: clamp(8px, .9vw, 10px);
+    --r: clamp(12px, 1.2vw, 14px);
+    --shadow-sm: 0 2px 10px rgba(2,8,23,.05);
+    --shadow: 0 10px 24px rgba(2,8,23,.08);
+}
+
+html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-size: var(--fs-base);
+}
+
+hr {
+    opacity: .12
+}
+
+/* ---------- Header ---------- */
+#appHeader {
+    box-shadow: 0 2px 0 rgba(2,8,23,.03);
+    background: rgba(255,255,255,.9);
+    backdrop-filter: saturate(1.1) blur(4px);
+}
+
+.brand-badge {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: #111827;
+    color: #fff;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.live-badge {
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+    border-radius: 999px;
+    padding: .15rem .5rem;
+    font-size: .75rem;
+}
+
+.header-tools .btn {
+    border-radius: 10px
+}
+
+/* Cho phép wrap khi hẹp để tránh tràn */
+#appHeader .d-flex.align-items-center.gap-3 {
+    flex-wrap: wrap;
+    row-gap: .5rem;
+}
+
+#appHeader .header-tools {
+    flex-wrap: wrap;
+}
+
+/* ---------- Stat pills ---------- */
+.stat-row {
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.stat-pill {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--card);
+    border: 1px solid var(--bd);
+    border-radius: 12px;
+    padding: .45rem .8rem;
+    min-height: 38px;
+    box-shadow: var(--shadow-sm);
+    font-size: .9rem;
+}
+
+    .stat-pill b {
+        font-variant-numeric: tabular-nums;
+    }
+
+/* ---------- Cards ---------- */
+.card {
+    border: 1px solid var(--bd) !important;
+    border-radius: var(--r);
+    box-shadow: var(--shadow-sm);
+    background: var(--card);
+}
+
+.card-header {
+    background: var(--card);
+    border-bottom: 1px solid var(--bd);
+}
+
+.card.flex-panel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+    .card.flex-panel .card-body {
+        overflow: auto;
+    }
+
+/* ---------- Sticky & viewport ---------- */
+.layout-sticky-col {
+    position: sticky;
+    top: calc(var(--hdr) + 12px);
+}
+
+.h-viewport {
+    max-height: calc(100vh - var(--hdr) - 24px);
+}
+
+.scroll-pane {
+    max-height: inherit;
+    overflow: auto;
+}
+
+/* ---------- Search ---------- */
+#rosterSearch {
+    max-width: 260px;
+    border: 1px solid var(--bd);
+    border-radius: 10px;
+}
+
+/* ---------- Roster list ---------- */
+#rosterList {
+    display: flex;
+    flex-direction: column;
+    gap: .75rem;
+    padding: .75rem;
+}
+
+.card-student {
+    border: 1px solid var(--bd) !important;
+    border-radius: 14px;
+    box-shadow: var(--shadow-sm);
+    transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+    cursor: pointer;
+}
+
+    .card-student:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow);
+        border-color: rgba(37,99,235,.35) !important;
+    }
+
+.ro-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
+    background: #111827;
+    color: #fff;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: .5rem;
+}
+
+.ro-name {
+    font-weight: 600;
+}
+
+.ro-sub {
+    font-size: .8rem;
+    color: var(--muted);
+}
+
+.ro-line {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+/* ---------- Chips (status) ---------- */
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .2rem .55rem;
+    font-size: .74rem;
+    border-radius: 999px;
+    border: 1px solid #e5e7eb;
+    background: #f3f4f6;
+    white-space: nowrap;
+}
+
+    .chip::before {
+        content: "";
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #9ca3af;
+    }
+
+.chip-online {
+    color: #065f46;
+    background: #ecfdf5;
+    border-color: #a7f3d0;
+}
+
+    .chip-online::before {
+        background: var(--success);
+    }
+
+.chip-oftab {
+    color: #92400e;
+    background: #fffbeb;
+    border-color: #fcd34d;
+}
+
+    .chip-oftab::before {
+        background: var(--warning);
+    }
+
+.chip-disc {
+    color: #7f1d1d;
+    background: #fef2f2;
+    border-color: #fecaca;
+}
+
+    .chip-disc::before {
+        background: var(--danger);
+    }
+
+.chip-sub {
+    color: #1e40af;
+    background: #eff6ff;
+    border-color: #bfdbfe;
+}
+
+    .chip-sub::before {
+        background: var(--primary);
+    }
+
+/* ---------- Progress bars ---------- */
+.progress {
+    height: 6px;
+    background: linear-gradient(180deg,rgba(2,8,23,.05),rgba(2,8,23,.02));
+    border: 1px solid var(--bd);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+    .progress .progress-bar {
+        border-radius: 999px;
+        transition: width .25s ease;
+    }
+
+/* ---------- Filter chips ---------- */
+.filter-bar {
+    gap: .4rem;
+}
+
+.filter-chip {
+    border: 1px solid var(--bd);
+    background: #fff;
+    border-radius: 999px;
+    padding: .25rem .7rem;
+    font-size: .8rem;
+    cursor: pointer;
+}
+
+    .filter-chip.active {
+        background: #eef2ff;
+        border-color: #c7d2fe;
+        color: #1e40af;
+    }
+
+/* ---------- Feed items (#generalActions p) ---------- */
+#generalActions {
+    padding: 10px;
+}
+
+    #generalActions p {
+        background: var(--card);
+        border: 1px solid var(--bd);
+        border-radius: 12px;
+        padding: .45rem .65rem;
+        margin-bottom: .5rem;
+        display: flex;
+        align-items: center;
+        gap: .6rem;
+    }
+
+        #generalActions p strong {
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            color: var(--muted);
+            min-width: 68px;
+            display: inline-block;
+        }
+
+.badge-tag {
+    border: 1px solid var(--bd);
+    background: #f8fafc;
+    color: #334155;
+    border-radius: 999px;
+    padding: .15rem .45rem;
+    font-size: .7rem;
+}
+
+/* ---------- Timeline (personalLog) ---------- */
+.timeline {
+    position: relative;
+    padding-left: 16px;
+}
+
+    .timeline::before {
+        content: "";
+        position: absolute;
+        left: 6px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #e5e7eb;
+    }
+
+.timeline-item {
+    position: relative;
+    margin-bottom: .5rem;
+}
+
+    .timeline-item::before {
+        content: "";
+        position: absolute;
+        left: -2px;
+        top: .45rem;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--primary);
+        box-shadow: 0 0 0 2px var(--card);
+    }
+
+.timeline-content {
+    background: var(--card);
+    border: 1px solid var(--bd);
+    border-radius: 10px;
+    padding: .5rem .6rem;
+}
+
+/* ---------- Right pane ---------- */
+.nav-tabs {
+    border-bottom: 1px solid var(--bd);
+}
+
+    .nav-tabs .nav-link {
+        border: none;
+        color: var(--muted);
+        position: relative;
+    }
+
+        .nav-tabs .nav-link.active {
+            color: var(--text);
+            background: transparent;
+        }
+
+            .nav-tabs .nav-link.active::after {
+                content: "";
+                position: absolute;
+                left: 10px;
+                right: 10px;
+                bottom: -1px;
+                height: 3px;
+                border-radius: 3px;
+                background: var(--primary);
+            }
+
+/* ---------- Floating button ---------- */
+.floating-action-btn {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 1030;
+}
+
+    .floating-action-btn .btn {
+        border-radius: 18px;
+        box-shadow: var(--shadow);
+    }
+
+/* ---------- Utilities ---------- */
+.small.text-muted {
+    color: var(--muted) !important;
+}
+
+.blink-icon {
+    animation: blink 1.2s linear infinite;
+}
+
+@keyframes blink {
+    50% {
+        opacity: .35
+    }
+}
+
+.border-connected {
+    border-color: rgba(16,185,129,.6) !important;
+}
+
+.border-disconnected {
+    border-color: rgba(239,68,68,.5) !important;
+}
+
+.border-notconnected {
+    border-color: rgba(156,163,175,.5) !important;
+}
+
+/* ---------- Roster compact grid ---------- */
+#rosterList.roster-compact {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: .6rem;
+    padding: .6rem;
+}
+
+.card-student-compact {
+    padding: .6rem !important;
+    border-radius: 12px;
+}
+
+    .card-student-compact .ro-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 10px;
+        font-size: .9rem;
+    }
+
+    .card-student-compact .ro-name {
+        font-size: .9rem;
+    }
+
+    .card-student-compact .ro-sub {
+        font-size: .75rem;
+    }
+
+    .card-student-compact .chip {
+        margin-top: .15rem;
+        font-size: .7rem;
+        padding: .15rem .45rem;
+    }
+
+/* ---------- Helper visibility ---------- */
+.d-none-important {
+    display: none !important;
+}
+
+/* ---------- AntiCheat modal ---------- */
+.anti-hdr {
+    background: linear-gradient(135deg,#2563eb,#0ea5e9);
+}
+
+.anti-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,.15);
+}
+
+.anti-card {
+    border: 1px solid var(--bd,#eaeef4);
+    background: var(--card,#fff);
+    border-radius: 14px;
+    box-shadow: 0 4px 18px rgba(2,8,23,.06);
+}
+
+.anti-ico {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.05rem;
+}
+
+.score-badge {
+    font-weight: 600;
+    border-radius: 999px;
+    padding: .2rem .55rem;
+}
+
+/* ---------- Indicators dùng ở panel Hướng dẫn ---------- */
+.circle-local-green,
+.circle-local-red {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    vertical-align: middle;
+}
+
+.circle-local-green {
+    background: var(--success);
+}
+
+.circle-local-red {
+    background: var(--danger);
+}
+
+/* ======================================
+   RESPONSIVE (Mobile-first)
+   ====================================== */
+
+/* <= XL (1199.98px): Thu gọn Guide để ưu tiên Roster + Feed */
+@media (max-width: 1199.98px) {
+    #guidePanel {
+        display: none;
+    }
+
+    #rosterList.roster-compact {
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    }
+
+    .stat-row {
+        gap: 8px;
+    }
+}
+
+/* <= LG (991.98px): Tắt sticky, bỏ max-height viewport, 1 cột dọc */
+@media (max-width: 991.98px) {
+    :root {
+        --shadow-sm: 0 1px 6px rgba(2,8,23,.06);
+        --shadow: 0 6px 16px rgba(2,8,23,.08);
+    }
+
+    .layout-sticky-col {
+        position: static;
+        top: auto;
+    }
+
+    .h-viewport {
+        max-height: none;
+    }
+
+    #rosterSearch {
+        max-width: 100%;
+    }
+
+    /* stat pill thành 2 cột cho tablet */
+    .stat-pill {
+        flex: 1 1 calc(50% - 8px);
+    }
+}
+
+/* <= MD (767.98px): Roster grid 2 cột, tăng hit-area filter */
+@media (max-width: 767.98px) {
+    #rosterList.roster-compact {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .filter-chip {
+        padding: .35rem .8rem;
+        font-size: .85rem;
+    }
+}
+
+/* <= SM (575.98px): Tối ưu chữ, avatar, progress, FAB safe-area */
+@media (max-width: 575.98px) {
+    .brand-badge {
+        width: 36px;
+        height: 36px;
+        border-radius: 9px;
+    }
+
+    #appHeader h5 {
+        font-size: 1rem;
+    }
+
+    #appHeader .small.text-muted {
+        font-size: var(--fs-sm);
+    }
+
+    #rosterSearch {
+        margin-top: .5rem;
+    }
+
+    /* stat pill 1 cột */
+    .stat-pill {
+        flex: 1 1 100%;
+    }
+
+    .card-student-compact {
+        padding: .5rem !important;
+    }
+
+        .card-student-compact .ro-name {
+            font-size: .95rem;
+        }
+
+        .card-student-compact .ro-sub {
+            font-size: .75rem;
+        }
+
+    .progress {
+        height: 5px;
+    }
+
+    .chip {
+        font-size: .7rem;
+        padding: .18rem .45rem;
+    }
+
+    #generalActions {
+        padding: 8px 6px;
+    }
+
+        #generalActions p {
+            padding: .5rem .6rem;
+        }
+
+    .nav-tabs .nav-link {
+        padding: .5rem .6rem;
+        font-size: .9rem;
+    }
+
+        .nav-tabs .nav-link.active::after {
+            height: 2px;
+            left: 6px;
+            right: 6px;
+        }
+}
+
+/* Roster 1 cột cho màn cực hẹp */
+@media (max-width: 420px) {
+    #rosterList.roster-compact {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Safe-area cho iOS notch/gesture bar */
+@supports (padding: max(0px)) {
+    .floating-action-btn {
+        right: max(16px, env(safe-area-inset-right));
+        bottom: max(16px, env(safe-area-inset-bottom));
+    }
+}
+
+/* Giảm chuyển động theo hệ thống */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        transition: none !important;
+        animation: none !important;
+    }
+}

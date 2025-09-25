@@ -1,0 +1,74 @@
+pipeline {
+  agent any
+
+  options {
+    timestamps()
+    buildDiscarder(logRotator(numToKeepStr: '20'))
+  }
+
+  environment {
+    PUBLISH_DIR = 'publish/linux-x64'
+    DEPLOY_DIR  = '/var/www/itexam'
+    SERVICE     = 'itexam'
+    DOTNET_CLI_TELEMETRY_OPTOUT = '1'
+    DOTNET_SKIP_FIRST_TIME_EXPERIENCE = '1'
+  }
+
+  stages {
+
+    stage('Checkout') {
+      steps {
+        git branch: 'main',
+            credentialsId: 'github-ssh-itexam',
+            url: 'git@github.com:nguyenAnh132/ITExamHUTECH_NCKH.git'
+      }
+    }
+
+    stage('Build') {
+      steps {
+        sh '''
+          dotnet --info
+          dotnet restore
+          dotnet build -c Release --no-restore
+        '''
+      }
+    }
+
+    stage('Publish') {
+      steps {
+        sh '''
+          rm -rf ${PUBLISH_DIR}
+          # Nếu .csproj ở thư mục con, thay "." bằng đường dẫn tới <YourWebProject>.csproj
+          dotnet publish -c Release -o ${PUBLISH_DIR} -r linux-x64 --self-contained false
+        '''
+      }
+    }
+
+    stage('Prepare deploy dir') {
+      steps {
+        sh '''
+          sudo mkdir -p ${DEPLOY_DIR}
+          sudo chown -R jenkins:jenkins ${DEPLOY_DIR}
+        '''
+      }
+    }
+
+    stage('Deploy') {
+      steps {
+        sh '''
+          sudo systemctl stop ${SERVICE} || true
+          sudo rsync -a --delete ${PUBLISH_DIR}/ ${DEPLOY_DIR}/
+          sudo chown -R jenkins:jenkins ${DEPLOY_DIR}
+          sudo systemctl daemon-reload
+          sudo systemctl start ${SERVICE}
+          sudo systemctl status ${SERVICE} --no-pager || true
+        '''
+      }
+    }
+  }
+
+  post {
+    success { echo '✅ Deploy thành công.' }
+    failure { echo '❌ Build/Deploy thất bại.' }
+  }
+}

@@ -1,0 +1,23 @@
+.test_item{
+    box-shadow: rgba(50, 50, 93, 0.25) 0px 2px 5px -1px, rgba(0, 0, 0, 0.3) 0px 1px 3px -1px;
+}
+
+.test_item .test_item_info img{
+    height: 180px;
+    width: 100%;
+    object-fit: cover;
+}
+
+.exam_avatar{
+    width: 100px;
+    height: 100px;
+}
+
+.exam_avatar_teacher {
+    width: 130px;
+    height: 130px;
+}
+
+.btn_action {
+    width: 120px;
+}

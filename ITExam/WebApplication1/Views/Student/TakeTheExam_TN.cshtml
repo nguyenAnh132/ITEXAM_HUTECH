@@ -1,0 +1,769 @@
+﻿@using ITExam.ViewModels.Exam
+@using Newtonsoft.Json
+@model MultipleChoiceExamEntryVM
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thi trắc nghiệm</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css" />
+
+
+    <!-- Font Google -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&family=Paytone+One&display=swap"
+    rel="stylesheet">
+
+    <link href="/css/take-the-exam.css" rel="stylesheet" />
+
+</head>
+<body>
+
+    <div class="container py-4">
+        <div class="row g-4">
+            <div class="col-12 col-md-5">
+                <div class="quiz-app">
+                    <h3 class="py-3 px-4 m-0">Thông tin thí sinh</h3>
+                    <div class="d-flex justify-content-between border-bottom px-4">
+                        <h6 class="my-3">Sinh viên</h6>
+                        <h6 class="my-3">@Model.FullName</h6>
+                    </div>
+                    <div class="d-flex justify-content-between border-bottom px-4">
+                        <h6 class="my-3">MSSV</h6>
+                        <h6 class="my-3">@Model.StudentId</h6>
+                    </div>
+                    <div class="d-flex justify-content-between border-bottom px-4">
+                        <h6 class="my-3">Lớp</h6>
+                        <h6 class="my-3">@Model.ClassName</h6>
+                    </div>
+                    <div class="d-flex justify-content-between mt-2 px-4">
+                        <button type="button" data-bs-toggle="modal" data-bs-target="#staticBackdrop-result-exam" class="btn btn-submit fw-bold">Nộp bài</button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-md-7">
+                <div class="quiz-app">
+                    <div class="quiz-info">
+                        <div class="category">Bài thi: <span>@Model.ExamName</span></div>
+                        <div class="count">Tổng câu: <span>@Model.Questions.Count</span></div>
+                    </div>
+                    <div id="question-list" class="options-area">
+                        @for (int i = 0; i < Model.Questions.Count; i++)
+                        {
+                            var ch = Model.Questions[i];
+                            <div class="question-container @(i == 0 ? "active" : "")" data-index="@i" data-question="@i">
+                                <div class="mb-3">
+                                    <div class="question-title">
+                                        @{
+                                            ch.QuestionContent = @ch.QuestionContent.Replace("<p>", "").Replace("</p>", "");
+                                        }
+                                        @if (ch.QuestionType == "2"){
+                                            <h3 class="mb-1"><b>Câu @(i + 1):</b> @Html.Raw(ch.QuestionContent + " (Chọn nhiều đáp án)")</h3>
+                                        }
+                                        else
+                                        {
+                                            <h3 class="mb-1"><b>Câu @(i + 1):</b> @Html.Raw(ch.QuestionContent)</h3>
+                                        }
+                                    </div>
+                                    <div class="question-content">
+                                        @{
+                                            char choice = 'A';
+                                        }
+                                        @foreach (var da in ch.Choices)
+                                        {
+                                            <div class="option">
+                                                
+                                                <div class="form-check">
+                                                    @{
+                                                        da.ChoiceContent = da.ChoiceContent.Replace("<p>", "").Replace("</p>", "");
+                                                    }
+                                                    @if (ch.QuestionType == "1" || ch.QuestionType == "3")
+                                                    {
+                                                        <input class="form-check-input" type="radio" name="@ch.QuestionId" id="opt_@i@da.ChoiceId" value="@da.ChoiceId" @(da.IsSelected ? "checked" : "") />
+                                                    }
+                                                    else if (ch.QuestionType == "2")
+                                                    {
+                                                        <input class="form-check-input mt-2" type="checkbox" name="@ch.QuestionId" id="opt_@i@da.ChoiceId" value="@da.ChoiceId" @(da.IsSelected ? "checked" : "")  />
+                                                    }
+                                                    <label class="form-check-label" for="opt_@i@da.ChoiceId">
+                                                        @choice: @Html.Raw(da.ChoiceContent)
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            choice++;
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                    <div class="quiz-navigation d-flex justify-content-between my-3">
+                        <button id="prev-btn" class="btn btn-secondary nav-button">⬅ Câu trước</button>
+                        <button id="next-btn" class="btn btn-primary nav-button">Câu sau ➡</button>
+                    </div>
+                    <div class="bullets text-center mb-3">
+                        <div class="spans">
+                            @for (int i = 0; i < Model.Questions.Count; i++)
+                            {
+                                <span id="qBtn_@i"
+                                      class="@(i == 0 ? "on" : "")"
+                                      onclick="goToQuestion(@i)">
+                                    @(i + 1)
+                                </span>
+                            }
+                        </div>
+                        <div id="timer" style="font-weight:bold;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="staticBackdrop-result-exam" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title fw-bold">
+                        <i class="fa-solid fa-triangle-exclamation me-2"></i> Xác nhận nộp bài
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body bg-light text-center">
+                    <p class="fs-5 fw-semibold text-danger mb-3">
+                        <i class="fa-solid fa-circle-info me-2"></i>
+                        Sau khi nộp bạn sẽ không thể chỉnh sửa bài làm.
+                    </p>
+                </div>
+                <div class="modal-footer bg-white border-top">
+                    <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">
+                        <i class="fa-solid fa-xmark me-1"></i> Hủy
+                    </button>
+                    <form action="ExamResult_TN" method="post">
+                        <input type="hidden" name="maDe" value="@Model.ExamId" />
+                        <input type="hidden" name="maLop" value="@Model.ClassId" />
+                        <button type="submit" class="btn btn-danger fw-bold px-4">
+                            <i class="fa-solid fa-paper-plane me-1"></i> Nộp bài ngay
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentIndex = 0;
+        const questions = document.querySelectorAll(".question-container");
+        const bullets = document.querySelectorAll(".bullets span");
+
+        function showQuestion(index) {
+            questions.forEach((q, i) => {
+                q.classList.toggle("active", i === index);
+            });
+            bullets.forEach((b, i) => {
+                b.classList.toggle("on", i === index);
+            });
+            document.getElementById("prev-btn").disabled = index === 0;
+            document.getElementById("next-btn").disabled = index === questions.length - 1;
+        }
+
+        function goToQuestion(index) {
+            currentIndex = index;
+            showQuestion(currentIndex);
+        }
+
+        document.getElementById("prev-btn").addEventListener("click", () => {
+            if (currentIndex > 0) {
+                currentIndex--;
+                showQuestion(currentIndex);
+            }
+        });
+
+        document.getElementById("next-btn").addEventListener("click", () => {
+            if (currentIndex < questions.length - 1) {
+                currentIndex++;
+                showQuestion(currentIndex);
+            }
+        });
+
+        document.addEventListener("DOMContentLoaded", () => {
+            showQuestion(currentIndex);
+        });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let timeLeft = @Model.Duration;
+        let timerInterval;
+
+        function updateTimer() {
+            let minutes = Math.floor(timeLeft / 60);
+            let seconds = timeLeft % 60;
+            document.getElementById("timer").innerText = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+            timeLeft--;
+
+            if (timeLeft < 0) {
+                clearInterval(timerInterval);
+                window.location.href = "/Student/ExamResult_TN/@Model.ExamId/@Model.ClassId";
+            }
+        }
+
+        timerInterval = setInterval(updateTimer, 1000);
+
+        function markAnswered(questionNumber) {
+            const btn = document.getElementById(`qBtn_${questionNumber}`);
+            const inputs = document.querySelectorAll(`.question-container[data-question='${questionNumber}'] input`);
+            let isAnyChecked = Array.from(inputs).some(input => input.checked);
+            btn.classList.toggle("answered", isAnyChecked);
+        }
+
+        function scrollToQuestion(number) {
+            const target = document.querySelector(`.question-container[data-question='${number}']`);
+            if (target) {
+                window.scrollTo({ top: target.offsetTop - 100, behavior: 'smooth' });
+            }
+        }
+    </script>
+
+
+    <script>
+        const currentUser = @Model.UserId;
+        const currentExam = @Model.ExamId;
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const lastChecked = {};
+            document.querySelectorAll("input[type=radio]:checked").forEach(input => {
+                const maCauHoi = parseInt(input.name);
+                const maLuaChon = parseInt(input.value);
+                lastChecked[maCauHoi] = maLuaChon;
+            });
+
+            document.querySelectorAll("input[type=radio], input[type=checkbox]").forEach(input => {
+                input.addEventListener("click", function () {
+                    const maCauHoi = parseInt(this.name);
+                    const maLuaChon = parseInt(this.value);
+                    const isMultiChoice = this.type === "checkbox";
+                    let isChecked = this.checked;
+                    if (!isMultiChoice) {
+                        if (lastChecked[maCauHoi] === maLuaChon) {
+                            this.checked = false;
+                            isChecked = false;
+                            lastChecked[maCauHoi] = null;
+                        } else {
+                            lastChecked[maCauHoi] = maLuaChon;
+                        }
+                    }
+
+                    fetch("/Student/SaveAnswer", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            maDe: currentExam,
+                            userId: currentUser,
+                            maCauHoi: maCauHoi,
+                            maLuaChon: maLuaChon,
+                            isMultiChoice: isMultiChoice,
+                            isChecked: isChecked,
+                        })
+                    });
+
+                    const questionNumber = this.closest('.question-container')?.dataset.question;
+                    if (questionNumber) markAnswered(questionNumber);
+                });
+            });
+            document.querySelectorAll(".question-container").forEach(container => {
+                const qNumber = container.dataset.question;
+                const anyChecked = container.querySelector("input:checked");
+                if (anyChecked) {
+                    markAnswered(qNumber);
+                }
+            });
+        });
+    </script>
+
+    <!--SignalR - giám sát thời gian thực-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+    <script>
+        let hasSubmitted = false;
+        let lastSentIp = null;
+        let lastSentUa = null;
+        const studentId = "@Model.StudentId";
+        const studentName = decodeURIComponent("@Uri.EscapeDataString(Model.FullName)");
+        const examId = "@Model.ExamId";
+		const classId = "@Model.ClassId";
+        const userId = "@Model.UserId";
+
+        let initialWidth = window.innerWidth;
+        let initialHeight = window.innerHeight;
+        console.log(studentId,studentName, examId, classId);
+
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/examMonitorHub")
+            .withAutomaticReconnect([0, 2000, 10000, 30000])
+            .build();
+
+        //FUNCTION
+        // Lấy IP công khai từ bên ngoài
+        async function getPublicIP() {
+            try {
+                const response = await fetch("https://api.ipify.org?format=json");
+                const data = await response.json();
+                return data.ip;
+            } catch (error) {
+                console.error("Không thể lấy IP:", error);
+                return "Không xác định";
+            }
+        }
+
+        async function sendClientInfoToHub() {
+            const ip = await getPublicIP();
+            const ua = navigator.userAgent;
+
+            if (ip !== lastSentIp || ua !== lastSentUa) {
+                connection.invoke("SendClientInfo", examId, classId, studentId, studentName, ip, ua)
+                    .then(() => {
+                        console.log("Gửi lại IP/UA mới:", ip, ua);
+                        lastSentIp = ip;
+                        lastSentUa = ua;
+                    })
+                    .catch(err => console.error("Lỗi gửi IP/UA:", err));
+            }
+        }
+
+
+        @{
+            int index = 1;
+            foreach (var question in Model.Questions)
+            {
+                question.QuestionId = index;
+                index++;
+            }
+        }
+
+        const examStructureRaw = @Html.Raw(JsonConvert.SerializeObject(
+            Model.Questions,
+            new JsonSerializerSettings
+            {
+                StringEscapeHandling = StringEscapeHandling.Default
+            }
+        ));
+
+        function sendAnswerToHub(input) {
+            if (!input || hasSubmitted) return;
+
+            const qContainer = input.closest('.question-container');
+            const questionId = qContainer?.dataset.question;
+            console.log(questionId);
+            const questionContent = qContainer?.querySelector('.question-title h3')?.innerHTML.trim();
+            const answerId = input.value;
+            const answerContent = input.closest('.form-check')?.querySelector('.form-check-label')?.innerHTML.trim();
+            const isMulti = input.type === "checkbox";
+            const isChecked = input.checked;
+
+            if (!examId || !studentId || !studentName || !questionId || !answerId) return;
+
+            const logContent = isMulti
+                ? (isChecked ? "Chọn " : "Bỏ chọn ") + answerContent
+                : answerContent;
+
+            connection.invoke("SelectAnswer", examId, classId, studentId, studentName, questionId, questionContent, answerId, logContent)
+                .then(() => console.log("Gửi SelectAnswer:", questionId, answerId))
+                .catch(err => console.error("Lỗi gửi SelectAnswer:", err));
+        }
+
+        function countAnsweredQuestions() {
+            const questionContainers = document.querySelectorAll(".question-container");
+            let answeredCount = 0;
+
+            questionContainers.forEach(container => {
+                if (container.querySelector("input:checked")) {
+                    answeredCount++;
+                }
+            });
+
+            return answeredCount;
+        }
+
+
+        function sendProgressInfoToHub() {
+            if (typeof timeLeft === "undefined" || hasSubmitted) return;
+            const totalQuestions = @Model.Questions.Count;
+            const answeredCount = countAnsweredQuestions();
+            //console.log(`[GỬI PROGRESS] ${studentId} - TimeLeft: ${timeLeft}s - Answered: ${answeredCount} - Total Question: ${totalQuestions}`);
+
+            connection.invoke("SendRemainingTime", examId, classId, studentId, timeLeft, answeredCount, totalQuestions)
+                .catch(err => console.error("Lỗi gửi thời gian/câu đã làm:", err));
+        }
+
+
+        function setupAntiCheat(config) {
+            document.onkeydown = null;
+            document.oncopy = null;
+            document.oncut = null;
+            document.onpaste = null;
+            document.onselectstart = null;
+            document.oncontextmenu = null;
+
+            if (config.blockDevTools) {
+                document.onkeydown = function (e) {
+                    if (e.key === "F12" || (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "i")) {
+                        e.preventDefault();
+                        return false;
+                    }
+                };
+            }
+            if (config.blockCopyPaste) {
+                const showBlockMessage = (action) => {
+                    alert(`Bạn không được phép ${action} trong quá trình làm bài.`);
+                };
+                document.oncopy = function (e) {
+                    e.preventDefault();
+                    showBlockMessage("sao chép");
+                };
+                document.oncut = function (e) {
+                    e.preventDefault();
+                    showBlockMessage("cắt");
+                };
+                document.onpaste = function (e) {
+                    e.preventDefault();
+                    showBlockMessage("dán");
+                };
+            }
+            if (config.blockTextSelection) {
+                document.onselectstart = function (e) {
+                    e.preventDefault();
+                    return false;
+                };
+            }
+            if (config.blockRightClick) {
+                document.oncontextmenu = function (e) {
+                    e.preventDefault();
+                    return false;
+                };
+            }
+        }
+
+
+        connection.start().then(() => {
+            console.log("SignalR connected");
+            console.log(examStructureRaw);
+            return connection.invoke("JoinExam", examId, classId, studentId, studentName);
+        }).then(() => {
+            return Promise.all([
+                connection.invoke("SendFullExamStructure", examId, classId, studentId, studentName, examStructureRaw),
+                sendClientInfoToHub()
+            ]);
+        }).catch(err => {
+            console.error("SignalR connection error:", err);
+        });
+
+        connection.on("ReceiveAntiCheatConfig", setupAntiCheat);
+
+        connection.onclose(() => {
+            if (!hasSubmitted) {
+                setTimeout(() => {
+                    connection.start().then(() => {
+                        return connection.invoke("JoinExam", examId, classId, studentId, studentName);
+                    }).catch(console.error);
+                }, 5000);
+            }
+        });
+
+        connection.onreconnected(() => {
+            console.log("Đã reconnect, gửi lại IP/UA...");
+            sendClientInfoToHub(); // Gửi lại thông tin để trang giám sát phát hiện thay đổi
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (!hasSubmitted) {
+                // Chặn F5
+                if (e.keyCode === 116) {
+                    e.preventDefault();
+                    return false;
+                }
+
+                // Chặn Ctrl+R hoặc Cmd+R
+                if ((e.ctrlKey || e.metaKey) && e.keyCode === 82) {
+                    e.preventDefault();
+                    return false;
+                }
+
+                // Chặn Ctrl+F5
+                if (e.ctrlKey && e.keyCode === 116) {
+                    e.preventDefault();
+                    return false;
+                }
+            }
+        });
+
+        document.addEventListener("DOMContentLoaded", () => {
+            document.querySelectorAll("input[type='radio'], input[type='checkbox']").forEach(input => {
+                input.addEventListener("change", () => {
+                    sendAnswerToHub(input);
+                    const qNum = input.closest('.question-container')?.dataset.question;
+                    if (qNum) markAnswered(qNum);
+                });
+            });
+
+            document.addEventListener("visibilitychange", () => {
+                if (!hasSubmitted) {
+                    const isActive = document.visibilityState === "visible";
+                    connection.invoke("DetectTabChange", examId, classId, studentId, studentName, isActive)
+                        .catch(console.error);
+                }
+            });
+
+            const submitBtn = document.querySelector(".modal-footer .btn-danger");
+            if (submitBtn) {
+                submitBtn.addEventListener("click", () => {
+                    hasSubmitted = true;
+                    connection.invoke("SubmitExam", examId, classId, studentId, studentName).catch(console.error);
+                });
+            }
+
+            window.addEventListener("beforeunload", () => {
+                if (!hasSubmitted) {
+                    connection.invoke("LeaveExam", examId, classId, studentId, studentName).catch(console.error);
+                }
+            });
+
+            if (typeof timeLeft !== "undefined") {
+                const originalUpdateTimer = updateTimer;
+                let lastSentTimeLeft = null;
+
+                window.updateTimer = function () {
+                    originalUpdateTimer();
+
+                    if (timeLeft === 0 && !hasSubmitted) {
+                        hasSubmitted = true;
+                        connection.invoke("SubmitExam", examId, classId, studentId, studentName).catch(console.error);
+                    }
+                };
+            }
+
+            // Gửi thông tin mỗi 1s
+            setInterval(() => {
+                sendProgressInfoToHub();
+            }, 1000);
+
+            //Gửi ip/ua mỗi 5s
+            setInterval(() => {
+                if (!hasSubmitted) {
+                    sendClientInfoToHub();
+                }
+            }, 5000);
+
+        });
+    </script>
+    <script>
+        // Detect Resize
+        (function setupAntiResize() {
+          // ====== Cấu hình ngưỡng ======
+          const MIN_PX_DELTA = 16;       // bỏ thay đổi < 16px
+          const MIN_RATIO_DELTA = 0.02;  // 2% thay đổi
+          const KEYBOARD_DELTA_PX = 120; // giảm cao >= 120px có thể là bàn phím
+          const STABILIZE_MS = 350;      // thời gian ổn định trước khi quyết định
+          const RATE_LIMIT_MS = 1000;    // tối đa gửi 1 lần / giây
+
+          // Trạng thái ban đầu
+          const initial = {
+            w: document.documentElement.clientWidth,
+            h: document.documentElement.clientHeight
+          };
+          initial.area = initial.w * initial.h;
+
+          const vv = window.visualViewport || null;
+          const initialVVH = vv ? vv.height : null;
+          const initialScale = vv ? vv.scale : 1;
+
+          let resizeAlertSent = false;
+          let debounceTimer, lastSentAt = 0;
+
+          // Giữ một snapshot "last" để so sánh ổn định
+          const last = {
+            clientW: initial.w,
+            clientH: initial.h,
+            innerW: window.innerWidth,
+            innerH: window.innerHeight,
+            outerW: window.outerWidth,
+            outerH: window.outerHeight,
+            vvW: vv ? vv.width : null,
+            vvH: vv ? vv.height : null,
+            vvScale: vv ? vv.scale : 1,
+            vvTop: vv ? vv.offsetTop : 0
+          };
+
+          function hasEditorFocus() {
+            if (document.querySelector('.ck-focused')) return true;
+            const ae = document.activeElement;
+            if (!ae) return false;
+            const tag = (ae.tagName || '').toUpperCase();
+            if (tag === 'INPUT' || tag === 'TEXTAREA') return true;
+            if (ae.isContentEditable) return true;
+            return false;
+          }
+
+          const percentDelta = (oldV, newV) => {
+            if (!oldV) return 1;
+            return Math.abs(newV - oldV) / oldV;
+          };
+
+          const overThreshold = (oldV, newV) => {
+            return (
+              Math.abs(newV - oldV) >= MIN_PX_DELTA ||
+              percentDelta(oldV, newV) >= MIN_RATIO_DELTA
+            );
+          };
+
+          function classify() {
+            const clientW = document.documentElement.clientWidth;
+            const clientH = document.documentElement.clientHeight;
+            const innerW  = window.innerWidth;
+            const innerH  = window.innerHeight;
+            const outerW  = window.outerWidth;
+            const outerH  = window.outerHeight;
+
+            const hasVV = !!vv;
+            const vvW = hasVV ? vv.width : null;
+            const vvH = hasVV ? vv.height : null;
+            const scale = hasVV ? vv.scale : 1;
+            const vvTop = hasVV ? vv.offsetTop : 0;
+
+            const widthChanged  = overThreshold(last.clientW, clientW);
+            const heightChanged = overThreshold(last.clientH, clientH);
+
+            // 1) Pinch-zoom?
+            const pinchZoomLikely = hasVV && Math.abs(scale - last.vvScale) > 0.001;
+
+            // 2) Bàn phím ảo?
+            const keyboardLikely =
+              hasEditorFocus() &&
+              (
+                (hasVV && last.vvH !== null && (last.vvH - vvH) >= KEYBOARD_DELTA_PX) ||
+                (last.innerH - innerH) >= KEYBOARD_DELTA_PX
+              ) &&
+              percentDelta(last.clientW, clientW) < 0.01; // chiều rộng hầu như không đổi
+
+            // 3) Thanh URL ẩn/hiện (mobile)
+            const urlBarLikely =
+              !hasEditorFocus() &&
+              !pinchZoomLikely &&
+              widthChanged === false &&
+              heightChanged === true &&
+              (
+                (hasVV && Math.abs(vvTop - last.vvTop) > 0) ||
+                Math.abs(last.innerH - innerH) >= MIN_PX_DELTA
+              );
+
+            // 4) Orientation change (coi như resize thật)
+            const angle = (screen.orientation && screen.orientation.angle !== undefined)
+              ? screen.orientation.angle
+              : (window.orientation || 0);
+            classify._lastAngle ??= angle;
+            const orientationChanged = angle !== classify._lastAngle;
+            classify._lastAngle = angle;
+
+            // 5) Desktop: outer size thay đổi là resize thật
+            const desktopRealByOuter =
+              overThreshold(last.outerW, outerW) || overThreshold(last.outerH, outerH);
+
+            // 6) Quyết định "real resize"
+            const realResize =
+              !pinchZoomLikely &&
+              !keyboardLikely &&
+              !urlBarLikely &&
+              (
+                orientationChanged ||
+                desktopRealByOuter ||
+                widthChanged ||
+                (heightChanged && percentDelta(last.clientH, clientH) >= 0.03) // cao đổi >3%
+              );
+
+            const payload = {
+              initialWidth:  initial.w,
+              initialHeight: initial.h,
+              currentWidth:  clientW,
+              currentHeight: clientH,
+              innerWidth: innerW,
+              innerHeight: innerH,
+              outerWidth: outerW,
+              outerHeight: outerH,
+              visualViewport: hasVV ? {
+                width: vvW, height: vvH, scale: scale, offsetTop: vvTop,
+                initialHeight: initialVVH, initialScale: initialScale
+              } : null,
+              flags: {
+                pinchZoomLikely,
+                keyboardLikely,
+                urlBarLikely,
+                orientationChanged,
+                desktopRealByOuter
+              },
+              timestamp: new Date().toISOString(),
+              userAgent: navigator.userAgent
+            };
+
+            return { realResize, payload, snapshot: { clientW, clientH, innerW, innerH, outerW, outerH, vvW, vvH, vvScale: scale, vvTop } };
+          }
+
+          function checkResize() {
+            if (resizeAlertSent || typeof hasSubmitted === "boolean" && hasSubmitted) return;
+
+            const { realResize, payload, snapshot } = classify();
+
+            // Cập nhật "last" để so sánh lần sau
+            last.clientW = snapshot.clientW;
+            last.clientH = snapshot.clientH;
+            last.innerW  = snapshot.innerW;
+            last.innerH  = snapshot.innerH;
+            last.outerW  = snapshot.outerW;
+            last.outerH  = snapshot.outerH;
+            last.vvW     = snapshot.vvW;
+            last.vvH     = snapshot.vvH;
+            last.vvScale = snapshot.vvScale;
+            last.vvTop   = snapshot.vvTop;
+
+            if (!realResize) return;
+
+            const now = Date.now();
+            if (now - lastSentAt < RATE_LIMIT_MS) return; // rate-limit
+            lastSentAt = now;
+
+            resizeAlertSent = true;
+
+            // Gửi log lên Hub (giữ nguyên keyword, tham số)
+            try {
+              connection?.invoke?.(
+                "DetectWindowResize",
+                examId, classId, studentId, studentName,
+                payload
+              );
+            } catch (e) { console.error("DetectWindowResize error:", e); }
+
+            alert("CẢNH BÁO! Phát hiện thay đổi kích thước cửa sổ đáng kể. Trang sẽ được làm mới.");
+            setTimeout(() => location.reload(), 1000);
+          }
+
+          function debouncedCheck() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(checkResize, STABILIZE_MS);
+          }
+
+          // Lắng nghe sự kiện
+          window.addEventListener("resize", debouncedCheck, { passive: true });
+          window.addEventListener("orientationchange", debouncedCheck, { passive: true });
+          if (vv) {
+            vv.addEventListener("resize", debouncedCheck, { passive: true });
+            vv.addEventListener("scroll", debouncedCheck, { passive: true }); // iOS URL bar làm offsetTop đổi
+          }
+          // Khi focus/blur input — giúp phân biệt bàn phím ảo
+          window.addEventListener("focus", debouncedCheck, true);
+          window.addEventListener("blur", debouncedCheck, true);
+          document.addEventListener("visibilitychange", debouncedCheck, { passive: true });
+        })();
+    </script>
+</body>
+</html>

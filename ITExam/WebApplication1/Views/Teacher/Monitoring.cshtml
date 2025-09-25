@@ -1,0 +1,1402 @@
+﻿@model ITExam.ViewModels.Exam.MonitoringVM;
+@using Newtonsoft.Json;
+
+@{
+    ViewData["Title"] = "Monitoring - ITExam";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Giám sát thi - @Model.ExamName</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
+    <link rel="stylesheet" href="~/css/teacher-monitoring-style.css">
+</head>
+<body>
+    <!-- Thông tin đề thi -->
+    <div class="container-fluid">
+        <header id="appHeader" class="border-bottom">
+            <div class="container-fluid py-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="brand-badge">IT</div>
+                    <div>
+                        <div class="d-flex align-items-center gap-2">
+                            <h5 class="mb-0 fw-semibold">@Model.ExamName - @Model.ClassName</h5>                        
+                        </div>
+                        <div class="small text-muted mt-1">
+                            Đề: <b>@Model.ExamId</b> • Thời gian: <b>@Model.Duration</b> phút • Loại: <b>@Model.ExamType</b>
+                        </div>
+                    </div>
+
+                    <div class="ms-auto header-tools d-flex align-items-center gap-2">
+                        <div class="small text-muted me-2"><i class="fa-regular fa-clock me-1"></i><span id="countdown" class="fw-semibold">--:--</span></div>
+                        <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#antiCheatModal">
+                            <i class="fa-solid fa-shield-halved me-1"></i>Anti-Cheat
+                        </button>
+                        <button class="btn btn-danger btn-sm completeMonitoringButton"><i class="fa-solid fa-check-circle me-1"></i>Hoàn tất</button>
+                    </div>
+                </div>
+
+                <!-- Stat pills -->
+                <div class="d-flex stat-row mt-3 flex-wrap">
+                    <div class="stat-pill">Sĩ số: <b id="m-total">--</b></div>
+                    <div class="stat-pill">Online: <b id="m-online">--</b></div>
+                    <div class="stat-pill">Rời tab: <b id="m-oftab">--</b></div>
+                    <div class="stat-pill">Ngắt kết nối: <b id="m-disc">--</b></div>
+                    <div class="stat-pill">Đã nộp: <b id="m-submit">--</b></div>
+                </div>
+            </div>
+        </header>
+    </div>
+
+    <!-- Phần chính -->
+    <div class="container-fluid px-3 mt-2">
+        <div class="row g-3">
+
+            <!-- LEFT: Roster -->
+            <aside id="col-left" class="col-12 col-lg-3">
+                <div class="h-viewport">
+                    <div class="d-flex align-items-center mb-2">
+                        <h6 class="mb-0"><i class="fas fa-user-check text-success me-1"></i> Danh sách thí sinh </h6>
+                        <input id="rosterSearch" type="search" class="form-control form-control-sm ms-auto" placeholder="Tìm tên/mã…">
+
+                        <div class="dropdown ms-2">
+                            <button class="btn btn-light btn-sm dropdown-toggle" id="rosterOptions" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fa-solid fa-gear"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><button class="dropdown-item" id="optLayoutDefault"><i class="fa-solid fa-columns me-2"></i>Bố cục mặc định (3 cột)</button></li>
+                                <li><button class="dropdown-item" id="optLayoutClass"><i class="fa-solid fa-table-cells-large me-2"></i>Theo dõi lớp học (2 cột)</button></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card flex-panel">
+                        <div id="rosterList" class="card-body scroll-pane">
+                            @* mỗi SV là một thẻ – GIỮ ID để JS update *@
+                            @foreach (var sv in Model.StudentList)
+                            {
+                                <div class="card-student p-2 card-student-compact" id="tab-student-@sv.Username">
+                                    <div class="ro-line mb-1">
+                                        <div class="ro-avatar">
+                                            @{
+                                                var parts = (sv.FullName ?? "").Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                                                var first = parts.Length > 0 ? parts[0][0].ToString().ToUpper() : "U";
+                                                var last = parts.Length > 1 ? parts[^1][0].ToString().ToUpper() : "";
+                                            }
+                                            @($"{first}{last}")
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="ro-name text-truncate fw-semibold">@sv.FullName</div>
+                                            <div class="ro-sub small text-muted">@sv.Username</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="progress mb-1">
+                                        <div class="progress-bar" id="progress-@sv.Username" role="progressbar" style="width:0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+
+                                    <div class="d-flex align-items-center justify-content-between small mb-1">
+                                        <span class="text-muted" id="timeleft-@sv.Username"><i class="fas fa-clock me-1"></i>--p --s</span>
+                                    </div>
+
+                                    <!-- CHIP trạng thái đặt dưới student id để tránh tràn -->
+                                    <div class="d-flex">
+                                        <span id="status-@sv.Username" class="chip chip-disc w-auto">Chưa kết nối</span>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- MIDDLE: Feed + Filters -->
+            <main id="col-middle" class="col-12 col-lg-6">
+                <div class="card mb-2">
+                    <div class="card-body py-2 d-flex align-items-center filter-bar">
+                        <button class="filter-chip active" data-filter="all">Tất cả</button>
+                        <button class="filter-chip" data-filter="answer">Trả lời</button>
+                        <button class="filter-chip" data-filter="switchtab">Chuyển tab</button>
+                        <button class="filter-chip" data-filter="resize">Thay kích thước</button>
+                        <button class="filter-chip" data-filter="disconnect">Ngắt kết nối</button>
+                    </div>
+                </div>
+
+                <!-- Room feed -->
+                <div id="roomFeedPanel" class="card flex-panel">
+                    <div class="card-header d-flex align-items-center">
+                        <span class="fw-semibold"><i class="fas fa-globe text-secondary me-2"></i>Hoạt động phòng thi</span>
+                    </div>
+                    <div id="generalActions" class="card-body scroll-pane"><!-- JS append <p> --></div>
+                </div>
+
+                <!-- Student feed -->
+                <div id="studentFeedPanel" class="card flex-panel d-none mt-2">
+                    <div class="card-header d-flex align-items-center">
+                        <button id="btnBackToRoomFeed" class="btn btn-outline-secondary btn-sm me-2"><i class="fas fa-arrow-left me-1"></i>Tổng quát</button>
+                        <span class="fw-semibold"><i class="fas fa-user text-primary me-2"></i><span id="sf-title">Nhật ký của …</span></span>
+                    </div>
+                    <div class="card-body scroll-pane">
+                        <div id="personalLogContent" class="timeline"></div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- RIGHT: Guide (default) / Student detail (toggle) -->
+            <aside id="col-right" class="col-12 col-lg-3">
+                <!-- Panel Hướng dẫn (mặc định hiển thị) -->
+                <div id="guidePanel" class="card shadow-sm bg-light p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="text-primary mb-0">
+                            <i class="fas fa-circle-question me-2"></i>Hướng dẫn giám sát
+                        </h5>
+                        <!--
+                        <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseGuide" aria-expanded="true" aria-controls="collapseGuide">
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        -->
+                    </div>
+                    <div class="collapse show" id="collapseGuide">
+                        <hr />
+                        <div class="small">
+                            <div class="mb-2"><span class="circle-local-green me-2"></span><b>Online</b>: Thí sinh đang kết nối & tập trung vào tab làm bài.</div>
+                            <div class="mb-2"><span class="circle-local-red me-2"></span><b>Disconnected</b>: Thí sinh đã mất kết nối / rời phiên.</div>
+                            <div class="mb-2"><i class="fas fa-exclamation-triangle me-2 text-warning"></i><b>Off tab</b>: Thí sinh chuyển khỏi tab làm bài.</div>
+                            <div class="mb-2"><i class="fas fa-check-circle me-2 text-success"></i><b>Submitted</b>: Thí sinh đã nộp bài.</div>
+                            <hr class="my-3" />
+                            <div class="mb-2"><i class="fas fa-globe me-2 text-secondary"></i><b>Tổng quát</b>: Dòng hoạt động của cả phòng thi.</div>
+                            <div class="mb-2"><i class="fas fa-user me-2 text-primary"></i><b>Cá nhân</b>: Nhấn tên thí sinh ở cột trái để xem nhật ký chi tiết.</div>
+                            <div class="mb-2"><i class="fas fa-filter me-2 text-info"></i><b>Bộ lọc</b>: Lọc theo loại sự kiện: Answer / SwitchTab / Resize / Disconnect / Submit.</div>
+                            <div class="mb-2"><i class="fas fa-shield-alt me-2 text-dark"></i><b>Anti-Cheat</b>: Cấu hình hạn chế gian lận gửi tới client sinh viên.</div>
+                            <div class="mb-2"><i class="fas fa-check me-2 text-success"></i><b>Hoàn tất</b>: Kết thúc giám sát & dọn dẹp dữ liệu.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel Thông tin sinh viên (ẩn mặc định) -->
+                <div id="rightPaneStudent" class="card flex-panel d-none mt-3">
+                    <div class="card-header">
+                        <ul class="nav nav-tabs card-header-tabs" id="rightPaneTabs" role="tablist">
+                            <li class="nav-item">
+                                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#rp-overview" type="button">Tổng quan</button>
+                            </li>
+                            <li class="nav-item">
+                                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#rp-exam" type="button">Đề thi</button>
+                            </li>
+                            <li class="nav-item">
+                                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#rp-sus" type="button">Nghi vấn</button>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="tab-content p-3 scroll-pane" style="flex:1">
+                        <div class="tab-pane fade show active" id="rp-overview">
+                            <div class="mb-2 small text-muted">Đang xem: <b id="rp-name">Chưa chọn</b></div>
+                            <div class="mb-2 small"><div><b>IP:</b> <span id="rp-ip">—</span></div><div><b>Trình duyệt:</b> <span id="rp-ua">—</span></div></div>
+                            <div class="mb-2">
+                                <div class="progress"><div id="rp-progress" class="progress-bar" style="width:0%"></div></div>
+                                <div class="small mt-1 text-muted">Còn lại: <span id="rp-time">—</span> • Đã làm: <span id="rp-answered">0/0</span></div>
+                            </div>
+                            <div class="mt-2 small">Trạng thái: <span id="rp-status" class="chip">—</span></div>
+                        </div>
+                        <div class="tab-pane fade" id="rp-exam">
+                            <div id="rp-exam-structure" class="small text-body"></div>
+                        </div>
+                        <div class="tab-pane fade" id="rp-sus">
+                            <div class="small mb-2">
+                                <div>Rời tab: <b id="rp-count-oftab">0</b></div>
+                                <div>Resize cửa sổ: <b id="rp-count-resize">0</b></div>
+                                <div>Ngắt kết nối: <b id="rp-count-disc">0</b></div>
+                            </div>
+                            <div id="rp-sus-list" class="small"></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Panel: Log tổng quát ở chế độ 2 cột -->
+                <div id="rightGeneralLogPanel" class="card flex-panel d-none mt-3">
+                    <div class="card mb-2">
+                        <div class="card-body py-2 d-flex align-items-center filter-bar">
+                            <button class="filter-chip active" data-filter="all">Tất cả</button>
+                            <button class="filter-chip" data-filter="answer">Trả lời</button>
+                            <button class="filter-chip" data-filter="switchtab">Chuyển tab</button>
+                            <button class="filter-chip" data-filter="resize">Thay kích thước</button>
+                            <button class="filter-chip" data-filter="disconnect">Ngắt kết nối</button>
+                        </div>
+                    </div>
+
+                    <div class="card-header d-flex align-items-center">
+                        <span class="fw-semibold"><i class="fas fa-globe text-secondary me-2"></i>Hoạt động phòng thi</span>
+                    </div>
+                    <div class="card-body scroll-pane">
+                        <!-- Sẽ DI CHUYỂN #generalActions vào đây khi vào chế độ 2 cột -->
+                        <div id="right-generalActions-slot"></div>
+                    </div>
+                </div>
+
+                <!-- Panel: Log cá nhân ở chế độ 3 cột khi chọn sinh viên -->
+                <div id="rightPersonalLogPanel" class="card flex-panel d-none mt-3">
+                    <div class="card-header d-flex align-items-center justify-content-between">
+                        <span class="fw-semibold"><i class="fas fa-user text-primary me-2"></i><span id="right-sf-title">Nhật ký của …</span></span>
+                        <button id="btnBackToClassMode" class="btn btn-outline-secondary btn-sm"><i class="fas fa-arrow-left me-1"></i>Quay lại theo dõi lớp</button>
+                    </div>
+                    <div class="card-body scroll-pane">
+                        <!-- Sẽ DI CHUYỂN #personalLogContent vào đây khi vào chế độ 3 cột (chọn SV) -->
+                        <div id="right-personalLog-slot"></div>
+                    </div>
+                </div>
+
+            </aside>
+
+
+        </div>
+    </div>
+
+    <!-- Floating action button for mobile -->
+    <div class="floating-action-btn">
+        <div class="btn-group dropup">
+            <button type="button" class="btn btn-primary btn-lg rounded-circle shadow" data-bs-toggle="dropdown" aria-expanded="false" style="width: 56px; height: 56px;">
+                <i class="fas fa-bars"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end" style="border-radius: 12px;">
+                <li><button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#antiCheatModal"><i class="fas fa-shield-alt me-2"></i>Anti Cheat</button></li>
+                <li><button class="dropdown-item completeMonitoringButton"><i class="fas fa-check-circle me-2"></i>Hoàn tất</button></li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Modal AntiCheat -->
+    <div class="modal fade" id="antiCheatModal" tabindex="-1" aria-labelledby="antiCheatModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content shadow-lg border-0 rounded-4">
+                <div class="modal-header anti-hdr text-white rounded-top-4">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="anti-icon"><i class="fas fa-shield-alt"></i></span>
+                        <div>
+                            <h5 class="modal-title mb-0" id="antiCheatModalLabel">Cấu hình chống gian lận</h5>
+                            <small class="opacity-75">Chọn các tính năng bảo mật cho phòng thi</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    <!-- Thanh tóm tắt + Chọn tất cả -->
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-2">
+                            <i class="fas fa-list-check me-1"></i>
+                            <span id="ac-enabled-count">0</span> / 4 tính năng đang bật
+                        </span>
+                        <div class="form-check form-switch m-0">
+                            <input class="form-check-input" type="checkbox" id="ac-select-all">
+                            <label class="form-check-label" for="ac-select-all"><strong>Chọn tất cả</strong></label>
+                        </div>
+                    </div>
+
+                    <!-- Lưới tính năng -->
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="anti-card p-3 h-100">
+                                <div class="d-flex align-items-start gap-3">
+                                    <div class="anti-ico bg-primary-subtle text-primary"><i class="fas fa-code"></i></div>
+                                    <div class="flex-fill">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <label for="blockDevTools" class="fw-semibold mb-1">Chặn Dev Tools (F12, Ctrl+Shift+I)</label>
+                                            <div class="form-check form-switch m-0">
+                                                <input class="form-check-input" type="checkbox" id="blockDevTools">
+                                            </div>
+                                        </div>
+                                        <div class="text-muted small">Ngăn mở bảng dành cho nhà phát triển, giảm nguy cơ can thiệp DOM.</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="anti-card p-3 h-100">
+                                <div class="d-flex align-items-start gap-3">
+                                    <div class="anti-ico bg-info-subtle text-info"><i class="fas fa-copy"></i></div>
+                                    <div class="flex-fill">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <label for="blockCopyPaste" class="fw-semibold mb-1">Chặn sao chép, cắt, dán (Ctrl+C, Ctrl+X, Ctrl+V)</label>
+                                            <div class="form-check form-switch m-0">
+                                                <input class="form-check-input" type="checkbox" id="blockCopyPaste">
+                                            </div>
+                                        </div>
+                                        <div class="text-muted small">Vô hiệu thao tác clipboard trong phiên làm bài.</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="anti-card p-3 h-100">
+                                <div class="d-flex align-items-start gap-3">
+                                    <div class="anti-ico bg-warning-subtle text-warning"><i class="fas fa-i-cursor"></i></div>
+                                    <div class="flex-fill">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <label for="blockTextSelection" class="fw-semibold mb-1">Chặn bôi đen văn bản</label>
+                                            <div class="form-check form-switch m-0">
+                                                <input class="form-check-input" type="checkbox" id="blockTextSelection">
+                                            </div>
+                                        </div>
+                                        <div class="text-muted small">Tránh việc chọn &amp; sao chép nội dung câu hỏi/đáp án.</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="anti-card p-3 h-100">
+                                <div class="d-flex align-items-start gap-3">
+                                    <div class="anti-ico bg-danger-subtle text-danger"><i class="fas fa-mouse-pointer"></i></div>
+                                    <div class="flex-fill">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <label for="blockRightClick" class="fw-semibold mb-1">Chặn chuột phải</label>
+                                            <div class="form-check form-switch m-0">
+                                                <input class="form-check-input" type="checkbox" id="blockRightClick">
+                                            </div>
+                                        </div>
+                                        <div class="text-muted small">Vô hiệu thực đơn ngữ cảnh nhằm hạn chế truy cập nhanh.</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div><!--/modal-body-->
+
+                <div class="modal-footer d-flex justify-content-between">
+                    <button type="button" class="btn btn-light" id="ac-reset">
+                        <i class="fas fa-rotate-left me-1"></i>Đặt lại
+                    </button>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-1"></i>Đóng
+                        </button>
+                        <button type="button" class="btn btn-primary" id="applyAntiCheat">
+                            <i class="fas fa-check me-1"></i>Áp dụng
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+<!--Script xử lý Giám sát thời gian thực-->
+    <script>
+        (() => {
+          // ====== Basic context ======
+          const EXAM_ID = '@Model.ExamId';
+          const CLASS_ID = '@Model.ClassId';
+          const INSTRUCTOR_NAME = '@(ViewBag.Instructor ?? "")';
+          const EXAM_DURATION_MIN = parseInt('@Model.Duration') || 0;
+
+          // ====== SignalR connection ======
+          const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/examMonitorHub")
+            .withAutomaticReconnect()
+            .build();
+
+          // ===== Helpers =====
+          const $  = (sel, p=document) => p.querySelector(sel);
+          const $$ = (sel, p=document) => Array.from(p.querySelectorAll(sel));
+          const debounce = (fn, t=200) => { let ti; return (...a)=>{ clearTimeout(ti); ti=setTimeout(()=>fn(...a),t);} };
+          const unsign = (s) => (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+          const formatTime = (d=new Date()) => d.toLocaleTimeString('vi-VN', { hour12:false });
+
+          // ====== DOM refs ======
+          // Khung cột
+          const colLeft   = document.getElementById('col-left');
+          const colMiddle = document.getElementById('col-middle');
+          const colRight  = document.getElementById('col-right');
+
+          // Feed giữa
+          const roomFeedPanel    = document.getElementById('roomFeedPanel');
+          const studentFeedPanel = document.getElementById('studentFeedPanel');
+
+          // Vùng log
+          const generalActions     = document.getElementById("generalActions");
+          const personalLogContent = document.getElementById("personalLogContent");
+
+          // Right pane
+          const guidePanel = document.getElementById('guidePanel');
+          const rightPaneStudent = document.getElementById('rightPaneStudent');
+          const rpName = document.getElementById('rp-name');
+          const rpIP = document.getElementById('rp-ip');
+          const rpUA = document.getElementById('rp-ua');
+          const rpProgressBar = document.getElementById('rp-progress');
+          const rpTime = document.getElementById('rp-time');
+          const rpAnswered = document.getElementById('rp-answered');
+          const rpStatus = document.getElementById('rp-status');
+          const rpExamStruct = document.getElementById('rp-exam-structure');
+          const rpCountTabOut = document.getElementById('rp-count-oftab');
+          const rpCountResize = document.getElementById('rp-count-resize');
+          const rpCountDisc = document.getElementById('rp-count-disc');
+
+          // Roster & controls
+          const rosterList = document.getElementById('rosterList');
+          const btnLayoutDefault = document.getElementById('optLayoutDefault');
+          const btnLayoutClass   = document.getElementById('optLayoutClass');
+          const btnBackRoomFeed  = document.getElementById('btnBackToRoomFeed');
+
+          // Stat pills
+          const elTotal  = document.getElementById('m-total');
+          const elOnline = document.getElementById('m-online');
+          const elOfftab = document.getElementById('m-oftab');
+          const elDisc   = document.getElementById('m-disc');
+          const elSubmit = document.getElementById('m-submit');
+
+          // ====== State ======
+          const allStudentIds = @Html.Raw(JsonConvert.SerializeObject(Model.StudentList.Select(sv => sv.Username)));
+          const students = new Map();           // id -> { isConnected, isActive, hasSubmitted, tabLeaveCount }
+          const studentActions = new Map();     // id -> [{timestamp, timeString, message, className, type}]
+          const fraudulenceData = new Map();    // id -> [logItems nghi vấn]
+          const examStructures = new Map();     // id -> array cấu trúc đề
+          const progressData = new Map();       // id -> { timeLeft, answeredCount, totalQuestions }
+          const suspiciousCounters = new Map(); // id -> { tabOut, resize, disconnect }
+          const ipUaCache = new Map();          // id -> { ip, ua }
+          const studentScores = new Map();      // id -> score (number)
+
+          let selectedStudentId = null;
+          let currentFilter = 'all';
+
+          // Khởi tạo state sinh viên
+          allStudentIds.forEach(id => {
+            students.set(id, { isConnected:false, isActive:false, hasSubmitted:false, tabLeaveCount:0 });
+          });
+
+          // ====== UI helpers ======
+          function setPanelMaxHeight(id, px = 500) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.style.maxHeight = px + 'px';
+            el.style.overflowY = 'auto';
+            const body = el.querySelector('.scroll-pane') || el.querySelector('.card-body');
+            const header = el.querySelector('.card-header');
+            if (body) {
+              const headerH = header ? header.offsetHeight : 0;
+              const innerMax = Math.max(120, px - headerH - 16);
+              body.style.maxHeight = innerMax + 'px';
+              body.style.overflowY = 'auto';
+            }
+          }
+
+          // Set lưới col-lg-x + order-lg-x
+          function setGrid(el, colLg, orderLg) {
+            if (!el) return;
+            el.className = el.className
+              .replace(/\bcol-lg-\d+\b/g, '')
+              .replace(/\border-lg-\d+\b/g, '')
+              .replace(/\bd-none\b/g, '')
+              .trim();
+            el.classList.add('col-12', `col-lg-${colLg}`, `order-lg-${orderLg}`);
+          }
+          const hide = (el)=>{ el && el.classList.add('d-none'); };
+          const show = (el)=>{ el && el.classList.remove('d-none'); };
+          const moveNode = (node, newParent)=>{ if (node && newParent && node.parentElement !== newParent) newParent.appendChild(node); };
+
+          // CSS roster compact (khi ở layout 2 cột)
+          (function ensureCompactCss(){
+            if (document.getElementById('roster-compact-style')) return;
+            const css = `
+              #rosterList.roster-compact{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:.6rem;padding:.6rem;}
+              .card-student-compact{padding:.6rem !important;border-radius:12px;}
+              .card-student-compact .ro-avatar{width:32px;height:32px;border-radius:10px;font-size:.9rem;}
+              .card-student-compact .ro-name{font-size:.9rem;}
+              .card-student-compact .ro-sub{font-size:.75rem;}
+              .card-student-compact .chip{margin-top:.15rem;font-size:.7rem;padding:.15rem .45rem;}
+            `;
+            const style = document.createElement('style');
+            style.id = 'roster-compact-style';
+            style.textContent = css;
+            document.head.appendChild(style);
+          })();
+
+          // Hiển thị feed
+          function showRoomFeed()    { show(roomFeedPanel); hide(studentFeedPanel); }
+          function showStudentFeed() { hide(roomFeedPanel); show(studentFeedPanel); }
+
+          // Right pane: hướng dẫn / thông tin cá nhân
+          function showGuidePanel()   { if (guidePanel) show(guidePanel); if (rightPaneStudent) hide(rightPaneStudent); }
+          function showStudentPanel() { if (guidePanel) hide(guidePanel); if (rightPaneStudent) show(rightPaneStudent); }
+
+          // Reset & ẩn pane thông tin cá nhân
+          function resetRightPaneStudent() {
+            selectedStudentId = null;
+            if (rightPaneStudent) rightPaneStudent.classList.add('d-none');
+            if (rpName) rpName.textContent = 'Chưa chọn';
+            if (rpIP) rpIP.textContent = '—';
+            if (rpUA) rpUA.textContent = '—';
+            if (rpTime) rpTime.textContent = '—';
+            if (rpAnswered) rpAnswered.textContent = '0/0';
+            if (rpExamStruct) rpExamStruct.innerHTML = '';
+            if (rpCountTabOut) rpCountTabOut.textContent = '0';
+            if (rpCountResize) rpCountResize.textContent = '0';
+            if (rpCountDisc) rpCountDisc.textContent = '0';
+            if (rpProgressBar) {
+              rpProgressBar.style.width = '0%';
+              rpProgressBar.classList.remove('bg-success','bg-warning','bg-danger');
+            }
+            if (rpStatus) {
+              rpStatus.className = 'chip';
+              rpStatus.textContent = '—';
+            }
+          }
+
+          // Đồng hồ local
+          function initLocalClock() {
+            const el = $('#countdown');
+            if (!el) return;
+            const tick = () => {
+              const d = new Date();
+              el.textContent = d.toLocaleTimeString('vi-VN', { hour12:false });
+              el.title = d.toLocaleDateString('vi-VN');
+            };
+            tick();
+            setInterval(tick, 1000);
+          }
+
+          // Progress giống roster
+          function applyRosterLikeProgress(el, secondsLeft) {
+            if (!el) return;
+            const totalSeconds = EXAM_DURATION_MIN * 60;
+            const pct = totalSeconds > 0 ? Math.max(0, Math.min(100, Math.floor((secondsLeft / totalSeconds) * 100))) : 0;
+            el.style.width = `${pct}%`;
+            el.setAttribute('aria-valuenow', String(pct));
+            el.setAttribute('aria-valuemin', '0');
+            el.setAttribute('aria-valuemax', '100');
+            el.title = `Còn lại ${pct}%`;
+            el.classList.remove('bg-success','bg-warning','bg-danger');
+            if (pct < 20)      el.classList.add('bg-danger');
+            else if (pct < 50) el.classList.add('bg-warning');
+            else               el.classList.add('bg-success');
+          }
+
+          // Toast
+          function showToast(message, type='info') {
+            const classes = { success:'bg-success text-white', error:'bg-danger text-white', warning:'bg-warning text-dark', info:'bg-info text-dark' };
+            const id = 'toastContainer';
+            let c = document.getElementById(id);
+            if (!c) { c = document.createElement('div'); c.id=id; c.className='toast-container position-fixed bottom-0 end-0 p-3'; document.body.appendChild(c); }
+            const el = document.createElement('div');
+            el.className = `toast ${classes[type]||classes.info} align-items-center border-0`;
+            el.setAttribute('role','alert'); el.setAttribute('aria-live','assertive'); el.setAttribute('aria-atomic','true');
+            el.innerHTML = `<div class="d-flex"><div class="toast-body">${message}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button></div>`;
+            c.appendChild(el); new bootstrap.Toast(el, {autohide:true, delay:3000}).show();
+          }
+
+          // Border + chip roster
+          function updateStudentCardBorder(studentId, status) {
+            const card = document.getElementById(`tab-student-${studentId}`);
+            if (!card) return;
+            card.classList.remove("border-connected","border-disconnected","border-notconnected","card-student-compact");
+            card.classList.add("card-student-compact");
+            if (status === "connected") card.classList.add("border-connected");
+            else if (status === "disconnected") card.classList.add("border-disconnected");
+            else card.classList.add("border-notconnected");
+          }
+
+          // ====== Score pill bên cạnh chip trạng thái ======
+          function setScorePill(studentId, {score=null, pending=false} = {}) {
+            const chip = document.getElementById(`status-${studentId}`);
+            if (!chip) return;
+
+            let pill = document.getElementById(`score-pill-${studentId}`);
+            if (!pill) {
+              pill = document.createElement('span');
+              pill.id = `score-pill-${studentId}`;
+              pill.className = 'ms-2 badge rounded-pill';
+              chip.insertAdjacentElement('afterend', pill); // đặt ngay cạnh chip
+            }
+
+            if (pending) {
+                     pill.className = 'ms-2 badge rounded-pill .bg-secondary.bg-gradient text-dark';
+              pill.textContent = 'Đang chấm...';
+            } else if (typeof score === 'number' && !Number.isNaN(score)) {
+              pill.className = 'ms-2 badge rounded-pill bg-light text-primary border';
+              pill.textContent = `Điểm: ${score.toFixed(2)}/10`;
+            } else {
+              pill.className = 'ms-2 badge rounded-pill bg-secondary-subtle text-secondary';
+              pill.textContent = 'Điểm: —';
+            }
+          }
+          function clearScorePill(studentId){
+            const pill = document.getElementById(`score-pill-${studentId}`);
+            if (pill) pill.remove();
+          }
+
+          function setStatusChip(studentId) {
+            const st = students.get(studentId);
+            const chip = document.getElementById(`status-${studentId}`);
+            if (!st || !chip) return;
+
+            chip.classList.remove('chip-online','chip-oftab','chip-disc','chip-sub');
+            let text = '—';
+            if (st.hasSubmitted)       { chip.classList.add('chip-sub');   text = 'Đã nộp'; }
+            else if (!st.isConnected)  { chip.classList.add('chip-disc');  text = 'Ngắt kết nối'; }
+            else if (!st.isActive)     { chip.classList.add('chip-oftab'); text = 'Chuyển tab'; }
+            else                       { chip.classList.add('chip-online');text = 'Trực tuyến'; }
+            chip.textContent = text;
+
+            // => Điểm hiển thị ngay cạnh chip
+            if (st.hasSubmitted) {
+              const sc = studentScores.get(studentId);
+              if (sc != null) setScorePill(studentId, {score: sc});
+              else setScorePill(studentId, {pending: true});
+            } else {
+              clearScorePill(studentId);
+            }
+
+            if (st.hasSubmitted || !st.isConnected) updateStudentCardBorder(studentId, 'disconnected');
+            else updateStudentCardBorder(studentId, 'connected');
+
+            if (selectedStudentId === studentId) setRightPaneStatusChip(studentId);
+          }
+
+          function setRightPaneStatusChip(studentId) {
+            if (!rpStatus) return;
+            const st = students.get(studentId) || { isConnected:false, isActive:false, hasSubmitted:false };
+            rpStatus.classList.remove('chip-online','chip-oftab','chip-disc','chip-sub');
+            let text = '—';
+            if (st.hasSubmitted)       { rpStatus.classList.add('chip-sub');   text = 'Đã nộp'; }
+            else if (!st.isConnected)  { rpStatus.classList.add('chip-disc');  text = 'Ngắt kết nối'; }
+            else if (!st.isActive)     { rpStatus.classList.add('chip-oftab'); text = 'Chuyển tab'; }
+            else                       { rpStatus.classList.add('chip-online');text = 'Trực tuyến'; }
+            rpStatus.textContent = text;
+          }
+
+          // ====== Stats ======
+          function recomputeStats() {
+            let online=0, offtab=0, submit=0;
+            students.forEach(st => {
+              if (st.hasSubmitted) submit++;
+              if (st.isConnected) {
+                online++;
+                if (!st.isActive) offtab++;
+              }
+            });
+            const total = allStudentIds.length;
+            const disc = total - online;
+            elTotal.textContent  = total;
+            elOnline.textContent = online;
+            elOfftab.textContent = offtab;
+            elDisc.textContent   = disc;
+            elSubmit.textContent = submit;
+          }
+
+          // ====== Filters ======
+          document.querySelectorAll('.filter-chip').forEach(btn => {
+            btn.addEventListener('click', () => {
+              document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
+              btn.classList.add('active');
+              currentFilter = btn.dataset.filter || 'all';
+              applyFilterTo('#generalActions');
+              applyFilterTo('#personalLogContent');
+            });
+          });
+          function applyFilterTo(containerSelector) {
+            const container = document.querySelector(containerSelector);
+            if (!container) return;
+            container.querySelectorAll('[data-type]').forEach(el => {
+              const t = el.dataset.type || 'info';
+              el.style.display = (currentFilter === 'all' || currentFilter === t) ? '' : 'none';
+            });
+          }
+
+          // ====== Logs render ======
+          function addGeneralLog(message, className="", type="info") {
+            const p = document.createElement('p');
+            p.className = 'mb-2';
+            p.dataset.type = type;
+            p.innerHTML = `<span class="${className}"><strong>[${formatTime()}]</strong> ${message}</span>`;
+            generalActions.appendChild(p);
+            applyFilterTo('#generalActions');
+            generalActions.scrollTop = generalActions.scrollHeight;
+          }
+          function addPersonalLog(studentId, message, className="", type="info") {
+            if (!studentActions.has(studentId)) studentActions.set(studentId, []);
+            const logItem = { timestamp:new Date(), timeString:`[${formatTime()}]`, message, className, type };
+            studentActions.get(studentId).push(logItem);
+            if (selectedStudentId === studentId) updatePersonalLog(studentId);
+          }
+          function updatePersonalLog(studentId) {
+            if (!personalLogContent) return;
+            personalLogContent.innerHTML = "";
+            const items = studentActions.get(studentId) || [];
+            if (items.length === 0) {
+              personalLogContent.innerHTML = "<p class='text-center text-muted my-4'>Chưa có hoạt động nào được ghi nhận.</p>";
+              return;
+            }
+            const box = document.createElement('div');
+            box.className = 'timeline';
+            items.forEach(log => {
+              const it = document.createElement('div');
+              it.className = 'timeline-item';
+              it.innerHTML = `<div class="timeline-content ${log.className}" data-type="${log.type}">
+                <strong>${log.timeString}</strong> ${log.message}
+              </div>`;
+              box.appendChild(it);
+            });
+            personalLogContent.appendChild(box);
+            applyFilterTo('#personalLogContent');
+            personalLogContent.scrollTop = personalLogContent.scrollHeight;
+          }
+
+          // ====== Suspicious counters ======
+          function ensureCounters(id) {
+            if (!suspiciousCounters.has(id)) suspiciousCounters.set(id, { tabOut:0, resize:0, disconnect:0 });
+            return suspiciousCounters.get(id);
+          }
+          function updateRightPaneSuspicious(studentId) {
+            const c = ensureCounters(studentId);
+            if (rpCountTabOut) rpCountTabOut.textContent = c.tabOut;
+            if (rpCountResize) rpCountResize.textContent = c.resize;
+            if (rpCountDisc)   rpCountDisc.textContent   = c.disconnect;
+          }
+
+          // ====== Right pane Overview & Exam ======
+          function updateRightPaneOverview(studentId) {
+            const id = String(studentId);
+            const info = ipUaCache.get(id) || {};
+            if (rpIP) rpIP.textContent = info.ip ?? '—';
+            if (rpUA) rpUA.textContent = info.ua ?? '—';
+
+            const pd = progressData.get(id) || {};
+            const timeLeft = typeof pd.timeLeft === 'number' ? pd.timeLeft : null;
+            if (timeLeft != null) {
+              const m = Math.floor(timeLeft / 60), s = timeLeft % 60;
+              if (rpTime) rpTime.textContent = `${m}p ${String(s).padStart(2,'0')}s`;
+              applyRosterLikeProgress(rpProgressBar, timeLeft);
+            } else {
+              if (rpTime) rpTime.textContent = '—';
+              applyRosterLikeProgress(rpProgressBar, 0);
+            }
+
+            const struct = examStructures.get(id);
+            const totalQ = pd.totalQuestions ?? (Array.isArray(struct) ? struct.length : 0);
+            const answered = pd.answeredCount ?? 0;
+            if (rpAnswered) rpAnswered.textContent = `${answered}/${totalQ}`;
+
+            setRightPaneStatusChip(id);
+          }
+
+          function updateRightPaneExamStructure(studentId) {
+            if (!rpExamStruct) return;
+            const structure = examStructures.get(String(studentId));
+            if (!Array.isArray(structure)) {
+              rpExamStruct.innerHTML = "<p class='text-muted'>Chưa có đề thi từ sinh viên này.</p>";
+              return;
+            }
+            rpExamStruct.innerHTML = "";
+            structure.forEach((q, idx) => {
+              const wrap = document.createElement('div');
+              wrap.className = "mb-3 border p-2 rounded";
+              const qId = q.questionId ?? q.maCauHoi ?? q.MaCauHoi ?? `${idx+1}`;
+              const qText = q.questionContent ?? q.noiDungCauHoi ?? q.NoiDungCauHoi ?? "Câu hỏi không xác định";
+              const answers = q.choices ?? q.danhSachLuaChon ?? q.DanhSachLuaChon ?? [];
+              let html = `<strong>Câu ${qId}: ${qText}</strong><ul class="mb-0">`;
+              answers.forEach((ans,i) => {
+                const label = String.fromCharCode(65+i);
+                const content = ans.choiceContent ?? ans.noiDungLuaChon ?? ans.NoiDungLuaChon ?? "—";
+                html += `<li><strong>${label}:</strong> ${content}</li>`;
+              });
+              html += `</ul>`;
+              wrap.innerHTML = html;
+              rpExamStruct.appendChild(wrap);
+            });
+          }
+
+          // ====== Load từ API/Redis ======
+          async function loadLogsFromRedis(studentId) {
+            const res = await fetch(`/api/ExamLog/${EXAM_ID}/${CLASS_ID}/${studentId}`);
+            if (!res.ok) throw new Error(`Load logs failed ${res.status}`);
+            return res.json();
+          }
+          async function loadExamStructureFromRedis(examId, studentId) {
+            const res = await fetch(`/api/ExamLog/structure/${examId}/${CLASS_ID}/${studentId}`);
+            if (!res.ok) throw new Error(`Load structure failed ${res.status}`);
+            const raw = await res.json();
+            let parsed;
+            try { parsed = typeof raw === 'string' ? JSON.parse(raw) : raw; }
+            catch { parsed = []; }
+            examStructures.set(studentId, parsed);
+          }
+
+          function processStudentLogs(studentId, redisLogs, {updateCounters=false} = {}) {
+            if (!studentActions.has(studentId)) studentActions.set(studentId, []);
+            if (!fraudulenceData.has(studentId)) fraudulenceData.set(studentId, []);
+            studentActions.get(studentId).length = 0;
+            fraudulenceData.get(studentId).length = 0;
+
+            let tabOut=0, resize=0, disc=0;
+
+            (redisLogs || []).forEach(logText => {
+              const prefixMatch = logText.match(/^\[(\w+)\]/);
+              const tsMatch = logText.match(/\[(\d{2}:\d{2}:\d{2})\]/);
+              const timeStr = tsMatch ? `[${tsMatch[1]}]` : `[${formatTime()}]`;
+              const prefix = prefixMatch ? prefixMatch[1] : '';
+              const raw = logText.replace(/^\[\w+\]/,'').replace(/\[\d{2}:\d{2}:\d{2}\]\s*/,'').trim();
+
+              let className = "text-secondary", isFraud = false, type = "info";
+              switch (prefix) {
+                case "JOIN": className="text-success"; type="join"; break;
+                case "ANSWER": className="text-primary"; type="answer"; break;
+                case "TABOUT": {
+                  const isResize = /thay đổi kích thước cửa sổ/i.test(raw);
+                  if (isResize) { className="text-warning"; type="resize"; resize++; isFraud=true; }
+                  else { className="text-warning"; type="switchtab"; tabOut++; isFraud=true; }
+                  break;
+                }
+                case "TABIN": className="text-success"; type="switchtab"; break;
+                case "DEVICE":
+                case "IP":
+                case "UA": className="text-danger"; type="device"; isFraud=true; break;
+                case "DISCONNECT": className="text-danger"; type="disconnect"; isFraud=true; disc++; break;
+                case "LEFT": className="text-secondary"; type="left"; disc++; break;
+                case "SUBMIT": className="text-success"; type="submit"; break;
+                default: className="text-secondary"; type="info"; break;
+              }
+
+              const logItem = { timestamp:new Date(), timeString:timeStr, message:raw, className, type };
+              studentActions.get(studentId).push(logItem);
+              if (isFraud) fraudulenceData.get(studentId).push(logItem);
+            });
+
+            if (updateCounters) suspiciousCounters.set(studentId, { tabOut, resize, disconnect:disc });
+
+            if (selectedStudentId === studentId) {
+              updatePersonalLog(studentId);
+              updateRightPaneSuspicious(studentId);
+            }
+          }
+
+          // ====== Tìm kiếm roster ======
+          function initRosterSearch() {
+            const input = $('#rosterSearch');
+            if (!input || !rosterList) return;
+
+            $$('.card-student', rosterList).forEach(card => {
+              if (!card.dataset.search) {
+                const name = $('.ro-name', card)?.textContent || '';
+                const id = $('.ro-sub', card)?.textContent || card.id.replace('tab-student-','');
+                card.dataset.search = unsign(`${name} ${id}`);
+              }
+            });
+
+            let emptyEl = $('#rosterEmpty');
+            if (!emptyEl) {
+              emptyEl = document.createElement('div');
+              emptyEl.id = 'rosterEmpty';
+              emptyEl.className = 'text-center text-muted small py-3 d-none';
+              emptyEl.innerHTML = `<i class="fas fa-search me-1"></i>Không có thí sinh phù hợp`;
+              rosterList.appendChild(emptyEl);
+            }
+
+            const apply = debounce(() => {
+              const q = unsign(input.value);
+              let shown = 0;
+              $$('.card-student', rosterList).forEach(card => {
+                const matched = !q || (card.dataset.search && card.dataset.search.includes(q));
+                card.style.display = matched ? '' : 'none';
+                if (matched) shown++;
+              });
+              emptyEl.classList.toggle('d-none', shown !== 0);
+            }, 100);
+
+            input.addEventListener('input', apply);
+          }
+
+          // ====== Bố cục ======
+          // mode: 'default' | 'class' | 'student'
+          let layoutMode = 'default';
+          let prevLayoutBeforeStudent = 'default';
+
+          function ensureRightGeneralLogPanel() {
+            let panel = document.getElementById('rightGeneralLogPanel');
+            if (!panel && colRight) {
+              panel = document.createElement('div');
+              panel.id = 'rightGeneralLogPanel';
+              panel.className = 'card flex-panel mt-3';
+              panel.innerHTML = `
+                <div class="card-header d-flex align-items-center">
+                  <span class="fw-semibold"><i class="fas fa-globe text-secondary me-2"></i>Hoạt động phòng thi</span>
+                </div>
+                <div class="card-body scroll-pane"><div id="right-generalActions-slot"></div></div>
+              `;
+              colRight.appendChild(panel);
+            }
+            // bảo đảm giới hạn chiều cao
+            setPanelMaxHeight('rightGeneralLogPanel', 500);
+            return panel;
+          }
+
+          function enterDefaultLayout() {
+            layoutMode = 'default';
+            resetRightPaneStudent(); // đảm bảo ẩn pane cá nhân khi quay về layout mặc định
+            if (colLeft && colMiddle && colRight) {
+              setGrid(colLeft,   3, 1);
+              setGrid(colMiddle, 6, 2);
+              setGrid(colRight,  3, 3);
+              show(colMiddle); show(colRight);
+            }
+            showRoomFeed();
+            showGuidePanel();
+
+            const midBody = roomFeedPanel?.querySelector('.card-body') || roomFeedPanel;
+            moveNode(generalActions, midBody);
+
+            hide(document.getElementById('rightGeneralLogPanel'));
+            rosterList?.classList.remove('roster-compact');
+          }
+
+          function enterClassLayout() {
+            layoutMode = 'class';
+            // Ẩn các phần không cần
+            hide(roomFeedPanel);
+            hide(studentFeedPanel);
+            hide(guidePanel);
+            resetRightPaneStudent(); // ẩn pane cá nhân khi chuyển sang 2 cột
+
+            if (colLeft && colRight && colMiddle) {
+              setGrid(colLeft,   9, 1);
+              setGrid(colRight,  3, 2);
+              hide(colMiddle);
+            }
+
+            const rightPanel = ensureRightGeneralLogPanel();
+            show(rightPanel);
+            const slot = document.getElementById('right-generalActions-slot') || rightPanel;
+            moveNode(generalActions, slot);
+
+            rosterList?.classList.add('roster-compact');
+          }
+
+          // CHỈ kích hoạt khi đang ở 2 cột (class)
+          function enterStudentLayout() {
+            if (layoutMode !== 'class') return;
+            prevLayoutBeforeStudent = 'class';
+            layoutMode = 'student';
+
+            if (colLeft && colMiddle && colRight) {
+              setGrid(colRight,  3, 1); // info (rightPaneStudent)
+              setGrid(colLeft,   6, 2); // roster
+              setGrid(colMiddle, 3, 3); // log cá nhân
+              show(colMiddle); show(colRight); show(colLeft);
+            }
+            showStudentFeed();
+            showStudentPanel();
+
+            const midBody = roomFeedPanel?.querySelector('.card-body') || roomFeedPanel;
+            moveNode(generalActions, midBody);
+
+            hide(document.getElementById('rightGeneralLogPanel'));
+            rosterList?.classList.add('roster-compact');
+          }
+
+          btnLayoutDefault?.addEventListener('click', () => {
+            resetRightPaneStudent();
+            selectedStudentId = null;
+            enterDefaultLayout();
+          });
+          btnLayoutClass?.addEventListener('click', () => {
+            resetRightPaneStudent();
+            selectedStudentId = null;
+            enterClassLayout();
+          });
+          btnBackRoomFeed?.addEventListener('click', () => {
+            selectedStudentId = null;
+            showRoomFeed();
+            showGuidePanel();
+            if (prevLayoutBeforeStudent === 'class') enterClassLayout();
+            else enterDefaultLayout();
+            applyFilterTo('#generalActions');
+          });
+
+          // ====== Click roster ======
+          rosterList?.addEventListener('click', async (e) => {
+            const card = e.target.closest('.card-student');
+            if (!card) return;
+            const studentId = card.id.replace('tab-student-','');
+            const nameEl = card.querySelector('.ro-name');
+            const studentName = (nameEl ? nameEl.textContent.trim() : studentId) || studentId;
+
+            selectedStudentId = studentId;
+            const sfTitle = document.getElementById('sf-title');
+            if (sfTitle) sfTitle.textContent = `Nhật ký của ${studentName}`;
+            if (rpName)  rpName.textContent  = studentName;
+
+            if (layoutMode === 'class') {
+              enterStudentLayout();
+            } else {
+              showStudentFeed();
+              showStudentPanel();
+            }
+
+            updateRightPaneOverview(studentId);
+            updateRightPaneExamStructure(studentId);
+            updateRightPaneSuspicious(studentId);
+
+            try {
+              const logs = await loadLogsFromRedis(studentId);
+              processStudentLogs(studentId, logs, {updateCounters:true});
+
+              await loadExamStructureFromRedis(EXAM_ID, studentId);
+              updateRightPaneExamStructure(studentId);
+
+              const infoRes = await fetch(`/api/ExamLog/info/${studentId}`).then(r => r.json()).catch(()=>null);
+              if (infoRes) ipUaCache.set(studentId, { ip:(infoRes.ip||infoRes.IP||'—'), ua:(infoRes.userAgent||infoRes.UserAgent||'—') });
+
+              const pd = progressData.get(studentId) || {};
+              if (pd.answeredCount == null) {
+                const answered = (studentActions.get(studentId) || []).filter(x => x.type === 'answer').length;
+                const totalQ = Array.isArray(examStructures.get(studentId)) ? examStructures.get(studentId).length : null;
+                progressData.set(studentId, { timeLeft: pd.timeLeft ?? null, answeredCount: answered, totalQuestions: totalQ });
+              }
+
+              updateRightPaneOverview(studentId);
+              updateRightPaneSuspicious(studentId);
+              updatePersonalLog(studentId);
+            } catch (err) {
+              console.error('Load student data error:', err);
+              showToast('Chưa có thông tin từ thí sinh này.', 'error');
+            }
+          });
+
+          // ====== Anti-cheat ======
+          function checkAllAntiCheatModal() {
+            document.querySelectorAll('#antiCheatModal input[type="checkbox"]').forEach(cb => cb.checked = true);
+          }
+          function uncheckAllAntiCheatModal() {
+            document.querySelectorAll('#antiCheatModal input[type="checkbox"]').forEach(cb => cb.checked = false);
+          }
+          document.getElementById('applyAntiCheat')?.addEventListener('click', async () => {
+            const config = {
+              blockDevTools: document.getElementById('blockDevTools')?.checked ?? false,
+              blockCopyPaste: document.getElementById('blockCopyPaste')?.checked ?? false,
+              blockTextSelection: document.getElementById('blockTextSelection')?.checked ?? false,
+              blockRightClick: document.getElementById('blockRightClick')?.checked ?? false
+            };
+            try {
+              await connection.invoke("SendAntiCheatConfig", EXAM_ID, CLASS_ID, config);
+              showToast('Đã áp dụng cấu hình chống gian lận!', 'success');
+              addGeneralLog('Đã kích hoạt các tính năng chống gian lận cho phòng thi', 'text-primary', 'info');
+              const modal = bootstrap.Modal.getInstance(document.getElementById('antiCheatModal'));
+              modal?.hide();
+            } catch (err) {
+              console.error(err);
+              showToast('Lỗi khi áp dụng cấu hình!', 'error');
+            }
+          });
+
+          // ====== Complete monitoring ======
+          document.querySelectorAll('.completeMonitoringButton').forEach(btn => {
+            btn.addEventListener('click', async () => {
+              if (!confirm('Bạn có chắc chắn muốn hoàn thành giám sát và xóa toàn bộ dữ liệu của bài thi này không?')) return;
+              try {
+                await connection.invoke("CompleteMonitoring", EXAM_ID, CLASS_ID, INSTRUCTOR_NAME);
+                alert('Đã hoàn thành giám sát và xóa toàn bộ dữ liệu!');
+                uncheckAllAntiCheatModal();
+                window.location.reload();
+              } catch (err) {
+                console.error("Error completing monitoring:", err);
+                alert('Có lỗi xảy ra khi hoàn thành giám sát!');
+              }
+            });
+          });
+
+          // ====== SignalR start ======
+          async function startConnection() {
+            try {
+              await connection.start();
+              await connection.invoke("JoinMonitor", EXAM_ID, CLASS_ID);
+
+              const autoConfig = { blockDevTools:true, blockCopyPaste:true, blockTextSelection:true, blockRightClick:true };
+              checkAllAntiCheatModal();
+              await connection.invoke("SendAntiCheatConfig", EXAM_ID, CLASS_ID, autoConfig);
+              showToast('Đã tự động áp dụng cấu hình chống gian lận!', 'success');
+              addGeneralLog('Đã tự động bật các tính năng chống gian lận khi vào trang', 'text-primary', 'info');
+            } catch (err) {
+              console.error("SignalR start error", err);
+              setTimeout(startConnection, 3000);
+            }
+          }
+
+          // ====== SignalR handlers ======
+          connection.on("StudentJoined", (data) => {
+            const id = data.studentId || data.StudentId;
+            const name = data.studentName || data.StudentName || id;
+            const st = students.get(id) || {};
+            st.isConnected = true; st.isActive = !!(data.isActive ?? data.IsActive); st.hasSubmitted = false;
+            students.set(id, st);
+
+            addGeneralLog(`${name} (${id}) đã tham gia bài thi`, 'text-primary', 'join');
+            updateStudentCardBorder(id,'connected');
+            setStatusChip(id);
+            recomputeStats();
+
+            if (selectedStudentId === id) addPersonalLog(id, `${name} đã tham gia bài thi`, 'text-success', 'join');
+          });
+
+          connection.on("StudentSelectedAnswer", (data) => {
+            const id = data.studentId || data.StudentId;
+            const name = data.studentName || data.StudentName || id;
+            const q = (data.questionContent || data.QuestionContent || '');
+            addGeneralLog(`${name} đã tương tác câu hỏi "${q.slice(0,50)}${q.length>50?'...':''}"`, 'text-primary', 'answer');
+            if (selectedStudentId === id) {
+              addPersonalLog(id, `${name} - Câu hỏi "${q.slice(0,50)}${q.length>50?'...':''}" --> "${data.answerContent || data.AnswerContent || ''}"`, 'text-primary', 'answer');
+              const pd = progressData.get(id) || {};
+              pd.answeredCount = (pd.answeredCount || 0) + 1;
+              progressData.set(id, pd);
+              updateRightPaneOverview(id);
+            }
+          });
+
+          connection.on("StudentSentExamStructure", (data) => {
+            const sid = data.studentId || data.StudentId;
+            if (Array.isArray(data.structure)) {
+              examStructures.set(sid, data.structure);
+              if (selectedStudentId === sid) updateRightPaneExamStructure(sid);
+            }
+          });
+
+          connection.on("StudentTabChanged", (data) => {
+            const id = data.studentId || data.StudentId;
+            const name = data.studentName || data.StudentName || id;
+
+            const st = students.get(id) || {};
+            st.isConnected = true;
+            st.isActive = !!(data.isActive ?? data.IsActive);
+            st.tabLeaveCount = data.tabLeaveCount ?? st.tabLeaveCount ?? 0;
+            students.set(id, st);
+
+            setStatusChip(id);
+
+            const type = 'switchtab';
+            const msg = st.isActive ? `${name} đã quay lại tab làm bài` : `${name} đã chuyển khỏi tab làm bài (lần thứ ${st.tabLeaveCount})`;
+            addGeneralLog(msg, st.isActive ? 'text-success' : 'text-warning', type);
+
+            if (!st.isActive) {
+              const c = ensureCounters(id);
+              c.tabOut = data.tabLeaveCount ?? (c.tabOut + 1);
+              suspiciousCounters.set(id, c);
+            }
+            if (selectedStudentId === id) {
+              addPersonalLog(id, st.isActive ? `${name} quay lại tab làm bài` : `${name} chuyển khỏi tab làm bài (lần thứ ${st.tabLeaveCount})`, st.isActive ? 'text-success' : 'text-warning', type);
+              updateRightPaneSuspicious(id);
+            }
+            recomputeStats();
+          });
+
+          connection.on("WindowResized", (data) => {
+            const id = data.studentId || data.StudentId;
+            const name = data.studentName || data.StudentName || id;
+            const msg = `${name} đã thay đổi kích thước cửa sổ từ ${data.initialWidth}x${data.initialHeight} thành ${data.currentWidth}x${data.currentHeight}`;
+            addGeneralLog(msg, 'text-warning', 'resize');
+            const c = ensureCounters(id); c.resize += 1; suspiciousCounters.set(id,c);
+            if (selectedStudentId === id) { addPersonalLog(id, msg, 'text-warning', 'resize'); updateRightPaneSuspicious(id); }
+          });
+
+          connection.on("StudentClientInfoUpdated", (data) => {
+            const id = data.StudentId || data.studentId;
+            const ip = data.IP || data.ip || '—';
+            const ua = data.UserAgent || data.userAgent || '—';
+            ipUaCache.set(id, { ip, ua });
+            if (selectedStudentId === id) updateRightPaneOverview(id);
+
+            const ipEl = document.querySelector(`#ip-${id}`);
+            const uaEl = document.querySelector(`#ua-${id}`);
+            if (ipEl) { ipEl.innerHTML = `<b><i>IP:</i></b> ${ip}`; ipEl.classList.add('bg-secondary','text-white','px-2'); setTimeout(()=>ipEl.classList.remove('bg-secondary','text-white','px-2'),2000); }
+            if (uaEl) { uaEl.innerHTML = `<b><i>Trình duyệt:</i></b> ${ua}`; uaEl.classList.add('bg-secondary','text-white','px-2'); setTimeout(()=>uaEl.classList.remove('bg-secondary','text-white','px-2'),2000); }
+          });
+
+          connection.on("UpdateStudentProgress", (data) => {
+            const id = data.studentId || data.StudentId;
+            const timeLeft = data.timeLeft ?? data.TimeLeft;
+            const answered = data.answeredCount ?? data.AnsweredCount;
+            const totalQ = data.totalQuestions ?? data.TotalQuestions;
+
+            progressData.set(id, { timeLeft:Number(timeLeft), answeredCount:Number(answered), totalQuestions:Number(totalQ) });
+
+            const totalSeconds = EXAM_DURATION_MIN * 60;
+            const pct = totalSeconds > 0 ? Math.max(0, Math.floor((timeLeft / totalSeconds) * 100)) : 0;
+            const bar = document.querySelector(`#progress-${id}`);
+            const timeEl = document.querySelector(`#timeleft-${id}`);
+            if (bar) {
+              bar.style.width = `${pct}%`; bar.setAttribute('aria-valuenow', pct);
+              bar.classList.remove('bg-success','bg-warning','bg-danger');
+              if (pct < 20) bar.classList.add('bg-danger'); else if (pct < 50) bar.classList.add('bg-warning'); else bar.classList.add('bg-success');
+            }
+            if (timeEl) {
+              const m = Math.floor(timeLeft/60), s = timeLeft%60;
+              timeEl.innerHTML = `<div class="d-inline-flex px-2 py-1 fw-semibold text-black bg-primary bg-opacity-10 border border-success border-opacity-10 rounded-2 ">
+                Còn lại: ${m}p ${String(s).padStart(2,'0')}s – Đã làm: ${answered}/${totalQ} câu</div>`;
+            }
+            if (selectedStudentId === id) updateRightPaneOverview(id);
+          });
+
+          connection.on("StudentDisconnected", (data) => {
+            const id = data.studentId || data.StudentId;
+            const name = data.studentName || data.StudentName || id;
+            const st = students.get(id) || {};
+            st.isConnected = false; st.isActive = false;
+            students.set(id, st);
+            addGeneralLog(`${name} ngắt kết nối`, 'text-danger', 'disconnect');
+            const c = ensureCounters(id); c.disconnect += 1; suspiciousCounters.set(id,c);
+            updateStudentCardBorder(id,'disconnected');
+            setStatusChip(id);
+            recomputeStats();
+            if (selectedStudentId === id) updateRightPaneSuspicious(id);
+          });
+
+          connection.on("StudentSubmittedExam", (data) => {
+            const id = data.studentId || data.StudentId;
+            const name = data.studentName || data.StudentName || id;
+            const tabCount = data.tabLeaveCount ?? 0;
+            const st = students.get(id) || {};
+            st.hasSubmitted = true; st.isConnected = false; st.isActive = false;
+            students.set(id, st);
+            addGeneralLog(`${name} đã nộp bài thi. Số lần chuyển tab: ${tabCount}`, 'text-success', 'submit');
+
+            // Hiển thị "Đang chấm..." ngay cạnh chip
+            setScorePill(id, {pending:true});
+
+            setStatusChip(id);
+            recomputeStats();
+            if (selectedStudentId === id) {
+              addPersonalLog(id, `${name} đã nộp bài thi. Số lần chuyển tab: ${tabCount}`, 'text-success', 'submit');
+              updateRightPaneOverview(id);
+            }
+          });
+
+          connection.on("StudentLeftExam", (data) => {
+            const id = data.studentId || data.StudentId;
+            const name = data.studentName || data.StudentName || id;
+            const st = students.get(id) || {};
+            st.isConnected = false; st.isActive = false;
+            students.set(id, st);
+            addGeneralLog(`${name} đã rời phòng thi`, 'text-secondary', 'left');
+            setStatusChip(id);
+            recomputeStats();
+            const c = ensureCounters(id); c.disconnect += 1; suspiciousCounters.set(id,c);
+            if (selectedStudentId === id) updateRightPaneSuspicious(id);
+          });
+
+          connection.on("ReceiveSystemLog", (data) => {
+            const id = data.StudentId || data.studentId;
+            const full = data.LogMessage || data.logMessage || '';
+            if (!full) return;
+            const prefixMatch = full.match(/^\[(\w+)\]/);
+            const prefix = prefixMatch ? prefixMatch[1] : 'INFO';
+            const message = full.replace(/^\[\w+\]/,'').replace(/\[\d{2}:\d{2}:\d{2}\]\s*/,'').trim();
+
+            let className='text-primary', type='info';
+            switch (prefix) {
+              case 'ANSWER': className='text-primary'; type='answer'; break;
+              case 'TABIN': className='text-success'; type='switchtab'; break;
+              case 'TABOUT': {
+                const isResize = /thay đổi kích thước cửa sổ/i.test(message);
+                className='text-warning'; type = isResize ? 'resize' : 'switchtab';
+                if (isResize) { const c=ensureCounters(id); c.resize +=1; suspiciousCounters.set(id,c); }
+                else { const c=ensureCounters(id); c.tabOut +=1; suspiciousCounters.set(id,c); }
+                break;
+              }
+              case 'DISCONNECT': className='text-danger'; type='disconnect'; { const c=ensureCounters(id); c.disconnect +=1; suspiciousCounters.set(id,c);} break;
+              case 'LEFT': className='text-secondary'; type='left'; { const c=ensureCounters(id); c.disconnect +=1; suspiciousCounters.set(id,c);} break;
+              case 'SUBMIT': className='text-success'; type='submit'; break;
+              case 'JOIN': className='text-success'; type='join'; break;
+              case 'IP':
+              case 'UA':
+              case 'DEVICE': className='text-danger'; type='device'; break;
+              default: className='text-primary'; type='info'; break;
+            }
+
+            addGeneralLog(message, className, type);
+            if (selectedStudentId === id) {
+              addPersonalLog(id, message, className, type);
+              updateRightPaneSuspicious(id);
+            }
+          });
+
+          // ====== NHẬN ĐIỂM từ server ======
+          connection.on("StudentScoreUpdated", (data) => {
+            const id = data.studentId || data.StudentId;
+            const name = data.studentName || data.StudentName || id;
+            const rawScore = data.score ?? data.Score;
+            const score = Number(rawScore);
+
+            studentScores.set(id, score);
+            setScorePill(id, {score});
+            setStatusChip(id); // để đồng bộ border/chip nếu cần
+
+            addGeneralLog(`Hệ thống đã chấm xong: ${name} (${id}) – Điểm ${isNaN(score)?'—':score.toFixed(2)}/10`, 'text-success', 'submit');
+          });
+
+          // ====== Init ======
+          document.addEventListener('DOMContentLoaded', () => {
+            // Giới hạn chiều cao 500px cho các panel
+            setPanelMaxHeight('studentFeedPanel', 500);
+            setPanelMaxHeight('roomFeedPanel', 500);
+            setPanelMaxHeight('rightPaneStudent', 500);
+            setPanelMaxHeight('rightGeneralLogPanel', 500);
+            setPanelMaxHeight('rightPersonalLogPanel', 500);
+
+            // rosterList cuộn
+            if (rosterList) { rosterList.style.maxHeight = '500px'; rosterList.style.overflowY = 'auto'; }
+
+            // Roster: default border = not connected
+            document.querySelectorAll("[id^='tab-student-']").forEach(el => {
+              const sid = el.id.replace("tab-student-","");
+              updateStudentCardBorder(sid, 'notconnected');
+            });
+
+            elTotal.textContent = allStudentIds.length;
+            recomputeStats();
+
+            // AntiCheat modal UI (Select all / reset)
+            const modal = document.getElementById('antiCheatModal');
+            if (modal){
+              const ids = ['blockDevTools','blockCopyPaste','blockTextSelection','blockRightClick'];
+              const toggles = ids.map(id => modal.querySelector('#'+id));
+              const selectAll = modal.querySelector('#ac-select-all');
+              const countEl = modal.querySelector('#ac-enabled-count');
+              const resetBtn = modal.querySelector('#ac-reset');
+
+              const updateCount = () => {
+                const n = toggles.filter(t => t && t.checked).length;
+                if (countEl) countEl.textContent = n;
+                if (selectAll){
+                  selectAll.indeterminate = (n>0 && n<toggles.length);
+                  selectAll.checked = (n===toggles.length);
+                }
+              };
+              toggles.forEach(t => t && t.addEventListener('change', updateCount));
+              selectAll?.addEventListener('change', () => {
+                toggles.forEach(t => { if (t) t.checked = !!selectAll.checked; });
+                updateCount();
+              });
+              resetBtn?.addEventListener('click', () => {
+                toggles.forEach(t => { if (t) t.checked = false; });
+                updateCount();
+              });
+              modal.addEventListener('shown.bs.modal', updateCount);
+              updateCount();
+            }
+
+            startConnection();
+            initLocalClock();
+            initRosterSearch();
+
+            // Bố cục mặc định
+            enterDefaultLayout();
+          });
+        })();
+    </script>
+
+</body>
+</html>

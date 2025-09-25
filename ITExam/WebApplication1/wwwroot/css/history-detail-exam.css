@@ -1,0 +1,13 @@
+﻿
+.noiDungLuaChon p{
+    overflow-wrap:anywhere;
+    margin-bottom:0
+}
+
+.noiDungLuaChon figure img,
+.question figure img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    object-fit: contain;
+}

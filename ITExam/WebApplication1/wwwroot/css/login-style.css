@@ -1,0 +1,133 @@
+﻿@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css');
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: white;
+}
+
+main {
+    padding: 20px;
+    max-width: 100%;
+    background-color: white;
+    margin-top: 100px;
+}
+
+.container-login {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.right-section {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.login-small-container {
+    background-color: rgba(255, 255, 255, 0.95);
+    padding: 40px;
+    border-radius: 15px;
+    box-shadow: 0 10px 25px rgba(10, 75, 90, 0.5);
+    width: 100%;
+    max-width: 500px;
+}
+
+.login-form span {
+    color: #ffb144;
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.form-control-login {
+    position: relative;
+    margin-bottom: 25px;
+}
+
+.form-control-login i {
+    position: absolute;
+    left: 15px;
+    top: 14px;
+    color: #32495e;
+}
+
+.form-control-login input {
+    width: 100%;
+    padding: 12px 0 12px 37px;
+    border: 2px solid #00569f1c;
+    background-color: rgb(232, 232, 232);
+    color: rgb(50, 73, 94);
+    border-radius: 6px;
+    transition: all 0.3s ease-in-out;
+    font-size: 16px;
+}
+
+.form-control-login input:focus {
+    outline: none;
+    border: 2px solid #ffd8a1;
+}
+
+.form-control-login input:invalid:not(:focus):not(:placeholder-shown) {
+    border: 2px solid #ff3860;
+}
+
+.login-form button {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 10px;
+    background-color: #ffaa33;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.login-form button:hover {
+    background-color: #405d7d;
+}
+
+.text-danger {
+    font-size: 14px;
+    display: block;
+}
+
+/* RESPONSIVE */
+@media (max-width: 576px) {
+    .container-login {
+        flex-direction: column;
+        padding: 10px;
+    }
+
+    .login-small-container {
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: none;
+    }
+
+    .form-control-login input {
+        font-size: 15px;
+        padding: 10px 0 10px 35px;
+    }
+
+    .login-form button {
+        font-size: 15px;
+        padding: 12px;
+    }
+
+    .text-danger {
+        text-align: center;
+        font-size: 13px;
+    }
+}

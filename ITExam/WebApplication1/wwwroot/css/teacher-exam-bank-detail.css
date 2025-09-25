@@ -1,0 +1,30 @@
+﻿* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    outline: none;
+}
+
+input {
+    outline: none;
+}
+
+.noiDungCauHoi p {
+    margin-bottom: 0rem !important;
+    white-space: normal;
+    word-break: break-word;
+}
+
+.noiDungLuaChon p {
+    margin-bottom: 0rem !important;
+    white-space: normal;
+    word-break: break-word;
+}
+
+.noiDungCauHoi figure img,
+.noiDungLuaChon figure img {
+    max-width: 100%;
+    height: auto;
+    display: block; /* Loại bỏ khoảng trắng dưới ảnh */
+    object-fit: contain; /* Đảm bảo ảnh co lại hợp lý */
+}

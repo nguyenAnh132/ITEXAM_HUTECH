@@ -1,0 +1,701 @@
+﻿@using ITExam.ViewModels.Exam
+@model EssayExamStartVM
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đề thi</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <!-- FontAwesome 6.2.0 CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css" />
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="~/css/reset.css">
+    <link rel="stylesheet" href="~/css/take-the-exam.css">
+</head>
+<body>
+    <div class="container py-4">
+        <div class="row g-4">
+            <div class="col-12 col-md-5">
+                <div class="quiz-app">
+                    <h3 class="py-3 px-4 m-0">Thông tin thí sinh</h3>
+                    <div class="d-flex justify-content-between border-bottom px-4">
+                        <h6 class="my-3">Sinh viên</h6>
+                        <h6 class="my-3">@Model.FullName</h6>
+                    </div>
+                    <div class="d-flex justify-content-between border-bottom px-4">
+                        <h6 class="my-3">MSSV</h6>
+                        <h6 class="my-3">@Model.StudentId</h6>
+                    </div>
+                    <div class="d-flex justify-content-between border-bottom px-4">
+                        <h6 class="my-3">Lớp</h6>
+                        <h6 class="my-3">@Model.ClassName</h6>
+                    </div>
+                    <div class="d-flex justify-content-between mt-2 px-4">
+                        <button id="btn-final-submit" type="button" data-bs-toggle="modal"
+                                data-bs-target="#staticBackdrop-result-exam" class="btn btn-submit fw-bold">
+                            Nộp bài
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-md-7">
+                <div class="quiz-app">
+                    <div class="quiz-info">
+                        <div class="category">Bài thi: <span>@Model.ExamName</span></div>
+                        <div class="count">Tổng câu: <span>@Model.Questions.Count</span></div>
+                    </div>
+                    <div id="question-list">
+                        @{
+                            int stt = 1;
+                        }
+                        <form method="post" asp-action="SubmitEssayExam">
+                            @foreach (var cauHoi in Model.Questions)
+                            {
+                                <div class="mb-4">
+                                    @{
+                                        cauHoi.QuestionContent = @cauHoi.QuestionContent.Replace("<p>", "").Replace("</p>", "");
+                                    }
+                                    <label for="tuLuan_@cauHoi.QuestionId" class="form-label">
+                                        <strong>Câu @stt:</strong> @cauHoi.QuestionContent
+                                    </label>
+                                    <textarea class="form-control" id="tuLuan_@cauHoi.QuestionId"
+                                              name="tuLuan_@cauHoi.QuestionId"
+                                              rows="5"></textarea>
+                                </div>
+                                stt++;
+                            }
+                        </form>
+                        <div class="mb-3">
+                            <label for="formFile" class="form-label">Tải lên bài làm</label>
+                            <input class="form-control" type="file" id="formFile">
+                        </div>
+                    </div>
+                    <div class="bullets text-center mb-3">
+                        
+                        <div id="timer" style="font-weight:bold;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="staticBackdrop-result-exam" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title fw-bold">
+                        <i class="fa-solid fa-triangle-exclamation me-2"></i> Xác nhận nộp bài
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body bg-light text-center">
+                    <p class="fs-5 fw-semibold text-danger mb-3">
+                        <i class="fa-solid fa-circle-info me-2"></i>
+                        Sau khi nộp bạn sẽ không thể chỉnh sửa bài làm.
+                    </p>
+                </div>
+                <div class="modal-footer bg-white border-top">
+                    <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">
+                        <i class="fa-solid fa-xmark me-1"></i> Hủy
+                    </button>
+                    <form action="ExamResult_TL" method="post">
+                        <input type="hidden" name="maDe" value="@Model.ExamId" />
+                        <input type="hidden" name="maLop" value="@Model.ClassId" />
+                        <button type="submit" class="btn btn-danger fw-bold px-4">
+                            <i class="fa-solid fa-paper-plane me-1"></i> Nộp bài ngay
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="~/lib/build/ckeditor.js"></script>
+    <script src="~/js/build/ckeditor.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Đếm ngược -->
+    <script>
+        let timeLeft = @Model.Duration;
+        let timerInterval;
+        function updateTimer() {
+          const minutes = Math.floor(timeLeft / 60);
+          const seconds = timeLeft % 60;
+          document.getElementById("timer").innerText =
+            `Thời gian còn lại: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+          timeLeft--;
+          if (timeLeft < 0) {
+            clearInterval(timerInterval);
+            alert("Hết thời gian làm bài!");
+            window.location.href="/Student/ExamResult_TL/@Model.ExamId";
+          }
+        }
+        timerInterval = setInterval(updateTimer, 1000);
+    </script>
+
+    <!-- CKEditor init + Autosave 5s (sau lưu Redis sẽ đẩy delta qua SignalR) -->
+    <script>
+        let isEditorReady = false;
+
+        const cachedAnswers = @Html.Raw(Json.Serialize(
+                    Model.Questions.ToDictionary(c => c.QuestionId, c => c.EssayAnswer ?? "")
+                ));
+
+        document.addEventListener("DOMContentLoaded", function () {
+          const allInit = [];
+          document.querySelectorAll("textarea[id^='tuLuan_']").forEach(textarea => {
+            const qid = textarea.id.split("_")[1];
+            const p = ClassicEditor.create(textarea).then(ed => {
+              textarea.ckeditorInstance = ed;
+              if (cachedAnswers.hasOwnProperty(qid)) ed.setData(cachedAnswers[qid]);
+            });
+            allInit.push(p);
+          });
+
+          Promise.all(allInit).then(() => {
+            isEditorReady = true;
+            setInterval(autoSaveEssay, 5000);
+          });
+        });
+
+        function autoSaveEssay() {
+          if (!isEditorReady) return;
+
+          const answers = {};
+          document.querySelectorAll("textarea[id^='tuLuan_']").forEach(textarea => {
+            const ed = textarea.ckeditorInstance;
+            const qid = textarea.id.split("_")[1];
+            if (ed) answers[qid] = ed.getData();
+          });
+
+          fetch('/Student/SaveEssayAnswer', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ maDe: @Model.ExamId, cauTraLoi: answers })
+          })
+          .then(r => r.json())
+          .then(d => {
+            if (d.success) {
+              // ✅ Lưu Redis xong thì đẩy delta để ghi log & cập nhật giám sát
+              window.ITExamEssay?.pushEssayDelta?.();
+            }
+          });
+        }
+    </script>
+
+    <!--Nộp bài-->
+    <script>
+        document.getElementById("btn-final-submit").addEventListener("click", async function (e) {
+          e.preventDefault(); // Ngăn submit ngay
+
+          if (!isEditorReady) {
+            alert("Đang khởi tạo bài làm. Vui lòng đợi...");
+            return;
+          }
+
+          // 1) Thu thập lại dữ liệu hiện tại từ tất cả CKEditor
+          const answers = {};
+          document.querySelectorAll("textarea[id^='tuLuan_']").forEach(textarea => {
+            const editorInstance = textarea.ckeditorInstance;
+            const maCauHoi = textarea.id.split("_")[1];
+            if (editorInstance) {
+              answers[maCauHoi] = editorInstance.getData();
+            }
+          });
+
+          // Helper: flush toàn bộ đáp án còn lại lên Hub (nếu có)
+          async function flushAllAnswersToHub() {
+            // Ưu tiên dùng hàm có sẵn
+            if (window.ITExamEssay?.pushEssayDelta) {
+              try { await window.ITExamEssay.pushEssayDelta(); } catch {}
+              return;
+            }
+            // Fallback: tự gửi từng câu (có đủ EXAM_ID/CLASS_ID/STUDENT_ID/FULLNAME và connection)
+            if (typeof connection === "object" && connection?.invoke) {
+              const items = [];
+              document.querySelectorAll("textarea[id^='tuLuan_']").forEach(textarea => {
+                const qid = textarea.id.split("_")[1];
+                const label = document.querySelector(`label[for='${textarea.id}']`);
+                let qContent = (label?.innerText || "").trim().replace(/^Câu\s+\d+\s*:\s*/i, "");
+                const html = textarea.ckeditorInstance ? textarea.ckeditorInstance.getData() : (textarea.value || "");
+                items.push({ qid, qContent, html, ansId: `essay:${qid}` });
+              });
+              for (const it of items) {
+                try {
+                  await connection.invoke(
+                    "SelectAnswer",
+                    EXAM_ID ?? examId,         // tương thích tên biến
+                    CLASS_ID ?? classId,
+                    STUDENT_ID ?? studentId,
+                    FULLNAME ?? studentName,
+                    String(it.qid),
+                    it.qContent || "",
+                    String(it.ansId),
+                    it.html || ""
+                  );
+                } catch (err) { console.error("SelectAnswer (flush) error:", err); }
+              }
+            }
+          }
+
+          // 2) Gửi về Redis trước
+          try {
+            const resp = await fetch('/Student/SaveEssayAnswer', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                maDe: @Model.ExamId,
+                cauTraLoi: answers
+              })
+            });
+            const data = await resp.json();
+
+            if (!data?.success) {
+              alert("Có lỗi khi lưu bài làm. Vui lòng thử lại.");
+              return;
+            }
+          } catch (error) {
+            alert("Không thể kết nối đến máy chủ.");
+            console.error(error);
+            return;
+          }
+
+          // 3) Sau khi lưu Redis thành công -> gửi Hub (flush answer deltas + SubmitExam)
+          try {
+            // gửi cấu trúc đề nếu bạn muốn đảm bảo (không bắt buộc khi submit):
+            if (window.ITExamEssay?.sendExamStructureOnce) {
+              try { await window.ITExamEssay.sendExamStructureOnce(true); } catch {}
+            }
+
+            await flushAllAnswersToHub(); // đẩy nốt phần còn lại vào log cá nhân
+
+            if (typeof connection === "object" && connection?.invoke) {
+              // Báo submit lên Hub
+              try {
+                await connection.invoke(
+                  "SubmitExam",
+                  EXAM_ID ?? examId,
+                  CLASS_ID ?? classId,
+                  STUDENT_ID ?? studentId,
+                  FULLNAME ?? studentName
+                );
+              } catch (err) {
+                // không chặn việc nộp form nếu Hub lỗi
+                console.warn("SubmitExam hub error:", err);
+              }
+            }
+          } finally {
+            // 4) Submit form sau cùng
+            const form = e.target.closest("form");
+            if (form) form.submit();
+          }
+        });
+    </script>
+
+    
+    <!-- SignalR -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+    <script>
+        (() => {
+          // ===== Context =====
+          const examId     = "@Model.ExamId";
+          const classId    = "@Model.ClassId";
+          const studentId  = "@Model.StudentId";
+          const studentName= decodeURIComponent("@Uri.EscapeDataString(Model.FullName)");
+
+          let hasSubmitted = false;
+          let joined = false;
+          let structureSent = false;
+
+          @using Newtonsoft.Json
+          @{
+                  var essayStruct = Model.Questions.Select(q => new
+                {
+                          questionId = q.QuestionId,
+                          questionContent = q.QuestionContent, 
+                          type = "essay",
+                          choices = new object[] { }
+                  });
+                  var essayJson = JsonConvert.SerializeObject(essayStruct,
+                          new JsonSerializerSettings { StringEscapeHandling = StringEscapeHandling.Default });
+          }
+          const examStructureRaw = @Html.Raw(essayJson);
+
+          let lastSentIp = null, lastSentUa = null;
+          async function getPublicIP() {
+            try {
+              const res = await fetch("https://api.ipify.org?format=json");
+              const data = await res.json();
+              return data.ip || "Không xác định";
+            } catch { return "Không xác định"; }
+          }
+          async function sendClientInfoToHub(connection) {
+            const ip = await getPublicIP();
+            const ua = navigator.userAgent;
+            if (ip !== lastSentIp || ua !== lastSentUa) {
+              try {
+                await connection.invoke("SendClientInfo", examId, classId, studentId, studentName, ip, ua);
+                lastSentIp = ip; lastSentUa = ua;
+              } catch (e) { console.error("Lỗi gửi IP/UA:", e); }
+            }
+          }
+
+          function collectEssayAnswers() {
+            const items = [];
+            document.querySelectorAll("textarea[id^='tuLuan_']").forEach(textarea => {
+              const ed = textarea.ckeditorInstance;
+              const qid = textarea.id.split("_")[1];
+              const label = document.querySelector(`label[for='${textarea.id}']`);
+              let qContent = (label?.innerText || "").trim().replace(/^Câu\s+\d+\s*:\s*/i, "");
+              const answerHtml = ed ? ed.getData() : (textarea.value || "");
+              const answerId = `essay:${qid}`;
+              items.push({ questionId: qid, questionContent: qContent, answerId, answerContent: answerHtml });
+            });
+            return items;
+          }
+          const lastSent = new Map();
+          async function pushEssayDelta(connection) {
+            const list = collectEssayAnswers();
+            for (const it of list) {
+              const prev = lastSent.get(it.answerId) || "";
+              if (it.answerContent !== prev) {
+                try {
+                  await connection.invoke(
+                    "SelectAnswer",
+                    examId, classId, studentId, studentName,
+                    String(it.questionId),
+                    it.questionContent || "",
+                    String(it.answerId),
+                    it.answerContent || ""
+                  );
+                  lastSent.set(it.answerId, it.answerContent);
+                } catch (e) { console.error("SelectAnswer error:", e); }
+              }
+            }
+          }
+
+          function startProgressBeat(connection) {
+            return setInterval(() => {
+              try {
+                const totalQ = document.querySelectorAll("textarea[id^='tuLuan_']").length;
+                let answered = 0;
+                document.querySelectorAll("textarea[id^='tuLuan_']").forEach(t => {
+                  const ed = t.ckeditorInstance;
+                  const content = ed ? ed.getData().replace(/<[^>]+>/g,'').trim() : (t.value||'').trim();
+                  if (content.length > 0) answered++;
+                });
+                const rem = Math.max(0, typeof timeLeft === "number" ? timeLeft : 0);
+                connection.invoke("SendRemainingTime", examId, classId, studentId, rem, answered, totalQ).catch(()=>{});
+              } catch {}
+            }, 1000);
+          }
+
+          const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/examMonitorHub")
+            .withAutomaticReconnect([0, 2000, 10000, 30000])
+            .build();
+
+          connection.on("ReceiveAntiCheatConfig", (config) => {
+            try {
+            } catch {}
+          });
+
+          connection.start()
+            .then(() => connection.invoke("JoinExam", examId, classId, studentId, studentName))
+            .then(async () => {
+              joined = true;
+
+              try {
+                await connection.invoke("SendFullExamStructure", examId, classId, studentId, studentName, examStructureRaw);
+                structureSent = true;
+              } catch (e) {
+                console.error("Gửi examStructureRaw lỗi:", e);
+              }
+
+              await sendClientInfoToHub(connection);
+
+              const progressTimer = startProgressBeat(connection);
+              const deltaTimer = setInterval(() => pushEssayDelta(connection), 5000);
+
+              document.addEventListener("visibilitychange", () => {
+                if (hasSubmitted) return;
+                const isActive = document.visibilityState === "visible";
+                connection.invoke("DetectTabChange", examId, classId, studentId, studentName, isActive).catch(console.error);
+              });
+
+              const submitBtn = document.querySelector(".modal-footer .btn-danger");
+              if (submitBtn) {
+                submitBtn.addEventListener("click", () => {
+                  hasSubmitted = true;
+                  connection.invoke("SubmitExam", examId, classId, studentId, studentName).catch(console.error);
+                });
+              }
+
+              window.addEventListener("beforeunload", () => {
+                if (!hasSubmitted) {
+                  connection.invoke("LeaveExam", examId, classId, studentId, studentName).catch(console.error);
+                }
+                clearInterval(progressTimer);
+                clearInterval(deltaTimer);
+                pushEssayDelta(connection);
+              });
+
+              if (typeof timeLeft !== "undefined") {
+                const originalUpdateTimer = window.updateTimer;
+                window.updateTimer = function () {
+                  originalUpdateTimer();
+                  if (timeLeft === 0 && !hasSubmitted) {
+                    hasSubmitted = true;
+                    connection.invoke("SubmitExam", examId, classId, studentId, studentName).catch(console.error);
+                  }
+                };
+              }
+
+              setInterval(() => { if (!hasSubmitted) sendClientInfoToHub(connection); }, 5000);
+            })
+            .catch(err => console.error("SignalR connection error:", err));
+
+          connection.onclose(() => {
+            if (!hasSubmitted) {
+              setTimeout(() => {
+                connection.start()
+                  .then(() => connection.invoke("JoinExam", examId, classId, studentId, studentName))
+                  .then(async () => {
+                    joined = true;
+                    try {
+                      await connection.invoke("SendFullExamStructure", examId, classId, studentId, studentName, examStructureRaw);
+                      structureSent = true;
+                    } catch (e) { console.error("Gửi lại examStructureRaw lỗi:", e); }
+                    await sendClientInfoToHub(connection);
+                  })
+                  .catch(console.error);
+              }, 5000);
+            }
+          });
+
+          connection.onreconnected(() => {
+            (async () => {
+              try {
+                await connection.invoke("SendFullExamStructure", examId, classId, studentId, studentName, examStructureRaw);
+                structureSent = true;
+              } catch (e) { console.error("onreconnected: examStructureRaw lỗi:", e); }
+              await sendClientInfoToHub(connection);
+            })();
+          });
+
+          window.ITExamEssay = {
+            pushEssayDelta: () => pushEssayDelta(connection)
+          };
+        })();
+    </script>
+    <script>
+        // Detect Resize
+        (function setupAntiResize() {
+          // ====== Cấu hình ngưỡng ======
+          const MIN_PX_DELTA = 16;       // bỏ thay đổi < 16px
+          const MIN_RATIO_DELTA = 0.02;  // 2% thay đổi
+          const KEYBOARD_DELTA_PX = 120; // giảm cao >= 120px có thể là bàn phím
+          const STABILIZE_MS = 350;      // thời gian ổn định trước khi quyết định
+          const RATE_LIMIT_MS = 1000;    // tối đa gửi 1 lần / giây
+
+          // Trạng thái ban đầu
+          const initial = {
+            w: document.documentElement.clientWidth,
+            h: document.documentElement.clientHeight
+          };
+          initial.area = initial.w * initial.h;
+
+          const vv = window.visualViewport || null;
+          const initialVVH = vv ? vv.height : null;
+          const initialScale = vv ? vv.scale : 1;
+
+          let resizeAlertSent = false;
+          let debounceTimer, lastSentAt = 0;
+
+          // Giữ một snapshot "last" để so sánh ổn định
+          const last = {
+            clientW: initial.w,
+            clientH: initial.h,
+            innerW: window.innerWidth,
+            innerH: window.innerHeight,
+            outerW: window.outerWidth,
+            outerH: window.outerHeight,
+            vvW: vv ? vv.width : null,
+            vvH: vv ? vv.height : null,
+            vvScale: vv ? vv.scale : 1,
+            vvTop: vv ? vv.offsetTop : 0
+          };
+
+          function hasEditorFocus() {
+            if (document.querySelector('.ck-focused')) return true;
+            const ae = document.activeElement;
+            if (!ae) return false;
+            const tag = (ae.tagName || '').toUpperCase();
+            if (tag === 'INPUT' || tag === 'TEXTAREA') return true;
+            if (ae.isContentEditable) return true;
+            return false;
+          }
+
+          const percentDelta = (oldV, newV) => {
+            if (!oldV) return 1;
+            return Math.abs(newV - oldV) / oldV;
+          };
+
+          const overThreshold = (oldV, newV) => {
+            return (
+              Math.abs(newV - oldV) >= MIN_PX_DELTA ||
+              percentDelta(oldV, newV) >= MIN_RATIO_DELTA
+            );
+          };
+
+          function classify() {
+            const clientW = document.documentElement.clientWidth;
+            const clientH = document.documentElement.clientHeight;
+            const innerW  = window.innerWidth;
+            const innerH  = window.innerHeight;
+            const outerW  = window.outerWidth;
+            const outerH  = window.outerHeight;
+
+            const hasVV = !!vv;
+            const vvW = hasVV ? vv.width : null;
+            const vvH = hasVV ? vv.height : null;
+            const scale = hasVV ? vv.scale : 1;
+            const vvTop = hasVV ? vv.offsetTop : 0;
+
+            const widthChanged  = overThreshold(last.clientW, clientW);
+            const heightChanged = overThreshold(last.clientH, clientH);
+
+            // 1) Pinch-zoom?
+            const pinchZoomLikely = hasVV && Math.abs(scale - last.vvScale) > 0.001;
+
+            // 2) Bàn phím ảo?
+            const keyboardLikely =
+              hasEditorFocus() &&
+              (
+                (hasVV && last.vvH !== null && (last.vvH - vvH) >= KEYBOARD_DELTA_PX) ||
+                (last.innerH - innerH) >= KEYBOARD_DELTA_PX
+              ) &&
+              percentDelta(last.clientW, clientW) < 0.01; // chiều rộng hầu như không đổi
+
+            // 3) Thanh URL ẩn/hiện (mobile)
+            const urlBarLikely =
+              !hasEditorFocus() &&
+              !pinchZoomLikely &&
+              widthChanged === false &&
+              heightChanged === true &&
+              (
+                (hasVV && Math.abs(vvTop - last.vvTop) > 0) ||
+                Math.abs(last.innerH - innerH) >= MIN_PX_DELTA
+              );
+
+            // 4) Orientation change (coi như resize thật)
+            const angle = (screen.orientation && screen.orientation.angle !== undefined)
+              ? screen.orientation.angle
+              : (window.orientation || 0);
+            classify._lastAngle ??= angle;
+            const orientationChanged = angle !== classify._lastAngle;
+            classify._lastAngle = angle;
+
+            // 5) Desktop: outer size thay đổi là resize thật
+            const desktopRealByOuter =
+              overThreshold(last.outerW, outerW) || overThreshold(last.outerH, outerH);
+
+            // 6) Quyết định "real resize"
+            const realResize =
+              !pinchZoomLikely &&
+              !keyboardLikely &&
+              !urlBarLikely &&
+              (
+                orientationChanged ||
+                desktopRealByOuter ||
+                widthChanged ||
+                (heightChanged && percentDelta(last.clientH, clientH) >= 0.03) // cao đổi >3%
+              );
+
+            const payload = {
+              initialWidth:  initial.w,
+              initialHeight: initial.h,
+              currentWidth:  clientW,
+              currentHeight: clientH,
+              innerWidth: innerW,
+              innerHeight: innerH,
+              outerWidth: outerW,
+              outerHeight: outerH,
+              visualViewport: hasVV ? {
+                width: vvW, height: vvH, scale: scale, offsetTop: vvTop,
+                initialHeight: initialVVH, initialScale: initialScale
+              } : null,
+              flags: {
+                pinchZoomLikely,
+                keyboardLikely,
+                urlBarLikely,
+                orientationChanged,
+                desktopRealByOuter
+              },
+              timestamp: new Date().toISOString(),
+              userAgent: navigator.userAgent
+            };
+
+            return { realResize, payload, snapshot: { clientW, clientH, innerW, innerH, outerW, outerH, vvW, vvH, vvScale: scale, vvTop } };
+          }
+
+          function checkResize() {
+            if (resizeAlertSent || typeof hasSubmitted === "boolean" && hasSubmitted) return;
+
+            const { realResize, payload, snapshot } = classify();
+
+            // Cập nhật "last" để so sánh lần sau
+            last.clientW = snapshot.clientW;
+            last.clientH = snapshot.clientH;
+            last.innerW  = snapshot.innerW;
+            last.innerH  = snapshot.innerH;
+            last.outerW  = snapshot.outerW;
+            last.outerH  = snapshot.outerH;
+            last.vvW     = snapshot.vvW;
+            last.vvH     = snapshot.vvH;
+            last.vvScale = snapshot.vvScale;
+            last.vvTop   = snapshot.vvTop;
+
+            if (!realResize) return;
+
+            const now = Date.now();
+            if (now - lastSentAt < RATE_LIMIT_MS) return; // rate-limit
+            lastSentAt = now;
+
+            resizeAlertSent = true;
+
+            // Gửi log lên Hub (giữ nguyên keyword, tham số)
+            try {
+              connection?.invoke?.(
+                "DetectWindowResize",
+                examId, classId, studentId, studentName,
+                payload
+              );
+            } catch (e) { console.error("DetectWindowResize error:", e); }
+
+            alert("CẢNH BÁO! Phát hiện thay đổi kích thước cửa sổ đáng kể. Trang sẽ được làm mới.");
+            setTimeout(() => location.reload(), 1000);
+          }
+
+          function debouncedCheck() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(checkResize, STABILIZE_MS);
+          }
+
+          // Lắng nghe sự kiện
+          window.addEventListener("resize", debouncedCheck, { passive: true });
+          window.addEventListener("orientationchange", debouncedCheck, { passive: true });
+          if (vv) {
+            vv.addEventListener("resize", debouncedCheck, { passive: true });
+            vv.addEventListener("scroll", debouncedCheck, { passive: true }); // iOS URL bar làm offsetTop đổi
+          }
+          // Khi focus/blur input — giúp phân biệt bàn phím ảo
+          window.addEventListener("focus", debouncedCheck, true);
+          window.addEventListener("blur", debouncedCheck, true);
+          document.addEventListener("visibilitychange", debouncedCheck, { passive: true });
+        })();
+    </script>
+</body>
+</html>

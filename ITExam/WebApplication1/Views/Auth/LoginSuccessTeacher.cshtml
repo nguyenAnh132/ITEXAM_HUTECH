@@ -1,0 +1,107 @@
+﻿@model ITExam.ViewModels.UserInfoVM
+<!-- Import cai layout -->
+@{
+
+    Layout = "_TeacherLayout";
+    <!-- Nhap title -->
+    ViewData["Title"] = "Thông tin tài khoản";
+}
+<!-- Add cai css do day -->
+@section Style {
+    <link rel="stylesheet" href="~/css/teacher-loginsuccess-style.css" />
+
+}
+<div class="main p-3">
+    <!-- About Start -->
+    <div class="container-fluid pt-4 pb-2">
+        <div class="container pt-4 pb-2">
+            <div class="row">
+                <div class="col-lg-5 mb-4 mb-lg-0">
+                    <div class="rounded  overflow-hidden"
+                         style="height: 100%">
+                        <img class="img-fluid w-100 h-100"
+                             src="~/img/teacher-avatar.jpg"
+                             style="object-fit: cover;"
+                             alt="Ảnh đại diện" />
+                    </div>
+                </div>
+                <div class="col-lg-7 mt-3">
+                    <div class="position-relative mb-3">
+                        <h6 class="text-primary text-uppercase border-bottom pb-2">
+                            Thông tin cá nhân
+                        </h6>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-body py-3 px-3">
+                                    <h6 class="card-title font-weight-bold mb-1 text-dark">
+                                        <i class="fa fa-user mr-2" style="color: #007bff"></i>Họ
+                                        tên
+                                    </h6>
+                                    <p class="card-text mb-0 font-weight-bold">@Model.HoTen</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-body py-3 px-3">
+                                    <h6 class="card-title font-weight-bold mb-1 text-dark">
+                                        <i class="fa fa-envelope mr-2" style="color: #007bff"></i>Email
+                                    </h6>
+                                    <p class="card-text mb-0 font-weight-bold">
+                                        @Model.Email
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-body py-3 px-3">
+                                    <h6 class="card-title font-weight-bold mb-1 text-dark">
+                                        <i class="fa fa-users mr-2" style="color: #007bff"></i>Nơi làm việc
+                                    </h6>
+                                    <p class="card-text mb-0 font-weight-bold">HUTECH</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-body py-3 px-3">
+                                    <h6 class="card-title font-weight-bold mb-1 text-dark">
+                                        <i class="fa fa-university mr-2"
+                                           style="color: #007bff"></i>Khoa
+                                    </h6>
+                                    <p class="card-text mb-0 font-weight-bold">
+                                        Công nghệ thông tin
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- About End -->
+
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+                const message = @Html.Raw(Json.Serialize(TempData["SuccessMessage"]));
+                if (message) {
+                    Toastify({
+                        text: message,
+                        duration: 4000,
+                        close: true,
+                        gravity: "bottom",
+                        position: "right",
+                        stopOnFocus: true,
+                        style: {
+                            background: "#28a745"
+                        }
+                    }).showToast();
+                }
+            });
+</script>

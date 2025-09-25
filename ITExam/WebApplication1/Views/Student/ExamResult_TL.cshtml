@@ -1,0 +1,39 @@
+﻿ <!DOCTYPE html> 
+ <html lang="vi"> 
+ <head> 
+     <meta charset="UTF-8"> 
+     <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+     <title>Kết quả bài thi</title> 
+
+     <!-- Bootstrap 5.3 --> 
+     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"> 
+
+     <!-- FontAwesome --> 
+     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" /> 
+
+     <!-- Google Font --> 
+     <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600&display=swap" rel="stylesheet"> 
+     <link rel="stylesheet" href="~/css/student-exam-result.css" /> 
+ </head> 
+ <body> 
+
+     <div class="card-result m-3"> 
+         <h2><i class="fa-solid fa-clipboard-check me-2"></i>Bạn đã hoàn thành bài thi</h2> 
+         <div class="score-display">Chưa có kết quả thi</div> 
+
+         <div class="info text-start mt-4"> 
+             <p class="fs-5"><i class="fa-regular fa-calendar-days"></i><strong>Ngày làm bài:</strong> 03/03/2025</p> 
+             <p class="fs-5"><i class="fa-solid fa-stopwatch"></i><strong>Thời gian làm bài:</strong> 00:26:00</p> 
+         </div> 
+
+        <a asp-action="ClassDetail" asp-route-id="@ViewBag.MaLop">
+             <button class="btn btn-primary btn-back"> 
+                 <i class="fa-solid fa-arrow-left me-2"></i>Quay lại 
+             </button>
+        </a>
+     </div> 
+
+     <!-- Bootstrap Bundle --> 
+     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script> 
+ </body> 
+ </html> 

@@ -1,0 +1,1538 @@
+﻿@using ITExam.ViewModels.Class
+@Html.AntiForgeryToken()
+
+@model ClassDetailVM
+@{
+    Layout = "_TeacherLayout";
+    <!-- Nhap title -->
+    ViewData["Title"] = "Chi tiết lớp học";
+    var grouped = Model.Logs.GroupBy(x => x.LoggedDate.Date);
+}
+@section Style {
+    <link rel="stylesheet" href="~/css/teacher-classDetail-style.css" />
+    <link rel="stylesheet" href="~/css/teacher-card-info-style.css" />
+    <link rel="stylesheet" href="~/css/teacher-classDetailResponsive-style.css" />
+}
+<div class="container-fluid p-0">
+    <div class="pt-3 pb-1 py-lg-0 px-lg-5 px-1">
+        <div class="row mx-0 justify-content-center pt-2">
+            <div class="col-lg-6">
+                <div class="section-title text-center position-relative mb-1">
+                    <h2 class="display-4">@Model.ClassInfo.ClassName</h2>
+                    <h6 class="d-inline-block position-relative text-secondary text-uppercase pb-2">Mô tả: @Model.ClassInfo.Description</h6>
+                </div>
+            </div>
+        </div>
+        <div class="tab-body">
+            <div class="tabs">
+                <div class="tabs-nav-wrapper position-relative">
+                    <button class="btn-scroll left" aria-label="Scroll left"><i class="fa fa-chevron-left"></i></button>
+                    <div class="tabs-nav scrollable d-flex" role="tablist" aria-label="Content sections">
+                        <div class="tabs-indicator"></div>
+                        <button class="tab-button" role="tab" aria-selected="true" aria-controls="panel-1" id="tab-1">
+                            Thông tin lớp học
+                        </button>
+                        <button class="tab-button" role="tab" aria-selected="false" aria-controls="panel-2" id="tab-2">
+                            Thành viên
+                        </button>
+                        <button class="tab-button" role="tab" aria-selected="false" aria-controls="panel-4" id="tab-4">
+                            Đề thi
+                        </button>
+                        <button class="tab-button" role="tab" aria-selected="false" aria-controls="panel-5" id="tab-5">
+                            Chấm thi
+                        </button>
+                        <button class="tab-button" role="tab" aria-selected="false" aria-controls="panel-6" id="tab-6">
+                            Nhật ký bài làm
+                        </button>
+                    </div>
+                    <button class="btn-scroll right" aria-label="Scroll right"><i class="fa fa-chevron-right"></i></button>
+                </div>
+
+
+                <div class="tab-panel px-1 px-md-4 py-2" role="tabpanel" id="panel-1" aria-labelledby="tab-1" aria-hidden="false">
+                    <h2>Tên lớp: @Model.ClassInfo.ClassName</h2>
+                    <p><b>Mã lớp học: </b>@Model.ClassInfo.ClassCode</p>
+                    <p><b>Mô tả: </b>@Model.ClassInfo.Description</p>
+                    <p><b>Ngày tạo: </b>@Model.ClassInfo.CreatedDate.ToString("dd/MM/yyyy HH:mm")</p>
+                    <p><b>Giảng viên: </b>@Model.ClassInfo.User.FullName</p>
+                </div>
+
+                <div class="tab-panel px-1 px-md-4 py-2" role="tabpanel" id="panel-2" aria-labelledby="tab-2" aria-hidden="true">
+                    <h2>Danh sách sinh viên</h2>
+                    <div class="px-3 py-2 d-flex align-items-center border-bottom justify-content-between">
+                        <div class="d-flex align-items-center gap-3">
+                            <h3 class="fs-6 mb-0 me-3">Số lượng sinh viên: @Model.Students.Count</h3>
+                            <form action="#" class="d-inline-block">
+                                <div class="input-group input-group-navbar">
+                                    <input type="text"
+                                           id="searchStudentInput"
+                                           onkeyup="searchItems('searchStudentInput', '#table-body')"
+                                           class="form-control border-0 rounded-0"
+                                           placeholder="Tìm kiếm . . . " />
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive mt-3 shadow-sm rounded">
+                        <table class="table  table-hover align-middle text-center">
+                            <thead class="table-primary">
+                                <tr>
+                                    <th scope="col">MSSV</th>
+                                    <th scope="col">Họ và tên</th>
+                                    <th scope="col">Email</th>
+                                    <th scope="col">Ngày tham gia</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-body">
+                                @if (Model.Students != null && Model.Students.Any())
+                                {
+                                    @foreach (var sv in Model.Students)
+                                    {
+                                        <tr>
+                                            <td>@sv.StudentId</td>
+                                            <td>@sv.FullName</td>
+                                            <td>@sv.Email</td>
+                                            <td>@sv.JoinDate.ToString("dd/MM/yyyy HH:mm")</td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="4" class="text-muted">🚫 Không có thành viên nào trong lớp.</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <nav class="mt-3">
+                        <ul class="pagination justify-content-center" id="pagination">
+                        </ul>
+                    </nav>
+                </div>
+
+                <div class="tab-panel px-1 px-md-4 py-2" role="tabpanel" id="panel-4" aria-labelledby="tab-4" aria-hidden="true">
+                    <h2>Danh sách đề thi</h2>
+
+                    <div class="row px-3 py-2 border-bottom align-items-center g-2">
+                        <!-- Cột tiêu đề + search -->
+                        <div class="col-12 col-md-8 d-flex align-items-center">
+                            <h3 class="fs-6 mb-0 me-3">Số lượng đề thi: @Model.ExamCount</h3>
+                            <form action="#" class="flex-grow-1">
+                                <div class="input-group">
+                                    <input type="text"
+                                           id="searchExamInput"
+                                           class="form-control rounded-2"
+                                           placeholder="Tìm kiếm . . ." />
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Cột nút thêm -->
+                        <div class="col-12 col-md-4 text-md-end">
+                            <button class="btn btn-primary w-100 w-md-auto"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#staticBackdrop-add-exam">
+                                Thêm đề thi
+                            </button>
+                        </div>
+                    </div>
+
+
+                    <div class="mt-2 px-3 pt-2">
+                        <div class="card mb-1 p-2 shadow-sm border rounded-3">
+                            <div class="d-flex flex-wrap justify-content-center text-center text-muted" style="font-size: 0.85rem; gap: 1rem;">
+                                <span class="d-flex align-items-center text-nowrap me-3">
+                                    <i class="fa-duotone fa-regular fa-eye text-primary me-1"></i> Giám sát: Theo dõi quá trình làm bài của học sinh
+                                </span>
+                                <span class="d-flex align-items-center text-nowrap me-3">
+                                    <i class="fa-regular fa-pen-to-square text-warning me-1"></i> Chỉnh sửa: Sửa thông tin đề thi
+                                </span>
+                                <span class="d-flex align-items-center text-nowrap me-3">
+                                    <i class="fa-solid fa-trash-can text-danger me-1"></i> Xóa: Xóa đề thi
+                                </span>
+                                <span class="d-flex align-items-center text-nowrap me-3">
+                                    <i class="fa-solid fa-toggle-on text-primary me-1"></i> Cho phép xem đề thi: Bật/tắt quyền xem đề
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="deThi" class="mt-4 d-flex flex-wrap">
+                        @foreach (var dt in Model.Exams)
+                        {
+                            if (dt.Type == true)
+                            {
+                                var tenDe = dt.ExamName.Length > 25 ? dt.ExamName.Substring(0, 25) + "..." : dt.ExamName;
+                                <div class="col-lg-4 col-md-6 mb-4">
+                                    <div class="card shadow-sm border-0 h-100">
+                                        <div style="height: 200px; overflow: hidden">
+                                            <img src="~/img/exam1-avatar.png"
+                                                 class="card-img-top"
+                                                 style="object-fit: cover; height: 100%; width: 100%"
+                                                 alt="Đề thi" />
+                                        </div>
+                                        <div class="card-body">
+                                            <h5 class="card-title text-primary font-weight-bold" title="@dt.ExamName">@tenDe</h5>
+
+                                            <p class="card-text mb-2">
+                                                <i class="fa fa-tags text-dark me-2"></i>
+                                                <strong>Loại đề:</strong> @dt.ExamType
+                                            </p>
+                                            <p class="card-text mb-2">
+                                                <i class="fa fa-calendar-alt text-dark me-2"></i>
+                                                <strong>Ngày thêm:</strong> @dt.CreatedDate.ToString("HH:mm:ss dd/MM/yyyy")
+                                            </p>
+                                            <p class="card-text mb-2">
+                                                <i class="fa fa-clock text-dark me-2"></i>
+                                                <strong>Thời gian làm bài:</strong> @dt.Duration phút
+                                            </p>
+                                            <p class="card-text mb-2">
+                                                <i class="fa fa-calendar-alt text-dark me-2"></i>
+                                                <strong>Bắt đầu:</strong> @dt.StartDate.ToString("HH:mm:ss dd/MM/yyyy")
+                                            </p>
+                                            <p class="card-text mb-2">
+                                                <i class="fa fa-calendar-check text-dark me-2"></i>
+                                                <strong>Kết thúc:</strong> @dt.EndDate.ToString("HH:mm:ss dd/MM/yyyy")
+                                            </p>
+
+                                            <div class="d-flex gap-3 mt-2 text-muted small">
+                                                <div data-bs-toggle="tooltip" data-bs-placement="top" title="Số lượng câu hỏi">
+                                                    <i class="fa-solid fa-circle-question text-primary"></i> @dt.QuestionCount
+                                                </div>
+                                                <div data-bs-toggle="tooltip" data-bs-placement="top" title="Lượt xem">
+                                                    <i class="fa-solid fa-eye"></i> 0
+                                                </div>
+                                                <div data-bs-toggle="tooltip" data-bs-placement="top" title="Lượt thi">
+                                                    <i class="fa-solid fa-right-from-bracket"></i> 0
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="px-3 pb-3 text-center">
+                                            <div class="d-flex justify-content-center gap-3 mb-2 btn_action">
+                                                @if (DateTime.Now > dt.StartDate && DateTime.Now < dt.EndDate)
+                                                {
+                                                    <a asp-controller="Teacher" asp-action="Monitoring"
+                                                       asp-route-examId="@dt.ExamId"
+                                                       asp-route-classId="@Model.ClassInfo.ClassId"
+                                                       class="btn btn-sm btn-primary" title="Giám sát" target="_blank">
+                                                        <i class="fa-duotone fa-regular fa-eye"></i>
+                                                    </a>
+                                                }
+
+                                                <button class="border-0 bg-transparent" title="Chỉnh sửa"
+                                                        onclick="openEditModal(@dt.ExamId, '@dt.StartDate.ToString("yyyy-MM-ddTHH:mm")', '@dt.EndDate.ToString("yyyy-MM-ddTHH:mm")')">
+                                                    <i class="fa-regular fa-pen-to-square text-warning fs-5"></i>
+                                                </button>
+
+                                                <button class="border-0 bg-transparent" title="Xóa"
+                                                        onclick="openDeleteModal(@dt.ExamId)">
+                                                    <i class="fa-solid fa-trash-can text-danger fs-5"></i>
+                                                </button>
+
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox"
+                                                           id="switch-access-@dt.ExamId"
+                                                           onchange="capNhatAccess(@Model.ClassInfo.ClassId, @dt.ExamId, this.checked)"
+                                                           @(dt.Access ? "checked" : null) />
+                                                </div>
+                                            </div>
+
+                                            <div class="btn_action">
+                                                <a asp-controller="Teacher" asp-action="List_Student_Do_Test"
+                                                   asp-route-id="@dt.ExamId"
+                                                   asp-route-maLopHoc="@(Model.ClassInfo.ClassId)"
+                                                   class="btn btn-sm btn-primary w-100">
+                                                    Chi tiết
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+
+                <div class="tab-panel px-1 px-md-4 py-2" role="tabpanel" id="panel-5" aria-labelledby="tab-5" aria-hidden="false">
+                    <div class="table-responsive mt-1 shadow-sm rounded">
+                        <table class="table  table-hover align-middle text-center">
+                            <thead class="table-primary">
+                                <tr>
+                                    <th scope="col">Tên đề thi</th>
+                                    <th scope="col">Loại đề</th>
+                                    <th scope="col">Ngày mở</th>
+                                    <th scope="col">Ngày đóng</th>
+                                    <th scope="col">Chưa chấm</th>
+                                    <th scope="col">Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-body">
+                                @foreach (var dt in Model.Exams)
+                                {
+                                    @if (dt.ExamType == "Tự luận")
+                                    {
+                                        <tr>
+                                            <td>@dt.ExamName</td>
+                                            <td>@dt.ExamType</td>
+                                            <td>@dt.StartDate.ToString("dd/MM/yyyy HH:mm")</td>
+                                            <td>@dt.EndDate.ToString("dd/MM/yyyy HH:mm")</td>
+                                            <td>@dt.UngradedStudentCount / @Model.StudentCount</td>
+                                            <td>
+                                                <form asp-controller="Teacher" asp-action="Grading_The_Exam" method="post">
+                                                    <input type="hidden" name="maDe" value="@dt.ExamId" />
+                                                    <input type="hidden" name="maLop" value="@Model.ClassInfo.ClassId" />
+                                                    <input type="submit" class="btn btn-outline-primary" value="Chấm bài" />
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                @{
+                    var studentsWithLogs = Model.Logs?
+                    .GroupBy(l => l.StudentFullName)
+                    .OrderBy(g => g.Key)
+                    .ToList() ?? new List<IGrouping<string, ITExam.ViewModels.Exam.ExamLogEntryVM>>();
+                }
+                <div class="tab-panel px-0 px-md-4 py-2" role="tabpanel" id="panel-6" aria-labelledby="tab-6" aria-hidden="false">
+                    <div class="row align-items-center border-bottom px-3 py-2 g-2">
+                        <!-- Tiêu đề + badge -->
+                        <div class="col-12 col-md-6 d-flex align-items-center gap-3">
+                            <h2 class="fs-5 mb-0">Nhật ký bài làm</h2>
+                            <span class="badge bg-primary">
+                                Tổng số bản ghi @Model.Logs?.Count
+                            </span>
+                        </div>
+
+                        <!-- Search box -->
+                        <div class="col-12 col-md-6">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text"><i class="fa fa-search"></i></span>
+                                <input type="text"
+                                       id="searchStudentLogs"
+                                       class="form-control"
+                                       placeholder="Tìm sinh viên...">
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <!-- View 1: Danh sách sinh viên -->
+                    <div id="view-students" class="mt-3">
+                        <div class="list-group list-group-flush" id="studentLogList">
+                            @for (int i = 0; i < studentsWithLogs.Count; i++)
+                            {
+                                var g = studentsWithLogs[i];
+                                var totalLogs = g.Count();
+                                var days = g.GroupBy(x => x.LoggedDate.Date).Count();
+                                var firstExam = g.Select(x => x.ExamName).FirstOrDefault();
+                                var studentId = $"stu-{i}";
+
+                                <div class="row">
+                                    <div class="col-11">
+                                        <!-- Nút mở danh sách log (sẵn có) -->
+                                        <button type="button"
+                                                class="list-group-item list-group-item-action d-flex justify-content-between align-items-center student-item"
+                                                data-stu-target="@studentId"
+                                                data-stu-name="@g.Key">
+                                            <div class="text-start">
+                                                <div class="fw-semibold">@g.Key</div>
+                                                <div class="small text-muted">@days ngày • @totalLogs log</div>
+                                                @if (!string.IsNullOrWhiteSpace(firstExam))
+                                                {
+                                                    <div class="small text-muted"><i class="fa fa-book me-1"></i>@firstExam</div>
+                                                }
+                                            </div>
+                                            <span class="badge bg-success rounded-pill">@totalLogs bản ghi</span>
+                                        </button>
+                                    </div>
+                                    <div class="col-1 align-content-center d-inline">
+                                        <!-- Nút XÓA LOG mới (đứng cạnh nút ở trên) -->
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-danger text-center mt-1 btn-delete-logs"
+                                                data-stu-target="@studentId"
+                                                data-stu-name="@g.Key">
+                                            <i class="fa-solid fa-trash-can me-1"></i>Xóa
+                                        </button>
+                                    </div>
+
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- View 2: Danh sách log của 1 sinh viên -->
+                    <div id="view-logs" class="mt-3 d-none">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <h5 id="logsStudentName" class="mb-0"></h5>
+                                <div class="small text-muted" id="logsStudentMeta"></div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-sm btn-outline-secondary" id="btnBackToStudents">
+                                    <i class="fa fa-arrow-left me-1"></i> Danh sách sinh viên
+                                </button>
+                            </div>
+                        </div>
+                        <div id="logsListContainer" class="border rounded p-3" style="max-height: 65vh; overflow-y: auto;">
+                            <div class="text-muted small">Chưa có nội dung để hiển thị.</div>
+                        </div>
+                    </div>
+
+                    <!-- View 3: Chi tiết 1 log -->
+                    <div id="view-log-detail" class="mt-3 d-none">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1" id="detailHeader"></h6>
+                                <div class="small text-muted" id="detailSubHeader"></div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <select id="detailFilter" class="form-select form-select-sm w-auto" disabled>
+                                    <option value="all">-- Tất cả --</option>
+                                    <option value="tab">Chuyển tab</option>
+                                    <option value="answer">Chọn câu hỏi</option>
+                                    <option value="device">Thay đổi IP/Trình duyệt</option>
+                                    <option value="joined">Tham gia/Nộp bài</option>
+                                </select>
+                                <button class="btn btn-sm btn-outline-primary" id="btnShowDetailStats" data-bs-toggle="modal" data-bs-target="#logStatsModal" disabled>
+                                    <i class="fas fa-chart-pie me-1"></i> Thống kê
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary" id="btnBackToLogs">
+                                    <i class="fa fa-arrow-left me-1"></i> Danh sách log
+                                </button>
+                            </div>
+                        </div>
+                        <div id="detailContent" class="border rounded p-3 bg-white" style="white-space: pre-wrap; max-height: 65vh; overflow-y: auto; font-family: 'Courier New'; font-size: 0.9rem;">
+                            <div class="text-muted small">Chưa có nội dung để hiển thị.</div>
+                        </div>
+                    </div>
+
+                    <!-- Panels ẩn: dữ liệu cho mỗi sinh viên (để clone) -->
+                    <div class="d-none">
+                        @for (int i = 0; i < studentsWithLogs.Count; i++)
+                        {
+                            var g = studentsWithLogs[i];
+                            var studentId = $"stu-{i}";
+                            var byDate = g.OrderByDescending(x => x.LoggedDate)
+                            .GroupBy(x => x.LoggedDate.Date);
+
+                            <!-- Danh sách LOG ITEM (View 2) -->
+                            <div id="@studentId-logsList" class="logs-list-panel">
+                                @foreach (var dayGroup in byDate)
+                                {
+                                    var dateLabel = dayGroup.Key.ToString("dd/MM/yyyy");
+
+                                    <div class="mb-3">
+                                        <div class="d-flex align-items-center justify-content-between mb-2">
+                                            <h6 class="text-secondary mb-0">
+                                                <i class="fa fa-calendar me-2"></i>@dateLabel
+                                                <span class="badge bg-light text-dark ms-2">@dayGroup.Count() log</span>
+                                            </h6>
+                                        </div>
+
+                                        <div class="list-group">
+                                            @foreach (var log in dayGroup)
+                                            {
+                                                var preview = (log.LogContent ?? "").Replace("\r", "").Split('\n').FirstOrDefault() ?? "";
+                                                if (preview.Length > 120) preview = preview.Substring(0, 120) + "...";
+
+                                                <a href="javascript:void(0)"
+                                                   class="list-group-item list-group-item-action log-item"
+                                                   data-id="@log.LogId"
+                                                   data-log="@Html.Raw(Html.Encode(log.LogContent).Replace("\r\n", "\\n").Replace("\n", "\\n"))"
+                                                   data-stu="@g.Key"
+                                                   data-exam="@log.ExamName"
+                                                   data-class="@log.ClassName"
+                                                   data-ins="@log.InstructorName"
+                                                   data-time="@log.LoggedDate.ToString("dd/MM/yyyy HH:mm")">
+                                                    <div class="d-flex w-100 justify-content-between">
+                                                        <h6 class="mb-1 fw-semibold text-truncate" title="@log.ExamName">
+                                                            <i class="fas fa-book me-2"></i>@log.ExamName
+                                                        </h6>
+                                                        <small class="text-muted">
+                                                            <i class="fas fa-clock me-1"></i>@log.LoggedDate.ToString("HH:mm")
+                                                        </small>
+                                                    </div>
+                                                    <small class="text-muted d-block text-truncate" title="@log.LogContent">@preview</small>
+                                                </a>
+
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+
+                            // Header meta (View 2)
+                            var totalLogs = g.Count();
+                            var dayCount = byDate.Count();
+
+                            <div id="@studentId-meta"
+                                 class="logs-meta"
+                                 data-days="@dayCount"
+                                 data-logs="@totalLogs"
+                                 data-name="@g.Key">
+                            </div>
+
+                            <!-- Danh sách checkbox để XÓA (panel ẩn) -->
+                            <div id="@studentId-deleteList" class="d-none">
+                                <div class="list-group">
+                                    @foreach (var log in g.OrderByDescending(x => x.LoggedDate))
+                                    {
+                                        var logId = log.LogId;
+
+                                        var preview = (log.LogContent ?? "").Replace("\r", "").Split('\n').FirstOrDefault() ?? "";
+                                        if (preview.Length > 120) preview = preview.Substring(0, 120) + "...";
+
+                                        <label class="list-group-item d-flex align-items-start gap-2">
+                                            <input class="form-check-input mt-1 delete-log-checkbox" type="checkbox" name="LogIds" value="@logId" />
+                                            <div class="flex-grow-1">
+                                                <div class="d-flex justify-content-between">
+                                                    <span class="fw-semibold">
+                                                        <i class="fa fa-book me-1"></i>@log.ExamName
+                                                    </span>
+                                                    <small class="text-muted">
+                                                        <i class="fa fa-clock me-1"></i>@log.LoggedDate.ToString("dd/MM/yyyy HH:mm")
+                                                    </small>
+                                                </div>
+                                                <small class="text-muted d-block">@preview</small>
+                                            </div>
+                                        </label>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+@section Modal {
+    <!-- Modal chỉnh sửa đề thi -->
+    <div class="modal fade" id="editExamModal" tabindex="-1" aria-labelledby="editExamModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form method="post" asp-action="Edit_Exam_Date" asp-controller="Teacher">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title text-white" id="editExamModalLabel">Chỉnh sửa ngày thi</h5>
+                        <button type="button" class="btn-close bg-white" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="MaDe" id="editMaDeInput" />
+                        <input type="hidden" name="MaLopHoc" value="@Model.ClassInfo.ClassId" />
+                        <div class="mb-3">
+                            <label class="form-label">Thời gian bắt đầu</label>
+                            <input name="StartTime" type="datetime-local" class="form-control" id="editThoiGianBatDau" required readonly />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Thời gian kết thúc</label>
+                            <input name="EndTime" type="datetime-local" class="form-control" id="editThoiGianKetThuc" required />
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal xác nhận xóa -->
+    <div class="modal fade" id="deleteExamModal" tabindex="-1" aria-labelledby="deleteExamModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form method="post" asp-action="Delete_Exam" asp-controller="Teacher">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title text-white" id="deleteExamModalLabel">Xác nhận xóa</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="MaDe" id="deleteMaDeInput" />
+                        <input type="hidden" name="MaLopHoc" value="@Model.ClassInfo.ClassId" />
+                        <p>Bạn có chắc chắn muốn xóa đề thi này không?</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-danger">Xóa</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <!-- Modal gán đề thi vào lớp học -->
+    <div class="modal fade" id="modalGanDeThi" tabindex="-1" aria-labelledby="modalGanDeThiLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form asp-action="Add_Exam_To_Class" asp-controller="Teacher" method="post">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title" id="modalGanDeThiLabel">Thêm đề thi vào lớp học</h5>
+                        <button type="button" class="btn-close bg-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="maLopHoc" value="@Model.ClassInfo.ClassId" />
+                        <input type="hidden" id="modalMaDeInput" name="maDe" />
+
+                        <div class="mb-3">
+                            <label class="form-label">Thời gian bắt đầu</label>
+                            <input name="StartTime" type="datetime-local" class="form-control" required />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Thời gian mở đề (phút)</label>
+                            <input name="ThoiGianMoDe" type="number" class="form-control" id="inputThoiGianMoDe" min="1" placeholder="(Không bắt buộc)" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Thời gian kết thúc</label>
+                            <input name="EndTime" type="datetime-local" class="form-control" id="inputThoiGianKetThuc" required />
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="LaDeThi" value="true" checked />
+                            <label class="form-check-label">Đặt là đề thi</label>
+                        </div>
+                    </div>
+                    <ul>
+                        <strong class="text-danger">Lưu ý:</strong>
+                        <li>Thời gian mở đề lớn hơn thời gian làm bài.</li>
+                        <li>Đánh dấu tích nếu là đề thi.</li>
+                        <li>Bỏ trống nếu là đề ôn tập.</li>
+                    </ul>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-primary">Xác nhận</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade"
+         id="staticBackdrop-add-review-exam"
+         data-bs-backdrop="static"
+         data-bs-keyboard="false"
+         tabindex="-1"
+         aria-labelledby="staticBackdropLabel"
+         aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h1 class="modal-title fs-5 text-white" id="staticBackdropLabel">
+                        THÊM ĐỀ ÔN TẬP
+                    </h1>
+                    <button type="button"
+                            class="btn-close bg-white"
+                            data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                </div>
+
+                @if (Model.Exams.Count == 0 && Model.UnassignedExams.Count == 0)
+                {
+                    <h5 class="text-center m-2">Chưa có đề ôn tập nào được tạo!</h5>
+                }
+                else
+                {
+                    @foreach (var dt in Model.UnassignedExams)
+                    {
+                        if (dt.InstructorId == @Model.ClassInfo.User.UserId)
+                        {
+                            <div class="test_item d-flex align-items-center border rounded p-3">
+                                <div class="test_image flex-shrink-0 me-3">
+                                    <img src="~/img/exam-avatar.png" alt="Exam Thumbnail" class="rounded" style="width: 80px; height: 80px;">
+                                </div>
+                                <div class="test_info flex-grow-1">
+                                    <p class="fw-bold text-primary mb-1">Tên đề thi: <span class="text-dark"> @dt.ExamName</span></p>
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fa-solid fa-clock me-2 text-muted"></i>
+                                        <span class="text-dark">Ngày tạo: @dt.CreatedDate.ToString("dd-MM-yyyy")</span>
+                                    </div>
+                                    <div class="d-flex gap-4">
+                                        <div class="d-flex align-items-center" data-bs-toggle="tooltip" title="Số lượng câu hỏi">
+                                            <i class="fa-solid fa-circle-question text-primary me-1"></i>
+                                            <span class="fw-bold text-dark">@dt.QuestionCount</span>
+                                        </div>
+                                        <div class="d-flex align-items-center" data-bs-toggle="tooltip" title="Lượt xem">
+                                            <i class="fa-solid fa-eye text-secondary me-1"></i>
+                                            <span class="fw-bold text-dark">0</span>
+                                        </div>
+                                        <div class="d-flex align-items-center" data-bs-toggle="tooltip" title="Lượt thi">
+                                            <i class="fa-solid fa-right-from-bracket text-success me-1"></i>
+                                            <span class="fw-bold text-dark">0</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="test_item_action ms-3">
+                                    <button class="btn btn-primary" onclick="closeAndOpenGanDeModal(@dt.ExamId, 'staticBackdrop-add-review-exam')">
+                                        <i class="fa-solid fa-plus me-1"></i> Thêm
+                                    </button>
+                                </div>
+                            </div>
+                        }
+                    }
+
+                    @foreach (var dt in Model.Exams)
+                    {
+                        <div class="test_item d-flex align-items-center border rounded p-3">
+                            <div class="test_image flex-shrink-0 me-3">
+                                <img src="~/img/exam-avatar.png" alt="Exam Thumbnail" class="rounded" style="width: 80px; height: 80px;">
+                            </div>
+                            <div class="test_info flex-grow-1">
+                                <p class="fw-bold text-primary mb-1">Tên đề thi: <span class="text-dark"> @dt.ExamName</span></p>
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fa-solid fa-clock me-2 text-muted"></i>
+                                    <span class="text-dark">Ngày thêm: @dt.CreatedDate.ToString("dd-MM-yyyy")</span>
+                                </div>
+                                <div class="d-flex gap-4">
+                                    <div class="d-flex align-items-center" data-bs-toggle="tooltip" title="Số lượng câu hỏi">
+                                        <i class="fa-solid fa-circle-question text-primary me-1"></i>
+                                        <span class="fw-bold text-dark">@dt.QuestionCount</span>
+                                    </div>
+                                    <div class="d-flex align-items-center" data-bs-toggle="tooltip" title="Lượt xem">
+                                        <i class="fa-solid fa-eye text-secondary me-1"></i>
+                                        <span class="fw-bold text-dark">0</span>
+                                    </div>
+                                    <div class="d-flex align-items-center" data-bs-toggle="tooltip" title="Lượt thi">
+                                        <i class="fa-solid fa-right-from-bracket text-success me-1"></i>
+                                        <span class="fw-bold text-dark">0</span>
+                                    </div>
+                                </div>
+                            </div>
+                            @if (dt.Type == true)
+                            {
+                                <div class="test_item_action ms-3">
+                                    <button class="btn btn-info">
+                                        Đề thi
+                                    </button>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="test_item_action ms-3">
+                                    <button class="btn btn-info">
+                                        Ôn tập
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade"
+         id="staticBackdrop-add-exam"
+         data-bs-backdrop="static"
+         data-bs-keyboard="false"
+         tabindex="-1"
+         aria-labelledby="staticBackdropLabel"
+         aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h1 class="modal-title fs-5 text-white" id="staticBackdropLabel">
+                        THÊM ĐỀ THI
+                    </h1>
+                    <button type="button"
+                            class="btn-close bg-white"
+                            data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                </div>
+
+                @if (Model.Exams.Count == 0 && Model.UnassignedExams.Count == 0)
+                {
+                    <h5 class="text-center m-2">Chưa có đề thi nào được tạo!</h5>
+                }
+                else
+                {
+                    @foreach (var dt in Model.UnassignedExams)
+                    {
+                        <div class="test_item d-flex align-items-center border rounded p-3">
+                            <div class="test_image flex-shrink-0 me-3">
+                                <img src="~/img/exam-avatar.png" alt="Exam Thumbnail" class="rounded" style="width: 80px; height: 80px;">
+                            </div>
+                            <div class="test_info flex-grow-1">
+                                <p class="fw-bold text-primary mb-1">Tên đề thi: <span class="text-dark"> @dt.ExamName</span></p>
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fa-solid fa-clock me-2 text-muted"></i>
+                                    <span class="text-dark">Ngày tạo: @dt.CreatedDate.ToString("dd-MM-yyyy")</span>
+                                </div>
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fa-solid fa-clock me-2 text-secondary"></i>
+                                    <span class="text-dark">Thời gian làm bài: @dt.Duration phút</span>
+                                </div>
+                                <div class="d-flex gap-4">
+                                    <div class="d-flex align-items-center" data-bs-toggle="tooltip" title="Số lượng câu hỏi">
+                                        <i class="fa-solid fa-circle-question text-primary me-1"></i>
+                                        <span class="fw-bold text-dark">@dt.QuestionCount</span>
+                                    </div>
+                                    <div class="d-flex align-items-center" data-bs-toggle="tooltip" title="Lượt xem">
+                                        <i class="fa-solid fa-eye text-secondary me-1"></i>
+                                        <span class="fw-bold text-dark">0</span>
+                                    </div>
+                                    <div class="d-flex align-items-center" data-bs-toggle="tooltip" title="Lượt thi">
+                                        <i class="fa-solid fa-right-from-bracket text-success me-1"></i>
+                                        <span class="fw-bold text-dark">0</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="test_item_action ms-3">
+                                <button class="btn btn-primary" onclick="closeAndOpenGanDeModal(@dt.ExamId, 'staticBackdrop-add-exam', @dt.Duration)">
+                                    <i class="fa-solid fa-plus me-1"></i> Thêm
+                                </button>
+
+                            </div>
+                        </div>
+                    }
+
+                    @foreach (var dt in Model.Exams)
+                    {
+                        <div class="test_item d-flex align-items-center border rounded p-3">
+                            <div class="test_image flex-shrink-0 me-3">
+                                <img src="~/img/exam-avatar.png" alt="Exam Thumbnail" class="rounded" style="width: 80px; height: 80px;">
+                            </div>
+                            <div class="test_info flex-grow-1">
+                                <p class="fw-bold text-primary mb-1">Tên đề thi: <span class="text-dark"> @dt.ExamName</span></p>
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fa-solid fa-clock me-2 text-muted"></i>
+                                    <span class="text-dark">Ngày thêm: @dt.CreatedDate.ToString("dd-MM-yyyy")</span>
+                                </div>
+                                <div class="d-flex gap-4">
+                                    <div class="d-flex align-items-center" data-bs-toggle="tooltip" title="Số lượng câu hỏi">
+                                        <i class="fa-solid fa-circle-question text-primary me-1"></i>
+                                        <span class="fw-bold text-dark">@dt.QuestionCount</span>
+                                    </div>
+                                    <div class="d-flex align-items-center" data-bs-toggle="tooltip" title="Lượt xem">
+                                        <i class="fa-solid fa-eye text-secondary me-1"></i>
+                                        <span class="fw-bold text-dark">0</span>
+                                    </div>
+                                    <div class="d-flex align-items-center" data-bs-toggle="tooltip" title="Lượt thi">
+                                        <i class="fa-solid fa-right-from-bracket text-success me-1"></i>
+                                        <span class="fw-bold text-dark">0</span>
+                                    </div>
+                                </div>
+                            </div>
+                            @if (dt.Type == true)
+                            {
+                                <div class="test_item_action ms-3">
+                                    <button class="btn btn-info">
+                                        Đã thêm
+                                    </button>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="test_item_action ms-3">
+                                    <button class="btn btn-info">
+                                        Ôn tập
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+    <!-- Modal thống kê -->
+    <div class="modal fade" id="logStatsModal" tabindex="-1" aria-labelledby="logStatsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="logStatsModalLabel">Thống kê hoạt động</h5>
+                    <button type="button" class="btn-close bg-white" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                </div>
+                <div class="modal-body modal-body-scrollable">
+                    <canvas id="logStatsChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modal: XÓA LOG THEO SINH VIÊN -->
+    <div class="modal fade" id="deleteLogsModal" tabindex="-1" aria-labelledby="deleteLogsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="deleteLogsModalLabel">Xóa nhật ký bài làm</h5>
+                    <button type="button" class="btn-close bg-white" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            <div class="fw-semibold">Sinh viên: <span id="deleteLogsStudentName" class="text-danger"></span></div>
+                            <small class="text-muted">Chọn các bản ghi cần xóa</small>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="chkDeleteAll">
+                            <label class="form-check-label" for="chkDeleteAll">Chọn tất cả</label>
+                        </div>
+                    </div>
+                    <div id="deleteLogsListContainer" class="border rounded p-2" style="max-height:65vh; overflow-y:auto;">
+                        <!-- clone từ #stu-*-deleteList -->
+                    </div>
+                    <div class="mt-2 small">
+                        Đã chọn: <span id="deleteSelectedCount" class="fw-semibold">0</span> bản ghi.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <input type="hidden" id="deleteLogsCurrentStuId" />
+                    <input type="hidden" id="deleteLogsClassId" value="@Model.ClassInfo.ClassId" />
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" id="btnConfirmDeleteLogs" class="btn btn-danger" disabled>
+                        <i class="fa-solid fa-trash-can me-1"></i> Xác nhận xóa
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+}
+@section Script {
+    <script>
+        // ===== Modal: Gán đề =====
+        function openGanDeModal(maDe, thoiGianLamBai) {
+          const input = document.getElementById("modalMaDeInput");
+          input.value = maDe;
+          input.setAttribute("data-thoigianlambai", thoiGianLamBai);
+          const modal = new bootstrap.Modal(document.getElementById('modalGanDeThi'));
+          modal.show();
+        }
+
+        function closeAndOpenGanDeModal(maDe, currentModalId, thoiGianLamBai) {
+          const modalThem = bootstrap.Modal.getInstance(document.getElementById(currentModalId));
+          if (modalThem) modalThem.hide();
+          setTimeout(() => openGanDeModal(maDe, thoiGianLamBai), 300);
+        }
+
+        // ===== Utils: format datetime-local =====
+        function formatLocalDateTime(date) {
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          const hours = String(date.getHours()).padStart(2, '0');
+          const minutes = String(date.getMinutes()).padStart(2, '0');
+          return `${year}-${month}-${day}T${hours}:${minutes}`;
+        }
+
+        // ===== Modal: Edit ngày thi =====
+        function openEditModal(maDe, thoiGianBatDau, thoiGianKetThuc) {
+          document.getElementById('editMaDeInput').value = maDe;
+          document.getElementById('editThoiGianBatDau').value = thoiGianBatDau ? formatLocalDateTime(new Date(thoiGianBatDau)) : "";
+          document.getElementById('editThoiGianKetThuc').value = thoiGianKetThuc ? formatLocalDateTime(new Date(thoiGianKetThuc)) : "";
+          const modal = new bootstrap.Modal(document.getElementById('editExamModal'));
+          modal.show();
+        }
+
+        // ===== Modal: Xoá đề =====
+        function openDeleteModal(maDe) {
+          document.getElementById('deleteMaDeInput').value = maDe;
+          const modal = new bootstrap.Modal(document.getElementById('deleteExamModal'));
+          modal.show();
+        }
+
+        // ===== Khởi tạo & validate thời gian =====
+        document.addEventListener("DOMContentLoaded", function () {
+          const now = new Date();
+          const localNow = formatLocalDateTime(now);
+
+          // fields edit
+          const editStart = document.getElementById("editThoiGianBatDau");
+          const editEnd = document.getElementById("editThoiGianKetThuc");
+          if (editStart) editStart.setAttribute("min", localNow);
+          if (editEnd) editEnd.setAttribute("min", localNow);
+
+          function validateDateTime(startInput, endInput) {
+            const start = new Date(startInput.value);
+            const end = new Date(endInput.value);
+            if (!startInput.value || !endInput.value) return;
+            if (end.getTime() <= start.getTime()) {
+              alert(" Thời gian kết thúc phải sau thời gian bắt đầu!");
+              endInput.value = "";
+              endInput.focus();
+            }
+          }
+
+          if (editStart && editEnd) {
+            editStart.addEventListener("change", function () {
+              editEnd.value = "";
+              editEnd.min = editStart.value;
+            });
+            editEnd.addEventListener("blur", function () {
+              validateDateTime(editStart, editEnd);
+            });
+          }
+
+          // fields gán đề
+          const modalGan = document.getElementById('modalGanDeThi');
+          if (modalGan) {
+            const ganStart = modalGan.querySelector('input[name="StartTime"]');
+            const ganEnd = modalGan.querySelector('input[name="EndTime"]');
+            const inputMoDe = document.getElementById("inputThoiGianMoDe");
+            const inputKetThuc = document.getElementById("inputThoiGianKetThuc");
+
+            function updateKetThucTuDong() {
+              if (!ganStart.value || !inputMoDe?.value) return;
+              const start = new Date(ganStart.value);
+              const moDeMinutes = parseInt(inputMoDe.value);
+              if (!isNaN(moDeMinutes) && moDeMinutes > 0) {
+                const ketThuc = new Date(start.getTime() + moDeMinutes * 60000);
+                if (inputKetThuc) inputKetThuc.value = formatLocalDateTime(ketThuc);
+              }
+            }
+
+            ganStart?.addEventListener("change", updateKetThucTuDong);
+            inputMoDe?.addEventListener("input", updateKetThucTuDong);
+
+            if (ganStart) ganStart.setAttribute("min", localNow);
+            if (ganEnd) ganEnd.setAttribute("min", localNow);
+
+            if (ganStart && ganEnd) {
+              ganStart.addEventListener("change", function () {
+                ganEnd.value = "";
+                ganEnd.min = ganStart.value;
+              });
+              ganEnd.addEventListener("blur", function () {
+                validateDateTime(ganStart, ganEnd);
+              });
+
+              const ganForm = modalGan.querySelector('form');
+              if (ganForm) {
+                ganForm.addEventListener('submit', function (e) {
+                  const start = new Date(ganStart.value);
+                  const end = new Date(ganEnd.value);
+                  const maDeInput = document.getElementById("modalMaDeInput");
+                  const thoiGianLamBai = parseInt(maDeInput.getAttribute("data-thoigianlambai"));
+
+                  if (!ganStart.value || !ganEnd.value || isNaN(thoiGianLamBai)) return;
+                  const durationMinutes = (end - start) / 60000;
+
+                  if (durationMinutes <= thoiGianLamBai) {
+                    e.preventDefault();
+                    alert(` Thời gian mở đề thi phải > ${thoiGianLamBai} phút!`);
+                    ganEnd.focus();
+                  }
+                });
+              }
+            }
+          }
+        });
+
+        // ===== Toastify message =====
+        document.addEventListener("DOMContentLoaded", function () {
+          const message = @Html.Raw(Json.Serialize(TempData["SuccessMessage"]));
+          if (message) {
+            Toastify({
+              text: message,
+              duration: 4000,
+              close: true,
+              gravity: "bottom",
+              position: "right",
+              stopOnFocus: true,
+              style: { background: "#28a745" }
+            }).showToast();
+          }
+        });
+
+        // ===== Debounce dùng chung =====
+        function debounce(func, wait) {
+          let timeout;
+          return function (...args) {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, args), wait);
+          };
+        }
+
+        // ===== Cập nhật quyền Access đề thi =====
+        function capNhatAccess(ClassId, ExamId, Access) {
+          fetch('/Teacher/CapNhatAccess', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+            },
+            body: JSON.stringify({ ClassId, ExamId, Access })
+          })
+            .then(response => {
+              if (!response.ok) throw new Error("HTTP status " + response.status);
+              return response.json();
+            })
+            .then(data => {
+              if (data.success) {
+                Toastify({
+                  text: data.message,
+                  duration: 3000,
+                  close: true,
+                  gravity: "bottom",
+                  position: "right",
+                  backgroundColor: "#28a745"
+                }).showToast();
+              } else {
+                alert("❌ Lỗi: " + data.message);
+              }
+            })
+            .catch(error => {
+              console.error("Lỗi:", error);
+              alert("🚫 Không thể cập nhật: " + error.message);
+            });
+        }
+    </script>
+    <script>
+        // Tìm kiếm danh sách chung (exam, review)
+        function searchItems(inputId, containerSelector) {
+          const input = document.getElementById(inputId);
+          const container = document.querySelector(containerSelector);
+          if (!input || !container) return;
+
+          const keyword = input.value.toLowerCase().trim();
+          const items = Array.from(container.children);
+          let visibleCount = 0;
+
+          items.forEach(item => {
+            const content = item.innerText.toLowerCase();
+            const match = keyword === '' || content.includes(keyword);
+            item.style.display = match ? '' : 'none';
+            if (match) visibleCount++;
+          });
+
+          showNoResultsMessage(container, keyword, visibleCount > 0, 'kết quả');
+        }
+
+        function showNoResultsMessage(container, keyword, hasMatch, typeLabel) {
+          let message = container.querySelector('.no-results-message');
+          if (!hasMatch && keyword !== '') {
+            if (!message) {
+              message = document.createElement('div');
+              message.className = 'no-results-message text-center mt-4';
+              container.appendChild(message);
+            }
+            message.innerHTML = `
+              <div class="alert alert-info">
+                <i class="fas fa-search me-2"></i>
+                Không tìm thấy ${typeLabel} nào phù hợp với từ khóa "<strong>${keyword}</strong>"
+              </div>`;
+          } else if (message) {
+            message.remove();
+          }
+        }
+
+        // Gắn debounce cho inputs còn dùng
+        document.addEventListener('DOMContentLoaded', () => {
+          const searchInputs = [
+            { inputId: 'searchReviewInput', container: '#deOnTap' },
+            { inputId: 'searchExamInput', container: '#deThi' },
+            // KHÔNG dùng searchLogs ở đây nữa (đã có JS riêng cho Tab-6)
+          ];
+          searchInputs.forEach(({ inputId, container }) => {
+            const input = document.getElementById(inputId);
+            if (input) {
+              const debounced = debounce(() => searchItems(inputId, container), 300);
+              input.addEventListener('input', debounced);
+            }
+          });
+        });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+          const tabList = document.querySelector('.tabs-nav');
+          if (!tabList) return;
+
+          const tabs = tabList.querySelectorAll('.tab-button');
+          const panels = document.querySelectorAll('.tab-panel');
+          const indicator = document.querySelector('.tabs-indicator');
+          const scrollContainer = document.querySelector('.tabs-nav.scrollable');
+          const btnLeft = document.querySelector('.btn-scroll.left');
+          const btnRight = document.querySelector('.btn-scroll.right');
+
+          const setIndicatorPosition = (tab) => {
+            if (!indicator || !tab) return;
+            indicator.style.transform = `translateX(${tab.offsetLeft}px)`;
+            indicator.style.width = `${tab.offsetWidth}px`;
+          };
+
+          function activateTab(tab) {
+            if (!tab) return;
+            tabs.forEach(t => { t.setAttribute('aria-selected', 'false'); t.classList.remove('active'); });
+            panels.forEach(p => p.setAttribute('aria-hidden', 'true'));
+
+            const panelId = tab.getAttribute('aria-controls');
+            const targetPanel = document.getElementById(panelId);
+
+            tab.setAttribute('aria-selected', 'true');
+            tab.classList.add('active');
+            if (targetPanel) targetPanel.setAttribute('aria-hidden', 'false');
+            setIndicatorPosition(tab);
+          }
+
+          tabs.forEach((tab, index) => {
+            tab.addEventListener('click', () => activateTab(tab));
+            if (index === 0) activateTab(tab);
+          });
+
+          // Keyboard
+          tabList.addEventListener('keydown', (e) => {
+            const targetTab = e.target;
+            if (!targetTab.classList.contains('tab-button')) return;
+            const prev = targetTab.previousElementSibling;
+            const next = targetTab.nextElementSibling;
+            if (e.key === 'ArrowLeft' && prev) { prev.click(); prev.focus(); }
+            if (e.key === 'ArrowRight' && next) { next.click(); next.focus(); }
+          });
+
+          // Scroll buttons
+          function updateScrollButtons() {
+            if (!scrollContainer || !btnLeft || !btnRight) return;
+            const overflow = scrollContainer.scrollWidth > scrollContainer.clientWidth;
+            btnLeft.style.display = overflow ? 'inline-flex' : 'none';
+            btnRight.style.display = overflow ? 'inline-flex' : 'none';
+          }
+          btnLeft?.addEventListener("click", () => scrollContainer?.scrollBy({ left: -150, behavior: "smooth" }));
+          btnRight?.addEventListener("click", () => scrollContainer?.scrollBy({ left: 150, behavior: "smooth" }));
+          window.addEventListener('resize', updateScrollButtons);
+          updateScrollButtons();
+        });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+          // Views
+          const viewStudents = document.getElementById("view-students");
+          const viewLogs = document.getElementById("view-logs");
+          const viewDetail = document.getElementById("view-log-detail");
+
+          // View 1
+          const studentList = document.getElementById("studentLogList");
+          const searchBox = document.getElementById("searchStudentLogs");
+
+          // View 2
+          const logsListContainer = document.getElementById("logsListContainer");
+          const logsStudentName = document.getElementById("logsStudentName");
+          const logsStudentMeta = document.getElementById("logsStudentMeta");
+          const btnBackToStudents = document.getElementById("btnBackToStudents");
+
+          // View 3
+          const detailHeader = document.getElementById("detailHeader");
+          const detailSubHeader = document.getElementById("detailSubHeader");
+          const detailContent = document.getElementById("detailContent");
+          const detailFilter = document.getElementById("detailFilter");
+          const btnShowDetailStats = document.getElementById("btnShowDetailStats");
+          const btnBackToLogs = document.getElementById("btnBackToLogs");
+
+          // State
+          let currentStudentId = null;     // stu-#
+          let currentLines = [];           // lines của log đang xem
+
+          // Helper
+          const prefixClasses = {
+            JOIN: "text-success",
+            ANSWER: "text-info",
+            TABOUT: "text-warning",
+            TABIN: "text-success",
+            DEVICE: "text-danger",
+            IP: "text-danger",
+            UA: "text-danger",
+            DISCONNECT: "text-danger",
+            SUBMIT: "text-success",
+            LEFT: "text-secondary"
+          };
+          const splitLines = raw => (raw || "").replace(/\\n/g, "\n").split("\n").filter(Boolean);
+          const lineHtml = line => {
+            const m = line.match(/^\[(\w+)\]/);
+            const pref = m?.[1] || "";
+            const content = line.replace(/^\[\w+\]\s*/, "");
+            const cls = prefixClasses[pref] || "";
+            return `<div class="${cls}">${content}</div>`;
+          };
+
+          // ---- View switchers
+          function showView(view) {
+            [viewStudents, viewLogs, viewDetail].forEach(v => v.classList.add("d-none"));
+            view.classList.remove("d-none");
+          }
+
+          // ---- View 1 -> View 2
+          function openStudentLogs(stuId) {
+            currentStudentId = stuId;
+            const meta = document.getElementById(`${stuId}-meta`);
+            const listPanel = document.getElementById(`${stuId}-logsList`);
+
+            // Header meta
+            const name = meta?.getAttribute("data-name") || "";
+            const days = meta?.getAttribute("data-days") || "0";
+            const logs = meta?.getAttribute("data-logs") || "0";
+            logsStudentName.textContent = name;
+            logsStudentMeta.textContent = `${days} ngày • ${logs} log`;
+
+            // Nội dung danh sách log
+            logsListContainer.innerHTML = listPanel ? listPanel.innerHTML : `<div class="text-muted small">Không có log.</div>`;
+
+            // Gán click vào từng log item (mở View 3)
+            logsListContainer.querySelectorAll(".log-item").forEach(item => {
+              item.addEventListener("click", () => openLogDetail(item.dataset));
+            });
+
+            showView(viewLogs);
+          }
+
+          // ---- View 2 -> View 3
+          function openLogDetail(ds) {
+            // ds: { log, stu, exam, class, ins, time }
+            const lines = splitLines(ds.log);
+            currentLines = lines.slice();
+
+            detailHeader.textContent = `${ds.stu} — ${ds.exam}`;
+            detailSubHeader.textContent = `${ds.class} • ${ds.ins} • ${ds.time}`;
+            detailContent.innerHTML = lines.map(lineHtml).join("<br>");
+
+            detailFilter.disabled = false;
+            btnShowDetailStats.disabled = false;
+
+            showView(viewDetail);
+          }
+
+          // ---- View 3: filter
+          detailFilter.addEventListener("change", () => {
+            if (!currentLines.length) return;
+            const selected = detailFilter.value;
+            const include = (p) => {
+              if (selected === "all") return true;
+              if (selected === "tab") return ["TABIN","TABOUT"].includes(p);
+              if (selected === "answer") return p === "ANSWER";
+              if (selected === "device") return ["DEVICE","IP","UA"].includes(p);
+              if (selected === "joined") return ["JOIN","SUBMIT"].includes(p);
+              return true;
+            };
+            const filtered = currentLines.filter(l => include((l.match(/^\[(\w+)\]/)?.[1]) || ""));
+            detailContent.innerHTML = filtered.map(lineHtml).join("<br>");
+          });
+
+          // ---- View 3: stats (Chart.js)
+          let chartInstance = null;
+          document.getElementById("btnShowDetailStats")?.addEventListener("click", () => {
+            const counts = { JOIN:0, ANSWER:0, TABIN:0, TABOUT:0, DEVICE:0, IP:0, UA:0, SUBMIT:0, DISCONNECT:0, LEFT:0 };
+            currentLines.forEach(l => { const p = l.match(/^\[(\w+)\]/)?.[1]; if (p && counts[p] !== undefined) counts[p]++; });
+            const ctx = document.getElementById("logStatsChart")?.getContext("2d");
+            if (!ctx) return;
+            if (chartInstance) chartInstance.destroy();
+            chartInstance = new Chart(ctx, {
+              type: "bar",
+              data: { labels: Object.keys(counts), datasets: [{ label: "Số lượng hành động", data: Object.values(counts) }] },
+              options: { responsive: true, plugins: { legend: { display:false } }, scales: { y: { beginAtZero:true, ticks:{ stepSize:1 } } } }
+            });
+          });
+
+          // ---- Back buttons
+          btnBackToStudents.addEventListener("click", () => showView(viewStudents));
+          btnBackToLogs.addEventListener("click", () => showView(viewLogs));
+
+          // ---- Student list events + search
+          function studentButtons() { return Array.from(studentList.querySelectorAll(".student-item")); }
+          studentButtons().forEach(btn => {
+            btn.addEventListener("click", () => {
+              const stuId = btn.getAttribute("data-stu-target");
+              openStudentLogs(stuId);
+            });
+          });
+
+          searchBox?.addEventListener("input", e => {
+            const kw = (e.target.value || "").toLowerCase().trim();
+            let any = false;
+            studentButtons().forEach(btn => {
+              const name = (btn.getAttribute("data-stu-name") || "").toLowerCase();
+              const match = !kw || name.includes(kw);
+              btn.style.display = match ? "" : "none";
+              if (match) any = true;
+            });
+            // thông báo không tìm thấy (nhẹ)
+            if (!any && !studentList.querySelector(".no-results")) {
+              const m = document.createElement("div");
+              m.className = "no-results text-center text-muted small py-2";
+              m.textContent = `Không tìm thấy sinh viên phù hợp với "${e.target.value}"`;
+              studentList.appendChild(m);
+            } else if (any) {
+              studentList.querySelector(".no-results")?.remove();
+            }
+          });
+        });
+    </script>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+          // ====== MỞ MODAL XÓA LOG (khi bấm nút .btn-delete-logs cạnh tên SV) ======
+          const deleteModalEl = document.getElementById('deleteLogsModal');
+          const deleteModal = deleteModalEl ? new bootstrap.Modal(deleteModalEl) : null;
+
+          const btnsOpenDelete = document.querySelectorAll('.btn-delete-logs');
+          const container = document.getElementById('deleteLogsListContainer');
+          const lblStuName = document.getElementById('deleteLogsStudentName');
+          const hidStuId = document.getElementById('deleteLogsCurrentStuId');
+          const hidClassId = document.getElementById('deleteLogsClassId');
+          const chkAll = document.getElementById('chkDeleteAll');
+          const btnConfirm = document.getElementById('btnConfirmDeleteLogs');
+          const selCount = document.getElementById('deleteSelectedCount');
+
+          function updateSelectedCount() {
+            const count = container.querySelectorAll('input.delete-log-checkbox:checked').length;
+            selCount.textContent = count;
+            btnConfirm.disabled = count === 0;
+            // sync select-all state
+            const total = container.querySelectorAll('input.delete-log-checkbox').length;
+            chkAll.checked = total > 0 && count === total;
+            chkAll.indeterminate = count > 0 && count < total;
+          }
+
+          function wireCheckboxEvents(scopeEl) {
+            scopeEl.querySelectorAll('input.delete-log-checkbox').forEach(cb => {
+              cb.addEventListener('change', updateSelectedCount);
+            });
+          }
+
+          btnsOpenDelete.forEach(btn => {
+            btn.addEventListener('click', () => {
+              const stuId = btn.getAttribute('data-stu-target');     // vd: "stu-3"
+              const stuName = btn.getAttribute('data-stu-name') || '';
+              const sourcePanel = document.getElementById(`${stuId}-deleteList`);
+
+              if (!sourcePanel) {
+                alert("Không tìm thấy danh sách log để xóa của sinh viên này.");
+                return;
+              }
+
+              // Fill modal
+              lblStuName.textContent = stuName;
+              hidStuId.value = stuId;
+
+              container.innerHTML = sourcePanel.innerHTML; // clone
+              wireCheckboxEvents(container);
+              selCount.textContent = '0';
+              btnConfirm.disabled = true;
+              chkAll.checked = false;
+              chkAll.indeterminate = false;
+
+              deleteModal?.show();
+            });
+          });
+
+          // Chọn tất cả
+          chkAll?.addEventListener('change', () => {
+            container.querySelectorAll('input.delete-log-checkbox').forEach(cb => {
+              cb.checked = chkAll.checked;
+            });
+            updateSelectedCount();
+          });
+
+          // XÁC NHẬN XÓA
+          btnConfirm?.addEventListener('click', async () => {
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+            const classId = parseInt(hidClassId.value);
+            const stuId = hidStuId.value;
+            const checked = Array.from(container.querySelectorAll('input.delete-log-checkbox:checked'));
+            if (!checked.length) return;
+
+            // Thu thập LogIds
+            const logIds = checked.map(cb => parseInt(cb.value)).filter(n => !isNaN(n));
+            btnConfirm.disabled = true; btnConfirm.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Đang xóa...';
+
+            try {
+              const res = await fetch('/Teacher/DeleteLogs', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'RequestVerificationToken': token
+                },
+                body: JSON.stringify({ classId: classId, logIds: logIds })
+              });
+
+              if (!res.ok) throw new Error("HTTP " + res.status);
+              const data = await res.json();
+
+              if (!data.success) {
+                alert("❌ Không thể xóa: " + (data.message || "Lỗi không xác định"));
+                btnConfirm.disabled = false; btnConfirm.textContent = 'Xóa các bản ghi đã chọn';
+                return;
+              }
+
+              // ===== CẬP NHẬT UI SAU KHI XÓA THÀNH CÔNG =====
+              const deletedIds = data.deletedIds || logIds;
+
+              // 1) Gỡ các checkbox item trong modal + panel ẩn của SV
+              deletedIds.forEach(id => {
+                // Trong modal
+                container.querySelectorAll(`input.delete-log-checkbox[value="${id}"]`).forEach(cb => cb.closest('label.list-group-item')?.remove());
+                // Trong panel ẩn
+                const sourcePanel = document.getElementById(`${stuId}-deleteList`);
+                sourcePanel?.querySelectorAll(`input.delete-log-checkbox[value="${id}"]`).forEach(cb => cb.closest('label.list-group-item')?.remove());
+              });
+
+              // 2) Gỡ các item trong danh sách View 2 (nếu đang mở) dựa theo data-id
+              document.querySelectorAll(`#${stuId}-logsList .log-item[data-id]`).forEach(a => {
+                const id = parseInt(a.getAttribute('data-id'));
+                if (deletedIds.includes(id)) {
+                  // Xóa phần tử <a> này
+                  a.remove();
+                }
+              });
+
+              // 3) Cập nhật badge đếm log trong nút sinh viên + meta header
+              //    - badge tại list sinh viên (View 1)
+              const studentButton = document.querySelector(`.student-item[data-stu-target="${stuId}"]`);
+              if (studentButton) {
+                const badge = studentButton.parentElement?.parentElement?.querySelector('.badge.bg-success');
+                if (badge) {
+                  const text = badge.textContent || '0';
+                  const current = parseInt((text.match(/\d+/) || [0])[0]);
+                  const next = Math.max(0, current - deletedIds.length);
+                  badge.textContent = `${next} bản ghi`;
+                }
+                // dòng "x ngày • y log" trong nút (nếu muốn, chỉ giảm y)
+                const metaSmall = studentButton.querySelector('.small.text-muted');
+                if (metaSmall) {
+                  metaSmall.textContent = metaSmall.textContent.replace(/(\d+)\s*log/, (m, n) => `${Math.max(0, (+n) - deletedIds.length)} log`);
+                }
+              }
+              //    - header View 2 nếu đang mở
+              const logsMeta = document.getElementById(`${stuId}-meta`);
+              if (logsMeta) {
+                const logs = parseInt(logsMeta.getAttribute('data-logs') || '0');
+                logsMeta.setAttribute('data-logs', Math.max(0, logs - deletedIds.length));
+                const logsStudentMeta = document.getElementById("logsStudentMeta");
+                if (logsStudentMeta && logsStudentMeta.textContent.includes('log')) {
+                  logsStudentMeta.textContent = logsStudentMeta.textContent.replace(/(\d+)\s*log/, (m, n) => `${Math.max(0, (+n) - deletedIds.length)} log`);
+                }
+              }
+
+                // 4) Thông báo + reload trang
+                if (window.Toastify) {
+                  Toastify({
+                    text: `✅ Đã xóa ${deletedIds.length} bản ghi.`,
+                    duration: 2000, // hiển thị 2s
+                    gravity: "bottom",
+                    position: "right",
+                    close: true,
+                    style: { background: "#28a745" },
+                    callback: function () {
+                      location.reload(); // reload sau khi toast biến mất
+                    }
+                  }).showToast();
+                } else {
+                  alert(`Đã xóa ${deletedIds.length} bản ghi.`);
+                  location.reload();
+                }
+
+
+            } catch (err) {
+              console.error(err);
+              alert("🚫 Lỗi xóa: " + err.message);
+              btnConfirm.disabled = false; btnConfirm.textContent = 'Xóa các bản ghi đã chọn';
+            }
+          });
+        });
+    </script>
+
+}
+</div> 

@@ -1,0 +1,107 @@
+﻿@model List<ITExam.ViewModels.Exam.StudentExamHistoryVM>
+
+@{
+    Layout = "_StudentLayout";
+    ViewData["Title"] = "Chi tiết lớp học";
+}
+@section Style {
+    <!-- FontAwesome 6.2.0 CSS -->
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css"
+          integrity="sha512-xh6O/CkQoPOWDdYTDqeRdPCVd1SpvCA9XXcUnZS2FmJNp1coAFzvtCN9BmamE+4aHK8yyUHUSCcJHgXloTyT2A=="
+          crossorigin="anonymous"
+          referrerpolicy="no-referrer" />
+
+<link href="~/css/student-classdetail-style.css" rel="stylesheet" />
+ }
+<div class="container-fluid p-0">
+    <div class="py-3 py-lg-0 px-lg-5 px-3">
+<div class="border">
+    <div class="d-flex justify-content-between pt-3 px-3 border-bottom">
+        <!-- Nav tabs -->
+        <ul class="nav nav-tabs" id="myTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active"
+                        id="deThi-tab"
+                        data-bs-toggle="tab"
+                        data-bs-target="#deThi"
+                        type="button"
+                        role="tab"
+                        aria-controls="deThi"
+                        aria-selected="false">
+                    Kết quả đề thi
+                </button>
+            </li>
+        </ul>
+    </div>
+
+</div>
+<div class="border rounded mt-2">
+    <div class="tab-content">
+        <!-- Phần đề thi -->
+        <div class="tab-pane active"
+             id="deThi"
+             role="tabpanel"
+             aria-labelledby="deThi-tab">
+            <!-- Nội dung đề thi viết ở đây -->
+            <div class="border">
+                <div class="table-responsive">
+                    <table class="table align-middle align-center mb-0 bg-white">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Lớp tham gia</th>
+                                <th>Đề thi</th>
+                                <th>Thời gian bắt đầu</th>
+                                <th>Thời gian kết thúc</th>
+                                <th>Điểm số</th>
+                                <th>Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- ĐỀ THI -->
+                            @if (Model.Where(x => x.IsExam == true).Any())
+                            {
+                                foreach (var item in Model.Where(x => x.IsExam == true))
+                                {
+                                    <tr>
+                                        <td>@item.ClassName</td>
+                                        <td>@item.ExamName</td>
+                                        <td>@item.StartTime.ToString("dd/MM/yyyy HH:mm")</td>
+                                        <td>@(item.SubmissionTime?.ToString("dd/MM/yyyy HH:mm") ?? "Chưa nộp")</td>
+                                        <td>@item.Score</td>
+                                        <td>
+                                            @if (item.Access==true)
+                                            {
+                                                <a class="btn btn-primary btn-sm"
+                                                   asp-controller="Student"
+                                                   asp-action="Exam_History_Detail"
+                                                   asp-route-id="@item.ExamHistoryId">
+                                                    Chi tiết
+                                                </a>
+                                            }
+                                            else
+                                            {
+                                                <button class="btn btn-secondary btn-sm" disabled
+                                                        onclick="alert('⛔ Bạn không được phép xem lại đề thi này.')">
+                                                    Chi tiết
+                                                </button>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="6" class="text-center text-danger">Không có kết quả nào</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                        </div>
+                    </div>
+        </div>
+    </div>
+</div>
+    </div>
+</div>

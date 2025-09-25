@@ -1,0 +1,132 @@
+﻿@model List<ITExam.ExternalModels.DatabaseQuestion>
+@{
+    Layout = "_TeacherLayout";
+    ViewData["Title"] = "Xem lại câu hỏi đã tạo";
+    var nganHangDeId = ViewBag.NganHangDeId;
+}
+
+@section Style {
+    <style>
+        .card-header {
+            background-color: rgba(0, 123, 255, 0.05);
+            font-size: 1.1rem;
+        }
+
+        .card {
+            border: 1px solid #e0e0e0;
+            transition: box-shadow 0.3s ease-in-out;
+        }
+
+            .card:hover {
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            }
+
+        .choice-input-group .input-group-text {
+            cursor: pointer;
+        }
+    </style>
+}
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="display-6">Xem lại & Chỉnh sửa câu hỏi</h2>
+            <p class="text-muted">Kiểm tra và tinh chỉnh các câu hỏi do AI tạo ra trước khi lưu vào ngân hàng đề.</p>
+        </div>
+        <a asp-action="Index" asp-route-id="@nganHangDeId" class="btn btn-outline-secondary">
+            <i class="fa-solid fa-arrow-left me-2"></i>Quay lại
+        </a>
+    </div>
+
+
+    @if (Model != null && Model.Any())
+    {
+        <form asp-action="SaveGeneratedQuestions" asp-controller="ApiQuestion" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="nganHangDeId" value="@nganHangDeId" />
+
+            @for (int i = 0; i < Model.Count; i++)
+            {
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <i class="fa-solid fa-file-circle-question me-2 text-primary"></i>
+                        <strong>Câu hỏi @(i + 1)</strong>
+                    </div>
+                    <div class="card-body p-4">
+                        @* Các trường ẩn để gửi dữ liệu về chương và CLO *@
+                        <input type="hidden" name="questions[@i].ChapterId" value="@Model[i].ChapterId" />
+                        <input type="hidden" name="questions[@i].CloId" value="@Model[i].CloId" />
+
+                        @* Vùng nhập nội dung câu hỏi *@
+                        <div class="mb-4">
+                            <label for="question-content-@i" class="form-label fw-bold">Nội dung câu hỏi:</label>
+                            <textarea id="question-content-@i" name="questions[@i].QuestionContent" class="form-control" rows="3">@Model[i].QuestionContent</textarea>
+                        </div>
+
+                        <h6 class="fw-bold">Các lựa chọn:</h6>
+                        <p class="text-muted small mt-0">Chọn một đáp án đúng bằng cách click vào nút tròn.</p>
+
+                        @for (int j = 0; j < Model[i].Choices.Count; j++)
+                        {
+                            var choice = Model[i].Choices[j];
+
+                            @* Dùng input-group để nhóm radio button và text input cho đẹp *@
+                            <div class="input-group mb-2 choice-input-group">
+                                <div class="input-group-text">
+                                    <input class="form-check-input mt-0" type="radio"
+                                           id="correct-choice-@i-@j"
+                                           name="questions[@i].CorrectChoiceId"
+                                           value="@choice.Id"
+                                           checked="@choice.LaDapAn"
+                                           aria-label="Chọn đây là đáp án đúng" />
+                                </div>
+
+                                @* Input ẩn để gửi ID của lựa chọn này *@
+                                <input type="hidden" name="questions[@i].Choices[@j].Id" value="@choice.Id" />
+
+                                @* Input để chỉnh sửa nội dung lựa chọn *@
+                                <input type="text" name="questions[@i].Choices[@j].NoiDung" class="form-control" value="@choice.NoiDung" aria-label="Nội dung lựa chọn">
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            @* Thanh công cụ lưu hoặc hủy *@
+            <div class="text-center my-4 p-3 bg-light rounded shadow-sm">
+                <button type="submit" class="btn btn-success btn-lg px-5 me-3">
+                    <i class="fa-solid fa-save me-2"></i>Lưu vào Ngân hàng đề
+                </button>
+                <a asp-action="Index" asp-route-id="@nganHangDeId" class="btn btn-danger btn-lg px-5">
+                    <i class="fa-solid fa-trash-alt me-2"></i>Hủy bỏ và Tạo lại
+                </a>
+            </div>
+        </form>
+    }
+    else
+    {
+        <div class="alert alert-warning text-center">
+            <h4 class="alert-heading"><i class="fa-solid fa-circle-info me-2"></i>Không có dữ liệu</h4>
+            <p>Không có câu hỏi nào được tạo ra hoặc đã có lỗi xảy ra trong quá trình xử lý.</p>
+            <hr>
+            <a asp-action="Index" asp-route-id="@ViewBag.NganHangDeId" class="btn btn-primary">
+                <i class="fa-solid fa-arrow-left me-2"></i>Quay lại trang tạo ma trận
+            </a>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        // Thêm một chút tương tác để người dùng dễ dàng chọn đáp án đúng
+        // bằng cách click vào cả vùng xám của input-group-text
+        document.querySelectorAll('.choice-input-group .input-group-text').forEach(el => {
+            el.addEventListener('click', function() {
+                const radio = this.querySelector('input[type="radio"]');
+                if (radio) {
+                    radio.checked = true;
+                }
+            });
+        });
+    </script>
+}

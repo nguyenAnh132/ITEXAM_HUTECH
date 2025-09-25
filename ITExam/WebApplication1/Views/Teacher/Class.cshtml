@@ -1,0 +1,466 @@
+﻿@using ITExam.ViewModels.Class
+@model IEnumerable<ClassVM>
+
+@{
+    Layout = "_TeacherLayout";
+    <!-- Nhap title -->
+    ViewData["Title"] = "Danh sách lớp học";
+}
+@section Style {
+    <link rel="stylesheet" href="~/css/teacher-class-style.css">
+    <link rel="stylesheet" href="~/css/teacher-card-info-style.css">
+}
+<!-- Courses Start -->
+<div class="container-fluid" style="padding: 30px 10px">
+    <div class="container">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-12 col-lg-4 mt-5 mt-lg-0">
+                <!-- Course Features -->
+                <div class="bg-primary mb-5 py-3">
+                    <h3 class="text-white py-3 px-4 m-0">Danh sách lớp học</h3>
+                    <div class="d-flex justify-content-between border-bottom px-4">
+                        <h6 class="text-white my-3">Số lượng</h6>
+                        <h6 class="text-white my-3">@Model.Count()</h6>
+                    </div>
+                    <div class="py-3 px-4">
+                        <a class="btn btn-block btn-secondary py-3 px-5 fw-bold" data-bs-toggle="modal" data-bs-target="#staticBackdrop-create-class" href="">Thêm lớp học</a>
+                    </div>
+                </div>
+
+                <div class="mb-5">
+                    <h2 class="mb-3">Lịch sử tạo lớp học</h2>
+                    <ul class="list-group list-group-flush">
+                        @foreach (var cl in Model)
+                        {
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                @{
+                                    var tenLop = cl.ClassName.Length > 20 ? cl.ClassName.Substring(0, 20) + "..." : cl.ClassName;
+                                }
+                                <a href="#" class="text-decoration-none h6 m-0">@tenLop</a>
+                                <span class="badge badge-primary badge-pill">
+                                    @((DateTime.Now - cl.CreatedDate).Days) ngày trước
+                                </span>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Danh sách lớp học -->
+            <div class="col-12 col-lg-8">
+                <div class="row">
+                    @foreach (var cl in Model)
+                    {
+                        var tenLop = cl.ClassName.Length > 20 ? cl.ClassName.Substring(0, 20) + "..." : cl.ClassName;
+
+                        <div class="col-12 col-md-6 col-xl-6 mb-4">
+                            <div class="card-info-item position-relative overflow-hidden rounded shadow-sm bg-black">
+                                <img class="img-fluid w-100" src="~/img/class-avatar.png" alt="Ảnh bài thi" style="height: 220px; object-fit: cover;">
+                                <div class="card-info-text p-4 text-white inner-outer-shadow">
+                                    <h5 class="text-center fw-semibold mb-2 text-white" title="@cl.ClassName">@tenLop</h5>
+                                    <div class="d-flex justify-content-between small border-top border-light pt-2 mt-2 px-1">
+                                        <div class="row text-white small">
+                                            <div class="col-12 col-md-6 mb-1">
+                                                <i class="fa-solid fa-users-line me-1"></i>
+                                                Số lượng sinh viên: @cl.StudentCount
+                                            </div>
+                                            <div class="col-12 col-md-6 mb-1">
+                                                <i class="fa-regular fa-file-lines me-1"></i>
+                                                Số lượng đề thi: @cl.ExamCount
+                                            </div>
+                                            <div class="col-12 col-md-6 mb-1">
+                                                <i class="fa-solid fa-clock mr-2 me-1"></i>
+                                                Ngày tạo: @cl.CreatedDate.ToString("dd-MM-yyyy")
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="w-100 bg-transparent rounded mt-3 mb-3 text-center p-2">
+                                        <div class="d-flex justify-content-center flex-wrap gap-2">
+                                            <a asp-controller="Teacher" asp-action="ClassDetail" asp-route-id="@cl.ClassId">
+                                                <button class="btn border-white text-white w-100 w-md-auto">Vào lớp học</button>
+                                            </a>
+                                            <div>
+                                                <button class="btn border-white text-white edit-class-btn"
+                                                        title="Chỉnh sửa"
+                                                        data-id="@cl.ClassId"
+                                                        data-ten="@cl.ClassName"
+                                                        data-mota="@cl.Description">
+                                                    <i class="fa-regular fa-pen-to-square"></i>
+                                                </button>
+
+                                                <button class="btn border-white text-white btn-xoa-lop"
+                                                        data-malop="@cl.ClassId"
+                                                        data-tenlop="@cl.ClassName">
+                                                    <i class="fa-solid fa-trash-can"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    @if (!Model.Any())
+                    {
+                        <h3 class="text-center mt-4">Không có lớp học nào!</h3>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Courses End -->
+
+@section Modal {
+    <!-- Modal xóa lớp học -->
+    <div class="modal fade" id="deleteClassModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-danger">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title text-white">Xác nhận xóa lớp học</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Bạn có chắc chắn muốn xóa lớp học <strong id="tenLopXoa"></strong> không?</p>
+                    <p class="text-danger">⚠️ Tất cả thông tin trong lớp học sẽ bị xóa vĩnh viễn!</p>
+                </div>
+                <div class="modal-footer">
+                    <form method="post" id="formXoaLop" asp-controller="Teacher" asp-action="DeleteClass">
+                        <input type="hidden" name="maLopHoc" id="maLopHocXoa" />
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-danger">Xác nhận xóa</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade"
+         id="staticBackdrop-create-class"
+         data-bs-backdrop="static"
+         data-bs-keyboard="false"
+         tabindex="-1"
+         aria-labelledby="staticBackdropLabel"
+         aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h1 class="modal-title fs-5 text-white" id="staticBackdropLabel">
+                        THÊM LỚP HỌC
+                    </h1>
+                    <button type="button"
+                            class="btn-close bg-white"
+                            data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                </div>
+                <form id="addClassForm" method="post" asp-action="Class" asp-controller="Teacher">
+                    <div class="modal-body">
+                        <div class="mb-4">
+                            <label for="ClassName" class="form-label">Nhập tên lớp học</label>
+                            <input name="ClassName" class="form-control border-success"
+                                   id="ClassName" placeholder="Tên lớp..." required />
+                        </div>
+                        <div class="mb-4">
+                            <label for="Description" class="form-label">Nhập mô tả lớp học</label>
+                            <input name="Description" class="form-control border-success"
+                                   id="Description" placeholder="Mô tả lớp học..." required />
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary"
+                                data-bs-dismiss="modal">
+                            Đóng
+                        </button>
+                        <button type="submit" class="btn btn-primary">Thêm</button>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade"
+         id="staticBackdrop-edit-class"
+         data-bs-backdrop="static"
+         data-bs-keyboard="false"
+         tabindex="-1"
+         aria-labelledby="staticBackdropLabel"
+         aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h1 class="modal-title fs-5 text-white" id="staticBackdropLabel">
+                        SỬA THÔNG TIN LỚP HỌC
+                    </h1>
+                    <button type="button"
+                            class="btn-close bg-white"
+                            data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                </div>
+                <form id="editClassForm" method="post" asp-action="EditClass" asp-controller="Teacher">
+                    <input type="hidden" name="ClassId" id="editClassId" />
+                    <div class="modal-body">
+                        <div class="mb-4">
+                            <label for="editClassName" class="form-label">Tên lớp học</label>
+                            <input name="ClassName" class="form-control border-success"
+                                   id="editClassName" required />
+                        </div>
+                        <div class="mb-4">
+                            <label for="editDescription" class="form-label">Mô tả lớp học</label>
+                            <input name="Description" class="form-control border-success"
+                                   id="editDescription" required />
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary"
+                                data-bs-dismiss="modal">
+                            Đóng
+                        </button>
+                        <button type="submit" class="btn btn-primary">Lưu</button>
+                    </div>
+                </form>
+
+
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade"
+         id="confirmEditModal"
+         data-bs-backdrop="static"
+         data-bs-keyboard="false"
+         tabindex="-1"
+         aria-labelledby="confirmEditLabel"
+         aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5 text-white" id="confirmEditLabel">
+                        Xác nhận chỉnh sửa lớp học
+                    </h1>
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Bạn có chắc chắn muốn lưu các thay đổi cho lớp học này không?</p>
+                    <ul>
+                        <li><strong>Tên lớp học:</strong> <span id="confirmClassName"></span></li>
+                        <li><strong>Mô tả:</strong> <span id="confirmDescription"></span></li>
+                    </ul>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary"
+                            data-bs-dismiss="modal">
+                        Hủy
+                    </button>
+                    <button type="button" class="btn btn-primary" id="confirmSaveChanges">Xác nhận</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade"
+         id="confirmAddModal"
+         data-bs-backdrop="static"
+         data-bs-keyboard="false"
+         tabindex="-1"
+         aria-labelledby="confirmAddLabel"
+         aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="confirmAddLabel">
+                        Xác nhận thêm lớp học
+                    </h1>
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Bạn có chắc chắn muốn thêm lớp học này không?</p>
+                    <ul>
+                        <li><strong>Tên lớp học:</strong> <span id="confirmAddTenLopHoc"></span></li>
+                        <li><strong>Mô tả:</strong> <span id="confirmAddMoTa"></span></li>
+                    </ul>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary"
+                            data-bs-dismiss="modal">
+                        Hủy
+                    </button>
+                    <button type="button" class="btn btn-primary" id="confirmAddClass">Xác nhận</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+}
+@section Script
+{
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            let editForm = document.querySelector("#editClassForm");
+            let confirmEditModal = new bootstrap.Modal(document.getElementById("confirmEditModal"));
+            let editClassModal = new bootstrap.Modal(document.getElementById("staticBackdrop-edit-class"));
+            let confirmButton = document.getElementById("confirmSaveChanges");
+            document.querySelectorAll(".edit-class-btn").forEach(button => {
+                button.addEventListener("click", function () {
+                    let classId = this.getAttribute("data-id");
+                    let className = this.getAttribute("data-ten");
+                    let classDescription = this.getAttribute("data-mota");
+                    document.querySelector("#editClassId").value = classId;
+                    document.querySelector("#editClassName").value = className;
+                    document.querySelector("#editDescription").value = classDescription;
+                });
+            });
+            editForm.addEventListener("submit", function (event) {
+                event.preventDefault();
+                editClassModal.hide();
+                let tenLopHoc = document.querySelector("#editClassName").value;
+                let moTa = document.querySelector("#editDescription").value;
+                document.getElementById("confirmClassName").textContent = tenLopHoc;
+                document.getElementById("confirmDescription").textContent = moTa;
+
+                setTimeout(() => {
+                    confirmEditModal.show();
+                }, 50);
+            });
+
+            confirmButton.addEventListener("click", function () {
+                editForm.submit();
+            });
+        });
+    </script>
+
+    <script>
+         document.addEventListener("DOMContentLoaded", function () {
+             let addForm = document.querySelector("#addClassForm");
+             let confirmAddModal = new bootstrap.Modal(document.getElementById("confirmAddModal"));
+             let createClassModal = new bootstrap.Modal(document.getElementById("staticBackdrop-create-class"));
+             let confirmAddButton = document.getElementById("confirmAddClass");
+
+             let editForm = document.querySelector("#editClassForm");
+             let confirmEditModal = new bootstrap.Modal(document.getElementById("confirmEditModal"));
+             let editClassModal = new bootstrap.Modal(document.getElementById("staticBackdrop-edit-class"));
+             let confirmEditButton = document.getElementById("confirmSaveChanges");
+             addForm.addEventListener("submit", function (event) {
+                 event.preventDefault();
+                 createClassModal.hide();
+                 let tenLopHoc = document.querySelector("#ClassName").value;
+                 let moTa = document.querySelector("#Description").value;
+                 document.getElementById("confirmAddTenLopHoc").textContent = tenLopHoc;
+                 document.getElementById("confirmAddMoTa").textContent = moTa;
+
+                 setTimeout(() => {
+                     confirmAddModal.show();
+                 }, 50);
+             });
+             confirmAddButton.addEventListener("click", function () {
+                 addForm.submit();
+             });
+            document.querySelectorAll(".edit-class-btn").forEach(button => {
+                button.addEventListener("click", function () {
+                    let classId = this.getAttribute("data-id");
+                    let className = this.getAttribute("data-ten");
+                    let classDescription = this.getAttribute("data-mota");
+
+                    document.querySelector("#editClassId").value = classId;
+                    document.querySelector("#editClassName").value = className;
+                    document.querySelector("#editDescription").value = classDescription;
+
+                    // Bỏ trạng thái hover nếu có
+                    document.querySelectorAll(".card-info-item.hovered")?.forEach(card => {
+                        card.classList.remove("hovered");
+                    });
+
+                    // Mở modal sửa lớp học
+                    editClassModal.show();
+                });
+            });
+
+             editForm.addEventListener("submit", function (event) {
+                 event.preventDefault();
+                 editClassModal.hide();
+
+                 let tenLopHoc = document.querySelector("#editClassName").value;
+                 let moTa = document.querySelector("#editDescription").value;
+
+                 document.getElementById("confirmClassName").textContent = tenLopHoc;
+                 document.getElementById("confirmDescription").textContent = moTa;
+                 setTimeout(() => {
+                     confirmEditModal.show();
+                 }, 50);
+             });
+             confirmEditButton.addEventListener("click", function () {
+                 editForm.submit();
+             });
+         });
+        document.querySelectorAll(".btn-xoa-lop").forEach(button => {
+            button.addEventListener("click", function () {
+                let tenLop = this.getAttribute("data-tenlop");
+                let maLop = this.getAttribute("data-malop");
+                document.getElementById("tenLopXoa").textContent = tenLop;
+                document.getElementById("maLopHocXoa").value = maLop;
+                let modal = new bootstrap.Modal(document.getElementById("deleteClassModal"));
+                modal.show();
+            });
+        });
+        document.addEventListener("DOMContentLoaded", function () {
+                const message = @Html.Raw(Json.Serialize(TempData["SuccessMessage"]));
+                if (message) {
+                    Toastify({
+                        text: message,
+                        duration: 4000,
+                        close: true,
+                        gravity: "bottom",
+                        position: "right",
+                        stopOnFocus: true,
+                        style: {
+                            background: "#28a745"
+                        }
+                    }).showToast();
+                }
+            });
+    </script>
+    <!-- Tìm kiếm lớp học -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const searchInput = document.getElementById("searchClassInput");
+            const classCards = document.querySelectorAll(".class-card");
+
+            searchInput.addEventListener("input", function () {
+                const keyword = this.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+                classCards.forEach(card => {
+                    const tenLop = card.getAttribute("data-tenlop").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                    if (tenLop.includes(keyword)) {
+                        card.style.display = "";
+                    } else {
+                        card.style.display = "none";
+                    }
+                });
+
+                const isAnyVisible = Array.from(classCards).some(card => card.style.display !== "none");
+                if (!isAnyVisible) {
+                    if (!document.getElementById("noResult")) {
+                        const msg = document.createElement("h4");
+                        msg.id = "noResult";
+                        msg.className = "text-center mt-4 text-danger";  
+                        msg.innerText = "❌ Không tìm thấy lớp học nào phù hợp!";
+                        document.querySelector(".px-4.pt-2.pt-4.pb-4").appendChild(msg);
+                    }
+                } else {
+                    const existingMsg = document.getElementById("noResult");
+                    if (existingMsg) existingMsg.remove();
+                }
+            });
+        });
+    </script>
+}

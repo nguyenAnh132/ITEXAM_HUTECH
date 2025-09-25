@@ -1,0 +1,228 @@
+﻿ @model IEnumerable<ITExam.Models.Exam>      
+ @{ 
+     Layout = "_TeacherLayout"; 
+     <!-- Nhap title --> 
+     ViewData["Title"] = "Danh sách đề thi"; 
+ } 
+ @section Style { 
+     <!-- FontAwesome 6.2.0 CSS --> 
+     <link rel="stylesheet" 
+           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css" 
+           integrity="sha512-xh6O/CkQoPOWDdYTDqeRdPCVd1SpvCA9XXcUnZS2FmJNp1coAFzvtCN9BmamE+4aHK8yyUHUSCcJHgXloTyT2A==" 
+           crossorigin="anonymous" 
+           referrerpolicy="no-referrer" /> 
+     <link rel="stylesheet" href="~/css/teacher-exam.css" /> 
+     <link rel="stylesheet" href="~/css/teacher-card-info-style.css" /> 
+ } 
+ <div class="container-fluid px-3"> 
+     <div class="pt-1 px-2 px-md-3 px-lg-4"> 
+         <div class="row mx-0 justify-content-center pt-2"> 
+             <div class="col-lg-6"> 
+                 <div class="section-title text-center position-relative mb-4"> 
+                     <h2 class="display-4">Danh sách đề thi</h2> 
+                     <h6 class="d-inline-block position-relative text-secondary text-uppercase pb-2">Số lượng đề thi đã tạo: @Model.Count()</h6> 
+                 </div> 
+             </div> 
+         </div> 
+
+         <div class="px-3 pt-2 pb-3"> 
+             <div class="row g-2"> 
+                 <!-- Tìm kiếm --> 
+                 <div class="col-12 col-md-8"> 
+                     <div class="input-group h-100"> 
+                         <input type="text" id="searchExamInput" class="form-control h-100" placeholder="Tìm kiếm đề thi..." /> 
+                     </div> 
+                 </div> 
+
+                 <!-- Nút tạo mới --> 
+                 <div class="col-12 col-md-4"> 
+                     <a class="btn btn-primary w-100 h-100 d-flex justify-content-center align-items-center" 
+                        data-bs-toggle="modal" 
+                        href="#exampleModalToggle" 
+                        role="button"> 
+                         Tạo đề thi mới 
+                     </a> 
+                 </div> 
+             </div> 
+         </div> 
+
+         <div id="examListContainer" class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4 px-4 pt-2 pb-4"> 
+             @foreach (var dt in Model) 
+             { 
+                 var tenDe = dt.ExamName.Length > 30 ? dt.ExamName.Substring(0, 30) + "..." : dt.ExamName; 
+                 <div class="col-12 col-sm-6 col-lg-4"> 
+                     <div class="card-info-item position-relative overflow-hidden rounded shadow-sm bg-black"> 
+                         <img class="img-fluid w-100" src="~/img/exam1-avatar.png" alt="Ảnh bài thi" style="height: 270px; object-fit: cover;"> 
+
+                         <div class="card-info-text p-4 text-white"> 
+                             <h5 class="text-center fw-semibold mb-2 text-white" title="@dt.ExamName">@tenDe</h5> 
+                             <div class="d-flex justify-content-between small border-top border-light pt-2 mt-2 px-1"> 
+                                 <div class="row text-white small"> 
+                                     <div class="col-12 col-md-6 mb-1"> 
+                                         <i class="fa fa-book me-2"></i> 
+                                         @dt.ExamType 
+                                     </div> 
+                                     <div class="col-12 col-md-6 mb-1"> 
+                                         <i class="fa-solid fa-clock me-1"></i> 
+                                         Thời gian làm bài: @dt.Duration phút 
+                                     </div> 
+                                     <div class="col-12 col-md-6 mb-1"> 
+                                         <i class="fa-solid fa-circle-question text-white me-1"></i> 
+                                         @dt.ExamMatrices.Sum(item => item.QuestionCount) câu hỏi 
+                                     </div> 
+                                 </div> 
+                             </div> 
+
+                             <div class="w-100 bg-transparent rounded mt-3 mb-3 text-center p-2"> 
+                                 <div class="d-flex justify-content-center flex-wrap gap-2"> 
+                                     <a asp-controller="Teacher" asp-action="Exam_Create_Matrix" asp-route-id="@dt.ExamId" 
+                                         class="btn border-white text-white edit-class-btn"> 
+                                         <i class="fa-regular fa-pen-to-square"></i> 
+                                     </a> 
+
+                                     <button type="button" 
+                                             class="btn border-white text-white btn-xoa-dethi" 
+                                             data-madt="@dt.ExamId"> 
+                                         <i class="fa-solid fa-trash-can"></i> 
+                                     </button> 
+
+                                 </div> 
+                             </div> 
+                         </div> 
+                     </div> 
+                 </div> 
+             } 
+         </div> 
+ 
+     </div> 
+ </div> 
+
+
+
+ <div class="modal fade" 
+      id="exampleModalToggle" 
+      aria-hidden="true" 
+      aria-labelledby="exampleModalToggleLabel" 
+      tabindex="10"> 
+     <div class="modal-dialog modal-dialog-centered"> 
+         <div class="modal-content"> 
+             <div class="modal-header bg-primary text-white"> 
+                 <h5 class="modal-title text-uppercase text-white" id="exampleModalToggleLabel"> 
+                     Vui lòng chọn phương thức 
+                 </h5> 
+                 <button type="button" 
+                         class="btn-close bg-white" 
+                         data-bs-dismiss="modal" 
+                         aria-label="Close"></button> 
+             </div> 
+             <div class="modal-body d-flex justify-content-center gap-3"> 
+                 <a asp-controller="Teacher" asp-action="Exam_Create"> 
+                     <button type="button" class="btn btn-primary"> 
+                         Từ ngân hàng đề 
+                     </button> 
+                 </a> 
+                  <a href="./teacher-upload-file-exam.html">  
+                      <button type="button" class="btn btn-secondary">  
+                          Upload File  
+                      </button>  
+                  </a>  
+             </div> 
+         </div> 
+     </div> 
+ </div> 
+
+ <!-- Modal xác nhận xóa đề thi --> 
+ <div class="modal fade" id="deleteDeThiModal" tabindex="-1" aria-labelledby="deleteDeThiModalLabel" aria-hidden="true"> 
+     <div class="modal-dialog modal-dialog-centered"> 
+         <div class="modal-content"> 
+             <form method="post" asp-action="XoaDeThi" asp-controller="Teacher"> 
+                 <div class="modal-header bg-danger text-white"> 
+                     <h5 class="modal-title text-white">Xác nhận xóa đề thi</h5> 
+                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button> 
+                 </div> 
+                 <div class="modal-body">
+                    <input type="hidden" name="examId" id="maDeToDelete" />
+                    <p>Bạn có chắc chắn muốn xóa đề thi này? Mọi dữ liệu liên quan sẽ bị mất.</p> 
+                 </div> 
+                 <div class="modal-footer"> 
+                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button> 
+                     <button type="submit" class="btn btn-danger">Xóa</button> 
+                 </div> 
+             </form> 
+         </div> 
+     </div> 
+ </div> 
+
+ @section Script { 
+     <script> 
+         document.addEventListener("DOMContentLoaded", function () { 
+             const deleteButtons = document.querySelectorAll(".btn-xoa-dethi"); 
+             const inputMaDe = document.getElementById("maDeToDelete"); 
+             const modalElement = document.getElementById("deleteDeThiModal"); 
+             const deleteModal = new bootstrap.Modal(modalElement); 
+
+             deleteButtons.forEach(button => { 
+                 button.addEventListener("click", function () { 
+                     const maDe = button.getAttribute("data-madt"); 
+                     inputMaDe.value = maDe; 
+
+                     // Reset trạng thái hover (nếu cần) 
+                     document.querySelectorAll(".card-info-item.hovered")?.forEach(card => { 
+                         card.classList.remove("hovered"); 
+                     }); 
+
+                     // Mở modal bằng JavaScript 
+                     deleteModal.show(); 
+                 }); 
+             }); 
+         }); 
+
+         document.addEventListener("DOMContentLoaded", function () { 
+             const message = @Html.Raw(Json.Serialize(TempData["SuccessMessage"])); 
+             if (message) { 
+                 Toastify({ 
+                     text: message, 
+                     duration: 4000, 
+                     close: true, 
+                     gravity: "top", 
+                     position: "right", 
+                     stopOnFocus: true, 
+                     style: { 
+                         background: "#28a745" 
+                     } 
+                 }).showToast(); 
+             } 
+         }); 
+         // Tìm kiếm đề thi 
+     function searchItems(inputId, containerSelector) { 
+     const keyword = document.getElementById(inputId).value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim(); 
+     const container = document.querySelector(containerSelector); 
+     if (!container) return; 
+
+     const items = Array.from(container.children); 
+
+     const scored = items.map(el => { 
+         const text = el.innerText.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); 
+         const score = text.includes(keyword) ? 1 : 0; 
+         return { el, score }; 
+     }); 
+
+     scored.sort((a, b) => b.score - a.score); 
+
+     scored.forEach(({ el, score }) => { 
+         el.style.display = keyword === '' || score > 0 ? '' : 'none'; 
+         container.appendChild(el); 
+     }); 
+ } 
+
+       document.addEventListener("DOMContentLoaded", function () { 
+     const searchInput = document.getElementById("searchExamInput"); 
+     if (searchInput) { 
+         searchInput.addEventListener("input", function () { 
+             searchItems("searchExamInput", "#examListContainer"); 
+         }); 
+     } 
+ }); 
+
+     </script> 
+ } 

@@ -1,0 +1,666 @@
+﻿ @using ITExam.ViewModels.ExamBank 
+  @model CreateQuestionVM
+
+  @{  
+      Layout = "_TeacherLayout";  
+      <!-- Nhap title -->  
+      ViewData["Title"] = "Soạn câu hỏi ngân hàng đề";  
+  }  
+  @section Style {  
+      <!-- FontAwesome 6.2.0 CSS -->  
+      <link rel="stylesheet"  
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css"  
+            integrity="sha512-xh6O/CkQoPOWDdYTDqeRdPCVd1SpvCA9XXcUnZS2FmJNp1coAFzvtCN9BmamE+4aHK8yyUHUSCcJHgXloTyT2A=="  
+            crossorigin="anonymous"  
+            referrerpolicy="no-referrer" />  
+     <link rel="stylesheet" href="~/css/teacher-exam-add-question-multiplechoice.css" /> 
+  } 
+ <div class="container-fluid p-0"> 
+     <div class="pt-3 py-lg-0 px-lg-5 px-3"> 
+         <form id="editExamForm" method="post" asp-action="EditExamBank" asp-controller="Teacher" class="m-1"> 
+             <div class="bg-white p-3 rounded shadow mb-3"> 
+                 <input type="hidden" name="MaNHD" value="@Model.ExamBankId" /> 
+
+                 <div class="modal-body row"> 
+                     <div class="mb-2 col-lg-9"> 
+                         <label class="form-label fw-bold">Tên ngân hàng đề</label> 
+                         <input name="TenNHD" class="form-control fs-6" 
+                                id="tenNHDInput" 
+                                value="@Model.ExamBankName" 
+                                data-original="@Model.ExamBankName" /> 
+                     </div> 
+                     <div class="mb-2 col-lg-3"> 
+                         <label class="form-label fw-bold">Trạng thái hiển thị</label> 
+                         <select name="TrangThai" class="form-select fs-6" id="trangThaiSelect" data-original="@Model.IsActive.ToString().ToLower()"> 
+                             <option value="true" selected="@Model.IsActive">Công khai</option> 
+                             <option value="false" selected="@(Model.IsActive == false)">Riêng tư</option> 
+                         </select> 
+                     </div> 
+                 </div> 
+
+                 <div class="modal-footer row p-2"> 
+                     <button type="submit" class="btn btn-primary" id="submitBtn" disabled> 
+                         Cập nhật thông tin 
+                     </button> 
+                 </div> 
+             </div> 
+         </form> 
+
+          <div class=" ">  
+              <!-- Nav tabs --> 
+             <ul class="nav nav-tabs pt-3 d-flex justify-content-between px-2 border-0" id="myTab" role="tablist"> 
+                 <li class="nav-item border-bottom" role="presentation"> 
+                     <button class="nav-link active border rounded fw-bold" style="color:#646cff ;box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;" id="create-tab" data-bs-toggle="tab" data-bs-target="#create" type="button" 
+                             role="tab" aria-controls="create" aria-selected="false">  
+                          Soạn câu hỏi  
+                      </button> 
+                 </li> 
+                     <a class="btn btn-danger asp-controller="Teacher" asp-action="ExamBank">Trở về</a> 
+             </ul>  
+             
+          </div>  
+
+          <div class="">  
+              <!-- Tab panes -->  
+              <div class="tab-content mt-3">  
+                  <div class="tab-pane active" id="create" role="tabpanel" aria-labelledby="create-tab">  
+                      <div class="row">  
+                          <div class="col-12 col-md-4 mb-3 mb-md-0">  
+                              <div class="bg-white p-3 rounded" style="  
+                                box-shadow: rgba(50, 50, 93, 0.25) 0px 6px 12px -2px,  
+                                  rgba(0, 0, 0, 0.3) 0px 3px 7px -3px;  
+                              "> 
+                                 <div class="d-xl-flex justify-content-between align-items-center"> 
+                                     <a class="btn btn-primary mb-1" 
+                                        asp-controller="ApiQuestion" 
+                                        asp-action="Index" 
+                                        asp-route-id="@Model.ExamBankId">Tạo câu hỏi với AI</a> 
+                                     <a class="btn btn-primary" 
+                                        asp-controller="Teacher" 
+                                        asp-action="Exam_Bank_Add_Question_MultipleChoice" 
+                                        asp-route-id="@Model.ExamBankId">Thêm câu hỏi mới</a> 
+                                 </div> 
+
+                                @{
+                                    bool coChuong = Model.ChapterList != null && Model.ChapterList.Any();
+                                    bool coCauHoiTheoChuong = coChuong && Model.QuestionList.Any(ch => ch.ChapterId != null);
+                                    int globalIndex = 0; // thêm biến đếm toàn cục
+                                }
+
+                                @if (coChuong && coCauHoiTheoChuong)
+                                {
+                                    // Hiển thị phân theo chương
+                                    foreach (var chuong in Model.ChapterList)
+                                    {
+                                        var cauHoiTheoChuong = Model.QuestionList
+                                        .Where(ch => ch.ChapterId == chuong.Id)
+                                        .ToList();
+
+                                        if (cauHoiTheoChuong.Any())
+                                        {
+                                            <div class="mt-3">
+                                                <h5 class="fw-bold text-primary">Chương: @chuong.Title</h5>
+                                                <div class="d-flex flex-wrap gap-3">
+                                                    @foreach (var cauHoi in cauHoiTheoChuong)
+                                                    {
+                                                        <div class="d-flex align-items-center gap-2">
+                                                            <button type="button"
+                                                                    class="btn btn-outline-primary question-button"
+                                                                    onclick="loadQuestion(@globalIndex)">
+                                                                @(globalIndex + 1)
+                                                            </button>
+                                                            <button type="button"
+                                                                    class="btn btn-danger btn-sm btn-open-delete-modal"
+                                                                    data-macauhoi="@cauHoi.QuestionId"
+                                                                    data-manhd="@Model.ExamBankId"
+                                                                    data-bs-toggle="modal"
+                                                                    data-bs-target="#deleteQuestionModal">
+                                                                <i class="fa fa-trash"></i>
+                                                            </button>
+                                                        </div>
+                                                        globalIndex++; // tăng sau mỗi câu
+                                                    }
+                                                </div>
+                                            </div>
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    // Không có chương, hiển thị danh sách như cũ
+                                    <div class="d-flex flex-wrap gap-3 mt-3">
+                                        @for (int i = 0; i < Model.QuestionList.Count; i++)
+                                        {
+                                            var cauHoi = Model.QuestionList[i];
+                                            <div class="d-flex align-items-center gap-2">
+                                                <button type="button" class="btn btn-outline-primary question-button" onclick="loadQuestion(@i)">
+                                                    @(i + 1)
+                                                </button>
+                                                <form asp-action="DeleteQuestion" asp-controller="Teacher" method="post" onsubmit="return confirm('Bạn có chắc muốn xóa câu hỏi này không?')">
+                                                    <input type="hidden" name="maCauHoi" value="@cauHoi.QuestionId" />
+                                                    <input type="hidden" name="MaNHD" value="@Model.ExamBankId" />
+                                                    <button type="submit" class="btn btn-danger btn-sm">
+                                                        <i class="fa fa-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+
+
+
+
+                            </div>  
+                          </div>  
+                          <div class="col-12 col-md-8">  
+                              <div class="bg-white p-3 rounded" style="  
+                                box-shadow: rgba(50, 50, 93, 0.25) 0px 6px 12px -2px,  
+                                  rgba(0, 0, 0, 0.3) 0px 3px 7px -3px;  
+                              ">  
+                                  <h3 class="fs-5 fw-semibold">Thêm câu hỏi mới</h3> 
+                                 <form asp-controller="Teacher" asp-action="Exam_Bank_Add_Question_MultipleChoice" method="post"> 
+                                     <input type="hidden" name="ExamBankId" value="@Model.ExamBankId" /> 
+                                     <input type="hidden" id="QuestionId" name="QuestionId" value="" />  
+
+                                      <!--    Loại câu hỏi -->  
+                                      <div class="mb-3">  
+                                          <label for="QuestionType" class="form-label">Loại câu hỏi</label>  
+                                          <select class="form-select" id="QuestionType" name="QuestionType" required onchange="updateAnswerType()">  
+                                              <option value="1" selected>Một đáp án</option>  
+                                              <option value="2">Nhiều đáp án</option>  
+                                              <option value="3">Đúng sai</option>  
+                                          </select>  
+                                      </div> 
+                                     <!--    CHƯƠNG --> 
+                                     <div class="mb-3" id="ChapterGroup"> 
+                                         <label for="Chapter" class="form-label">Chương</label>
+                                        <select class="form-select" id="ChapterId" name="ChapterId" required onchange="updateCLOOptions()">
+                                            <option value="">-- Chọn chương --</option> 
+                                             @foreach (var Chapter in Model.ChapterList) 
+                                             { 
+                                                 <option value="@Chapter.Id">@Chapter.Title</option> 
+                                             } 
+                                         </select> 
+                                     </div> 
+
+                                     <!--    CLO --> 
+                                     <div class="mb-3" id="CLOGroup"> 
+                                         <label for="CLO" class="form-label">CLO</label>
+                                        <select class="form-select" id="CLOId" name="CLOId" required>
+                                            <option value="">-- Chọn CLO --</option> 
+                                         </select> 
+                                     </div> 
+
+
+                                     <!-- Nội dung câu hỏi -->  
+                                      <div class="mb-3">  
+                                          <label for="QuestionContent" class="form-label fs-5 fw-semibold">Soạn câu hỏi</label>  
+                                          <textarea  class="form-control" id="QuestionContent" name="QuestionContent" placeholder="Nhập câu hỏi . . . "></textarea> 
+                                      </div>  
+
+                                      <!-- Nút thêm đáp án (ẩn khi chọn đúng/sai) -->  
+                                      <button type="button" class="btn btn-primary rounded-circle my-2" id="addAnswerButton" onclick="addAnswer()">  
+                                          <i class="fa-solid fa-plus"></i>  
+                                      </button>  
+
+                                      <div id="answersContainer">  
+                                          <!-- Các đáp án sẽ được thêm vào đây -->  
+                                      </div>  
+
+                                      <!-- Nút submit -->  
+                                      <div>  
+                                          <button type="submit" class="btn btn-primary">Lưu câu hỏi</button>  
+                                      </div>  
+                                  </form>  
+                              </div>  
+                          </div>  
+                      </div>  
+                  </div>  
+              </div>  
+          </div> 
+     </div> 
+ </div> 
+
+
+
+
+ <!-- Modal xác nhận xóa câu hỏi --> 
+ <div class="modal fade" id="deleteQuestionModal" tabindex="-1" aria-labelledby="deleteQuestionModalLabel" aria-hidden="true"> 
+     <div class="modal-dialog modal-dialog-centered"> 
+         <div class="modal-content"> 
+             <form method="post" asp-action="DeleteQuestion" asp-controller="Teacher"> 
+                 <div class="modal-header bg-danger text-white"> 
+                     <h5 class="modal-title text-white">Xác nhận xóa câu hỏi</h5> 
+                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button> 
+                 </div> 
+                 <div class="modal-body"> 
+                     <input type="hidden" id="macauhoiToDelete" name="maCauHoi" /> 
+                     <input type="hidden" id="manhdToDelete" name="MaNHD" /> 
+                     <p>Bạn có chắc chắn muốn xóa câu hỏi này khỏi ngân hàng đề?</p> 
+                 </div> 
+                 <div class="modal-footer"> 
+                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button> 
+                     <button type="submit" class="btn btn-danger">Xác nhận xóa</button> 
+                 </div> 
+             </form> 
+         </div> 
+     </div> 
+ </div> 
+
+ @section Script 
+  { 
+     <script src="~/lib/build/ckeditor.js"></script> 
+     <script> 
+         let answerCount = 0; 
+         let editors = {}; // Biến đếm số lượng đáp án 
+         function addAnswer(answerText = "", isCorrect = false) { 
+             const container = document.getElementById("answersContainer"); 
+             const questionType = document.getElementById("QuestionType").value; 
+             const inputType = questionType === "2" ? "checkbox" : "radio"; 
+
+             const index = answerCount++; 
+             const editorId = `editor_answer_${index}`; 
+             const html = ` 
+                 <div class="mb-3 p-1 border" id="answer_${index}"> 
+                     <input type="hidden" id="hiddenCorrectAnswers_${index}" name="CorrectAnswers[${index}]" value="${isCorrect}" /> 
+                     <input type="${inputType}" name="selectedAnswer" id="checkboxCorrectAnswers_${index}" ${isCorrect ? 'checked' : ''} onchange="updateHiddenInput(${index})" /> 
+                     <label class="mx-2 form-label fs-5 fw-semibold">Đáp án ${index + 1}</label> 
+                     <textarea class="form-control ckeditor-choice" id="${editorId}" name="ChoiceContents[${index}]">${answerText}</textarea> 
+                     <button type="button" class="btn btn-danger my-2" onclick="removeAnswer(${index})">Xóa</button> 
+                 </div> 
+             `; 
+             container.insertAdjacentHTML("beforeend", html); 
+
+             ClassicEditor.create(document.getElementById(editorId), { 
+                 simpleUpload:{ 
+                     uploadUrl: '/Upload/UploadImage' 
+                 } 
+             }).then(editor => { 
+                 editors[editorId] = editor; 
+             }).catch(error => console.error(error)); 
+         } 
+         //document.addEventListener("DOMContentLoaded", () => { 
+         //     ClassicEditor.create(document.querySelector('#QuestionContent'), { 
+         //         simpleUpload: { 
+         //             uploadUrl: '/Upload/UploadImage', 
+         //         } 
+         //     }).then(editor => { 
+         //             editors['QuestionContent'] = editor; 
+         //         }).catch(console.error); 
+         // }); 
+
+         function removeAnswer(index) { 
+             const div = document.getElementById(`answer_${index}`); 
+             if (!div) return; 
+
+             const editorId = `editor_answer_${index}`; 
+             if (editors[editorId]) { 
+                 editors[editorId].destroy().then(() => { 
+                     delete editors[editorId]; 
+                     div.remove(); 
+                     reindexAnswers(); 
+                 }); 
+             } else { 
+                 div.remove(); 
+                 reindexAnswers(); 
+             } 
+         } 
+
+         function reindexAnswers() { 
+             const container = document.getElementById("answersContainer"); 
+             const children = Array.from(container.children); 
+
+             answerCount = 0; 
+             editors = {}; // Reset lại 
+             container.innerHTML = ""; 
+
+             children.forEach((child, i) => { 
+                 const textarea = child.querySelector("textarea"); 
+                 const inputVal = textarea.value; 
+                 const isChecked = child.querySelector("input[type=radio], input[type=checkbox]").checked; 
+
+                 addAnswer(inputVal, isChecked); 
+             }); 
+         } 
+
+
+         function updateAnswerType() { 
+             const questionType = document.getElementById('QuestionType').value; 
+             const container = document.getElementById('answersContainer'); 
+             const addButton = document.getElementById('addAnswerButton'); 
+
+             // Xóa hết các đáp án trước đó 
+             container.innerHTML = ""; 
+             answerCount = 0; 
+
+             if (questionType === "3") { 
+                 // Nếu chọn "Đúng/Sai" 
+                 addButton.style.display = "none"; // Ẩn nút thêm đáp án 
+
+                 const trueAnswer = ` 
+                     <div class="mb-3 ms-5"> 
+                         <input type="hidden" id="hiddenCorrectAnswers_0" name="CorrectAnswers[0]" value="false" /> 
+                         <input type="radio" name="selectedAnswer" id="radioCorrectAnswers_0" onchange="updateHiddenInputYesNo(0)" /> 
+                         <label class="form-label fs-5 fw-semibold">Đúng</label> 
+                         <input type="hidden" name="ChoiceContents[0]" value="Đúng" /> 
+                     </div>`; 
+
+                 const falseAnswer = ` 
+                     <div class="mb-3 ms-5"> 
+                         <input type="hidden" id="hiddenCorrectAnswers_1" name="CorrectAnswers[1]" value="false" /> 
+                         <input type="radio" name="selectedAnswer" id="radioCorrectAnswers_1" onchange="updateHiddenInputYesNo(1)" /> 
+                         <label class="form-label fs-5 fw-semibold">Sai</label> 
+                         <input type="hidden" name="ChoiceContents[1]" value="Sai" /> 
+                     </div>`; 
+
+                 container.innerHTML = trueAnswer + falseAnswer; 
+             } else { 
+                 addButton.style.display = "inline-block"; // Hiện nút thêm đáp án 
+             } 
+         } 
+
+         function updateHiddenInput(index) { 
+             const questionType = document.getElementById('QuestionType').value; 
+
+             if (questionType === "1") { // Một đáp án đúng 
+                 // Reset hết hidden về false 
+                 const hiddenInputs = document.querySelectorAll('[id^="hiddenCorrectAnswers_"]'); 
+                 hiddenInputs.forEach(input => input.value = "false"); 
+
+                 // Gán true cho đáp án vừa chọn 
+                 const selectedInput = document.getElementById(`checkboxCorrectAnswers_${index}`); 
+                 const hiddenInput = document.getElementById(`hiddenCorrectAnswers_${index}`); 
+                 if (selectedInput && hiddenInput && selectedInput.checked) { 
+                     hiddenInput.value = "true"; 
+                 } 
+             } 
+             else if (questionType === "2") { // Nhiều đáp án đúng 
+                 const checkbox = document.getElementById(`checkboxCorrectAnswers_${index}`); 
+                 const hidden = document.getElementById(`hiddenCorrectAnswers_${index}`); 
+                 if (checkbox && hidden) { 
+                     hidden.value = checkbox.checked ? "true" : "false"; 
+                 } 
+             } 
+             else if (questionType === "3") { // Đúng/Sai 
+                 updateHiddenInputYesNo(index); 
+             } 
+         } 
+
+
+         document.addEventListener("DOMContentLoaded", () => { 
+             ClassicEditor.create(document.querySelector('#QuestionContent'), { 
+                 simpleUpload: { 
+                     uploadUrl: '/Upload/UploadImage', 
+                 } 
+             }).then(editor => { 
+                     editors['QuestionContent'] = editor; 
+                 }).catch(console.error); 
+         }); 
+
+
+         function updateHiddenInputYesNo(index) { 
+             // Reset hết hidden inputs về false 
+             const hiddenInputs = document.querySelectorAll('[id^="hiddenCorrectAnswers_"]'); 
+             hiddenInputs.forEach(input => input.value = "false"); 
+
+             // Gán true cho cái được chọn 
+             const selectedInput = document.querySelector('input[name="selectedAnswer"]:checked'); 
+             if (selectedInput) { 
+                 const selectedIndex = selectedInput.id.split("_").pop(); // lấy số index từ id 
+                 const hiddenInput = document.getElementById(`hiddenCorrectAnswers_${selectedIndex}`); 
+                 if (hiddenInput) hiddenInput.value = "true"; 
+             } 
+         } 
+
+     </script> 
+
+     <script> 
+         let questions = @Html.Raw(Json.Serialize(Model.QuestionDTOList)); 
+
+         console.log(questions); 
+
+         function loadQuestion(index) { 
+             if (!questions || questions.length <= index) return; 
+
+             let question = questions[index]; 
+
+             // Gán giá trị cho các input 
+             if (editors['QuestionContent']) { 
+                 editors['QuestionContent'].setData(question.questionContent || ""); 
+             }
+
+            document.getElementById("QuestionType").value = question.questionType || "";
+          document.getElementById("QuestionId").value = question.questionId || "";
+           document.getElementById("ChapterId").value = question.chapterId || "";
+            updateCLOOptions(); // Cập nhật danh sách CLO sau khi chọn chương 
+
+             setTimeout(() => {
+                document.getElementById("CLOId").value = question.cloId || "";
+            }) // Chờ 100ms để CLO dropdown cập nhật xong mới gán giá trị 
+
+
+             updateAnswerType(); // Cập nhật giao diện theo loại câu hỏi 
+
+             let answersContainer = document.getElementById("answersContainer"); 
+             answersContainer.innerHTML = ""; 
+             answerCount = 0; 
+
+             // Load danh sách đáp án
+            if (question.choiceContent) {
+               const danhSachDapAn = JSON.parse(question.choiceContent);
+              updateAnswerType();
+
+               if (question.questionType === "3") {   // nhớ so sánh string "3"
+                    const trueInput = document.getElementById("radioCorrectAnswers_0");
+                    const falseInput = document.getElementById("radioCorrectAnswers_1");
+                    const trueHidden = document.getElementById("hiddenCorrectAnswers_0");
+                    const falseHidden = document.getElementById("hiddenCorrectAnswers_1");
+
+                    danhSachDapAn.forEach(ans => {
+                        const noiDung = ans.NoiDung?.trim().toLowerCase();
+                        if (noiDung === "đúng" || noiDung === "dung") {
+                            trueInput.checked = ans.LaDapAn;
+                            trueHidden.value = ans.LaDapAn ? "true" : "false";
+                        } else if (noiDung === "sai") {
+                            falseInput.checked = ans.LaDapAn;
+                            falseHidden.value = ans.LaDapAn ? "true" : "false";
+                        }
+                    });
+                } else {
+                    danhSachDapAn.forEach((dapAn, i) => {
+                        addAnswerFromData(dapAn.NoiDung, dapAn.LaDapAn, i);
+                    });
+                }
+
+             } 
+
+
+
+         } 
+
+         function addAnswerFromData(answerHtml, isCorrect, index) { 
+             const container = document.getElementById('answersContainer'); 
+             const questionType = document.getElementById('QuestionType').value; 
+             const inputType = questionType === "2" ? "checkbox" : "radio"; 
+
+             const editorId = `editor_answer_${index}`; 
+             const html = ` 
+                 <div class="mb-3 p-1 border" id="answer_${index}"> 
+                     <input type="hidden" id="hiddenCorrectAnswers_${index}" name="CorrectAnswers[${index}]" value="${isCorrect}" /> 
+                     <input type="${inputType}" name="selectedAnswer" id="checkboxCorrectAnswers_${index}" ${isCorrect ? 'checked' : ''} onchange="updateHiddenInput(${index})" /> 
+                     <label class="mx-2 form-label fs-5 fw-semibold">Đáp án ${index + 1}</label> 
+                     <textarea class="form-control ckeditor-choice" id="${editorId}" name="ChoiceContents[${index}]"></textarea> 
+                     <button type="button" class="btn btn-danger my-2" onclick="removeAnswer(${index})">Xóa</button> 
+                 </div> 
+             `; 
+             container.insertAdjacentHTML("beforeend", html); 
+
+             ClassicEditor.create(document.getElementById(editorId), { 
+                 simpleUpload: { 
+                     uploadUrl: '/Upload/UploadImage'  
+                 } 
+             }).then(editor => { 
+                 editors[editorId] = editor; 
+                 editor.setData(answerHtml || ""); // Gán nội dung HTML vào editor 
+             }).catch(error => console.error(error)); 
+
+             answerCount++; 
+         } 
+
+
+
+     </script> 
+
+     <script> 
+         // Dữ liệu chương và CLO từ Razor -> JS 
+         const chapterData = @Html.Raw(Json.Serialize(Model.ChapterList)); 
+
+         function updateCLOOptions() { 
+             const ChapterId = document.getElementById("ChapterId").value; 
+             const cloSelect = document.getElementById("CLOId"); 
+
+             // Xóa các option hiện tại 
+             cloSelect.innerHTML = '<option value="">-- Chọn CLO --</option>'; 
+
+             const Chapter = chapterData.find(c => c.id == ChapterId); 
+
+             if (Chapter && Chapter.clos && Chapter.clos.length > 0) { 
+                 Chapter.clos.forEach(clo => { 
+                     const opt = document.createElement("option"); 
+                     opt.value = clo.id; 
+                     opt.text = clo.title + " - " + clo.description; 
+                     cloSelect.appendChild(opt); 
+                 }); 
+             } 
+         } 
+     </script> 
+     <script> 
+                 document.addEventListener("DOMContentLoaded", function () { 
+             const ChapterGroup = document.getElementById("ChapterGroup"); 
+             const cloGroup = document.getElementById("CLOGroup"); 
+
+             const ChapterSelect = document.getElementById("ChapterId"); 
+             const cloSelect = document.getElementById("CLOId"); 
+
+             const chapterList = @Html.Raw(Json.Serialize(Model.ChapterList)); 
+
+             if (!chapterList || chapterList.length === 0) { 
+                 if (ChapterGroup) ChapterGroup.style.display = "none"; 
+                 if (ChapterSelect) ChapterSelect.removeAttribute("required"); 
+
+                 if (cloGroup) cloGroup.style.display = "none"; 
+                 if (cloSelect) cloSelect.removeAttribute("required"); 
+             } else { 
+                 const hasAnyCLO = chapterList.some(ch => ch.clos && ch.clos.length > 0); 
+                 if (!hasAnyCLO) { 
+                     if (cloGroup) cloGroup.style.display = "none"; 
+                     if (cloSelect) cloSelect.removeAttribute("required"); 
+                 } 
+             } 
+         }); 
+
+     </script> 
+
+
+     <script> 
+         document.addEventListener("DOMContentLoaded", function () { 
+             const deleteButtons = document.querySelectorAll(".btn-open-delete-modal"); 
+             const inputMaCauHoi = document.getElementById("macauhoiToDelete"); 
+             const inputMaNHD = document.getElementById("manhdToDelete"); 
+
+             deleteButtons.forEach(button => { 
+                 button.addEventListener("click", () => { 
+                     const maCauHoi = button.getAttribute("data-macauhoi"); 
+                     const maNHD = button.getAttribute("data-manhd"); 
+
+                     inputMaCauHoi.value = maCauHoi; 
+                     inputMaNHD.value = maNHD; 
+                 }); 
+             }); 
+         }); 
+     </script> 
+
+
+     <script> 
+                 document.addEventListener("DOMContentLoaded", function () { 
+             // Kiểm tra thông điệp thành công 
+             const successMessage = @Html.Raw(Json.Serialize(TempData["SuccessMessage"])); 
+             if (successMessage) { 
+                 Toastify({ 
+                     text: successMessage, 
+                     duration: 4000, 
+                     close: true, 
+                     gravity: "bottom", 
+                     position: "right", 
+                     stopOnFocus: true, 
+                     style: { 
+                         background: "#28a745" // Màu xanh cho thông báo thành công 
+                     } 
+                 }).showToast(); 
+             } 
+
+             // Kiểm tra thông điệp lỗi 
+             const errorMessage = @Html.Raw(Json.Serialize(TempData["ErrorMessage"])); 
+             if (errorMessage) { 
+                 Toastify({ 
+                     text: errorMessage, 
+                     duration: 4000, 
+                     close: true, 
+                     gravity: "bottom", 
+                     position: "right", 
+                     stopOnFocus: true, 
+                     style: { 
+                         background: "#dc3545" // Màu đỏ cho thông báo lỗi 
+                     } 
+                 }).showToast(); 
+             } 
+         }); 
+     </script> 
+     <script> 
+         document.querySelector("form").addEventListener("submit", function (e) { 
+             // Đảm bảo tất cả nội dung CKEditor được cập nhật trước khi gửi 
+             for (let editorId in editors) { 
+                 if (editors[editorId]) { 
+                     editors[editorId].updateSourceElement(); 
+                 } 
+             } 
+         }); 
+
+
+     </script> 
+     <script> 
+         document.addEventListener("DOMContentLoaded", () => { 
+             const submitBtn = document.getElementById("submitBtn"); 
+             const inputs = document.querySelectorAll("#editExamForm input, #editExamForm select"); 
+
+             function checkChanges() { 
+                 let changed = false; 
+
+                 inputs.forEach(input => { 
+                     const original = input.getAttribute("data-original"); 
+                     if (original !== null) { 
+                         if (input.tagName === "SELECT") { 
+                             if (input.value.toLowerCase() !== original.toLowerCase()) { 
+                                 changed = true; 
+                             } 
+                         } else { 
+                             if (input.value !== original) { 
+                                 changed = true; 
+                             } 
+                         } 
+                     } 
+                 }); 
+
+                 submitBtn.disabled = !changed; 
+             } 
+
+             inputs.forEach(input => { 
+                 input.addEventListener("input", checkChanges); 
+                 input.addEventListener("change", checkChanges); 
+             }); 
+
+             checkChanges(); 
+         }); 
+     </script> 
+ } 

@@ -1,0 +1,83 @@
+﻿@model ITExam.ViewModels.Exam.GradingVM
+@{
+    Layout = "_TeacherLayout";
+    <!-- Nhap title -->
+    ViewData["Title"] = "Chấm thi";
+}
+@section Style {
+<link rel="stylesheet" href="~/css/teacher-grading-the_exam-style.css" />
+ }
+<div class="row mx-0 justify-content-center pt-2">
+    <div class="col-lg-6">
+        <div class="section-title text-center position-relative mb-4">
+            <h2 class="display-4">Chấm thi</h2>
+            <h6 class="d-inline-block position-relative text-secondary text-uppercase pb-2">Chưa chấm: @Model.NumberOfUngradedStudents</h6>
+        </div>
+    </div>
+</div>
+<div class="table-responsive mt-1 shadow-sm rounded px-md-3 px-lg-4 px-2">
+    <table class="table px-2 table-hover align-middle text-center">
+        <thead class="table-primary">
+            <tr>
+                <th scope="col">MSSV</th>
+                <th scope="col">Họ và tên</th>
+                <th scope="col">Thời gian làm bài</th>
+                <th scope="col">Thời gian nộp bài</th>
+                <th scope="col">Điểm đạt được</th>
+                <th scope="col">Hành động</th>
+            </tr>
+        </thead>
+        <tbody id="table-body">
+            @foreach (var sv in Model.SubmittedStudents)
+            {
+                <tr>
+                    <td class="pt-3">@sv.StudentID</td>
+                    <td class="pt-3">@sv.FullName</td>         
+                    <td class="pt-3">
+                        @{
+                            var thoiGian = sv.DurationInMinutes ?? 0; 
+                            var timeSpan = TimeSpan.FromSeconds((double)thoiGian);
+                        }
+                        @($"{timeSpan.Minutes} phút {timeSpan.Seconds} giây")
+                    </td>
+
+    
+                    <td class="pt-3">@sv.SubmissionTime</td>
+                    @if(sv.GradedScore != null)
+                    {
+                        <td class="pt-3">@sv.GradedScore / 10</td>
+                        <td>
+                            <input type="submit" class="btn btn-outline-danger" value="Đã chấm" />
+                        </td>
+                    }
+                    else
+                    {
+                        <td class="text-danger pt-3">Chưa chấm</td>
+                        <td>
+
+                            <form asp-controller="Teacher" asp-action="Grading_The_Exam_Of_Student" asp-route-id="@sv.HistoryId" method="post">
+                                <input type="hidden" name="maDe" value="" />
+                                <input type="hidden" name="maLop" value="" />
+                                <input type="submit" class="btn btn-primary" value="Chấm bài" />
+                            </form>
+                        </td>
+                    }                 
+                </tr>
+            }
+
+            @foreach (var sv in Model.UnsubmittedStudents)
+            {
+                <tr>
+                    <td class="pt-3">@sv.StudentID</td>
+                    <td class="pt-3">@sv.FullName</td>
+                    <td class="pt-3">
+                        Trống
+                    </td>
+                    <td class="pt-3">Trống</td>
+                    <td class="pt-3">Trống</td>
+                    <td class="pt-3"><input type="submit" readonly class="btn btn-danger" value="Chưa làm" /></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div> 

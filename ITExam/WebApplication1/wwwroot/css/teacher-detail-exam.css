@@ -1,0 +1,5 @@
+.de_thi_info .de_thi_img{
+    width: 100%;
+    height: 250px;
+    object-fit: cover;
+}

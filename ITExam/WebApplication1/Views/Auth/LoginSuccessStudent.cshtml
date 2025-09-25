@@ -1,0 +1,179 @@
+﻿@model ITExam.ViewModels.UserInfoVM
+<!-- Import cai layout -->
+@{
+
+    Layout = "_StudentLayout";
+    <!-- Nhap title -->
+    ViewData["Title"] = "Thông tin tài khoản";
+}
+<!-- Add cai css do day -->
+@section Style {
+
+}
+<div class="main p-3">
+    <!-- About Start -->
+    <div class="container-fluid pt-4 pb-2">
+        <div class="container pt-4 pb-2">
+            <div class="row">
+                <div class="col-lg-5 mb-4 mb-lg-0">
+                    <div class="rounded overflow-hidden"
+                         style="height: 100%">
+                        <img class="img-fluid w-100 h-100"
+                             src="~/img/teacher-avatar.jpg"
+                             style="object-fit: cover; border-radius: 1px"
+                             alt="Ảnh đại diện" />
+                    </div>
+                </div>
+                <div class="col-lg-7 mt-3">
+                    <div class="position-relative mb-3">
+                        <h6 class="text-primary text-uppercase border-bottom pb-2">
+                            Thông tin cá nhân
+                        </h6>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-body py-3 px-3">
+                                    <h6 class="card-title font-weight-bold mb-1 text-dark">
+                                        <i class="fa fa-user mr-2" style="color: #007bff"></i>Họ
+                                        tên
+                                    </h6>
+                                    <p class="card-text mb-0 font-weight-bold">@Model.HoTen</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-body py-3 px-3">
+                                    <h6 class="card-title font-weight-bold mb-1 text-dark">
+                                        <i class="fa fa-envelope mr-2" style="color: #007bff"></i>Email
+                                    </h6>
+                                    <p class="card-text mb-0 font-weight-bold">
+                                        @Model.Email
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-body py-3 px-3">
+                                    <h6 class="card-title font-weight-bold mb-1 text-dark">
+                                        <i class="fa fa-users mr-2" style="color: #007bff"></i>Lớp
+                                    </h6>
+                                    <p class="card-text mb-0 font-weight-bold">@Model.Lop</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-body py-3 px-3">
+                                    <h6 class="card-title font-weight-bold mb-1 text-dark">
+                                        <i class="fa fa-university mr-2"
+                                           style="color: #007bff"></i>Khoa
+                                    </h6>
+                                    <p class="card-text mb-0 font-weight-bold">
+                                       @Model.Khoa
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- About End -->
+    <!-- Feature Start -->
+    <div class="container-fluid pt-3">
+        <div class="container pt-3 pb-4">
+            <div class="row">
+                <div class="col-12 mb-4">
+                    <div class="position-relative">
+                        <h6 class="text-primary text-uppercase border-bottom pb-2">
+                            Danh sách đề thi đang mở
+                        </h6>
+                    </div>
+                </div>
+                @if (Model.DanhSachDeThi.Any(deThi => DateTime.Now >= deThi.StartDate && DateTime.Now <= deThi.EndDate))
+                {
+                    <div class="d-flex flex-wrap">
+                        @foreach (var deThi in Model.DanhSachDeThi.Where(d => DateTime.Now >= d.StartDate && DateTime.Now <= d.EndDate && !d.IsDone))
+                        {
+                            var tenDe = deThi.ExamName.Length > 25 ? deThi.ExamName.Substring(0, 25) + "..." : deThi.ExamName;
+                            var tenLop = deThi.ClassName.Length > 27 ? deThi.ClassName.Substring(0, 27) + "..." : deThi.ClassName;
+                            <div class="col-lg-4 col-md-6 mb-4">
+                                <div class="card h-80 shadow-sm border-0">
+                                    <div style="height: 200px; overflow: hidden">
+                                        <img src="~/img/exam1-avatar.png"
+                                             class="card-img-top"
+                                             style="object-fit: cover; height: 100%; width: 100%"
+                                             alt="Đề thi" />
+                                    </div>
+                                    <div class="card-body">
+                                        <h5 class="card-title text-primary font-weight-bold" title="@deThi.ExamName">
+                                           @tenDe
+                                        </h5>
+                                        <p class="card-text mb-2" title="@deThi.ClassName">
+                                            <i class="fa fa-users mr-2 text-black"></i>
+                                            <strong>Lớp:</strong> @tenLop
+                                        </p>
+                                        <p class="card-text mb-2">
+                                            <i class="fa fa-tags text-dark mr-2"></i>
+                                            <strong>Loại đề:</strong> @deThi.ExamType
+                                        </p>
+                                        <p class="card-text mb-2">
+                                            <i class="fa fa-clock text-dark mr-2"></i>
+                                            <strong>Thời gian làm bài:</strong> @deThi.Duration
+                                        </p>
+                                        <p class="card-text mb-2">
+                                            <i class="fa fa-calendar-alt text-dark mr-2"></i>
+                                            <strong>Bắt đầu:</strong> @deThi.StartDate.ToString("HH:mm:ss dd/MM/yyyy")
+                                        </p>
+                                        <p class="card-text mb-2">
+                                            <i class="fa fa-calendar-check text-dark mr-2"></i>
+                                            <strong>Kết thúc:</strong> @deThi.EndDate.ToString("HH:mm:ss dd/MM/yyyy")
+                                        </p>
+                                    </div>
+                                    <div class="card-footer bg-transparent border-top-0">
+                                        <a asp-controller="Student" asp-action="ClassDetail" asp-route-id="@deThi.ClassId" asp-route-tab="exam" class="btn btn-outline-primary btn-block">
+                                            Làm bài ngay
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p>Không có đề thi nào đang hoạt động.</p>
+                }
+                    
+            </div>
+        </div>
+    </div>
+    <!-- Feature End -->
+</div>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+                const message = @Html.Raw(Json.Serialize(TempData["SuccessMessage"]));
+                if (message) {
+                    Toastify({
+                        text: message,
+                        duration: 4000,
+                        close: true,
+                        gravity: "bottom",
+                        position: "right",
+                        stopOnFocus: true,
+                        style: {
+                            background: "#28a745"
+                        }
+                    }).showToast();
+                }
+            });
+    // Chuyển danh sách từ server sang JavaScript
+        var danhSachDeThi = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.DanhSachDeThi));
+
+        // Kiểm tra trên console
+        console.log(danhSachDeThi);
+</script>

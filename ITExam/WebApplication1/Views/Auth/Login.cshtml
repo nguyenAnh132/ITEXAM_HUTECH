@@ -1,0 +1,187 @@
+﻿@model ITExam.ViewModels.LoginVM 
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập</title>
+    <!-- Bootstrap CSS v5.2.1 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous" />
+    <!-- FontAwesome 6.2.0 CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css"
+          integrity="sha512-xh6O/CkQoPOWDdYTDqeRdPCVd1SpvCA9XXcUnZS2FmJNp1coAFzvtCN9BmamE+4aHK8yyUHUSCcJHgXloTyT2A=="
+          crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <!-- Font Google -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&family=Paytone+One&display=swap"
+          rel="stylesheet">
+    <!-- toastify  -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <link rel="shortcut icon" href="~/img/itexam.png" type="image/x-icon">
+
+    <!-- Css -->
+    <link rel="stylesheet" href="~/css/style.css">
+    <link rel="stylesheet" href="~/css/login-style.css">
+</head>
+
+<body>
+    <header class="fixed-top">
+        <div class="container-fluid p-0">
+            <nav class="navbar navbar-expand-lg bg-white navbar-light py-3 py-lg-0 px-lg-5">
+                <a href="/" class="navbar-brand ml-lg-3">
+                    <h1 class="m-0 text-uppercase text-primary">ITEXAM</h1>
+                </a>
+                <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#navbarCollapse">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse justify-content-between px-lg-3" id="navbarCollapse">
+                    <div class="navbar-nav mx-auto py-0">
+                        <a href="/" class="nav-item nav-link active">Trang chủ</a>
+                        <a asp-controller="Auth" asp-action="Login" class="nav-item nav-link">Lớp học</a>
+                        <a href="#" class="nav-item nav-link">Hướng dẫn</a>
+                    </div>
+                    <a asp-controller="Auth" asp-action="Login" class="btn btn-primary py-2 px-4">Đăng nhập</a>
+                </div>
+            </nav>
+        </div>
+    </header>
+    <main class="px-3">
+        <div class="container-login">
+            <div class="right-section">
+                <div class="login-small-container">
+                    <form class="login-form" asp-action="Login" method="post">
+                        <div class="text-center mb-2" >
+                            <span class="h2 fw-bold login-title typing"></span>
+                        </div>
+                        <br />
+                        @if (!ViewData.ModelState.IsValid)
+                        {
+                            var generalErrors = ViewData.ModelState[string.Empty]?.Errors;
+                            if (generalErrors != null && generalErrors.Count > 0)
+                            {
+                                <div class="text-danger mb-2 fz-2 text-center">
+                                    @foreach (var error in generalErrors)
+                                    {
+                                        <div>@error.ErrorMessage</div>
+                                    }
+                                </div>
+                            }
+                        }
+                        <div class="form-control-login">
+                            <i class="fas fa-user icon"></i>
+                            <input asp-for="Username" id="username" placeholder="Tên tài khoản" required/>
+                            <span asp-validation-for="Username" class="text-danger"></span>
+                        </div>
+                        <div class="form-control-login">
+                            <i class="fas fa-lock icon"></i>
+                            <input asp-for="Password" type="password" id="password" placeholder="Mật khẩu" />
+                            <span asp-validation-for="Password" class="text-danger"></span>
+                        </div>
+                        <button class="btn-login" type="submit">Đăng nhập</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+    <footer>
+        <div class="container-fluid position-relative overlay-top bg-dark text-white-50 py-3" style="margin-top: 90px;">
+        <div class="container mt-5 pt-5">
+            <div class="row">
+                <div class="col-md-6 mb-5">
+                    <a href="index.html" class="navbar-brand">
+                        <h1 class="mt-n2 text-uppercase text-white">ITEXAM</h1>
+                    </a>
+                    <p class="m-0">Website tạo đề thi, bài kiểm tra<br /><br />Trở ngại không thể cản bạn lại được. Nếu bạn va phải tường, đừng quay đi và bỏ cuộc. Hãy tìm cách trèo lên, phá vỡ hay bước vòng qua nó</p>
+                </div>
+                <div class="col-md-6 mb-5">
+                    <h3 class="text-white mb-4">Góp ý</h3>
+                    <div class="w-100">
+                        <div class="input-group">
+                            <input type="text" class="form-control border-light" style="padding: 30px;">
+                            <div class="input-group-append">
+                                <button class="btn btn-primary px-4">Gửi</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-5">
+                    <h3 class="text-white mb-4">Tác giả</h3>
+                    <p><i class="fa fa-angle-right mr-2"></i>Nguyễn Văn Tú Anh - 2280600101 - 22DTHG7</p>
+                    <p><i class="fa fa-angle-right mr-2"></i>Nguyễn Tấn Phát - 2280602306 - 22DTHG7</p>
+                </div>
+                <div class="col-md-6">
+                    <br />
+                    <p><i class="fa fa-angle-right mr-2"></i>Trần Hải Đăng - 2280600672 - 22DTHG7</p>
+                    <p><i class="fa fa-angle-right mr-2"></i>Trần Bá Tòng - 2280618811 - 22DTHG7</p>
+                    <p><i class="fa fa-angle-right mr-2"></i>Đỗ Minh Phương - 2280602518 - 22DTHG7</p>
+                </div>
+            </div>
+        </div>
+    </div>
+        <div class="container-fluid bg-dark text-white-50 border-top py-4" style="border-color: rgba(256, 256, 256, .1) !important;">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6 text-center text-md-left mb-3 mb-md-0">
+                    <p class="m-0">
+                        Copyright &copy; <a class="text-white" href="#">Khoa Công nghệ Thông tin</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    </footer>
+
+    <!-- Bootstrap JavaScript Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/@@popperjs/core@2.11.6/dist/umd/popper.min.js"
+            integrity="sha384-oBqDVmMz9ATKxIep9tiCxS/Z9fNfEXiDAYTujMAeBAsjFuCZSmKbSSUnQlmh/jp3"
+            crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js"
+            integrity="sha384-cuYeSxntonz0PPNlHhBs68uyIAVpIIOZZ5JqeqvYYIcEL727kskC66kF92t6Xl2V"
+            crossorigin="anonymous"></script>
+    <!-- JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/typed.js/2.0.10/typed.js"></script>
+    <!--toastify -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+                    const errorMessage = @Html.Raw(Json.Serialize(TempData["errorMessage"]));
+                    if (errorMessage) {
+                       Toastify({
+                            text: errorMessage,
+                            duration: 4000,
+                            close: true,
+                            gravity: "bottom",
+                            position: "right",
+                            stopOnFocus: true,
+                            style: { background: "#dc3545" }
+                        }).showToast();
+                    }
+                });
+    </script>
+    <!-- JavaScript Libraries -->
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.bundle.min.js"></script>
+    <script src="lib/easing/easing.min.js"></script>
+    <script src="lib/waypoints/waypoints.min.js"></script>
+    <script src="lib/counterup/counterup.min.js"></script>
+    <script src="lib/owlcarousel/owl.carousel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/typed.js/2.0.10/typed.js"></script>
+    <!-- Template Javascript -->
+    <script src="~/js/main.js"></script>
+    <script>
+        var typing = new Typed(".typing", {
+            strings: ["Vào thi ngay...", "Tạo bài thi ngay...."],
+            typeSpeed: 50,
+            backSpeed: 20,
+            loop: true
+        });
+    </script>
+</body>
+
+</html>
+
