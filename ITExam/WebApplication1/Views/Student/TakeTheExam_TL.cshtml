@@ -375,6 +375,53 @@
               }
             }
           }
+        function setupAntiCheat(config) {
+            document.onkeydown = null;
+            document.oncopy = null;
+            document.oncut = null;
+            document.onpaste = null;
+            document.onselectstart = null;
+            document.oncontextmenu = null;
+
+            if (config.blockDevTools) {
+                document.onkeydown = function (e) {
+                    if (e.key === "F12" || (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "i")) {
+                        e.preventDefault();
+                        return false;
+                    }
+                };
+            }
+            if (config.blockCopyPaste) {
+                const showBlockMessage = (action) => {
+                    alert(`Bạn không được phép ${action} trong quá trình làm bài.`);
+                };
+                document.oncopy = function (e) {
+                    e.preventDefault();
+                    showBlockMessage("sao chép");
+                };
+                document.oncut = function (e) {
+                    e.preventDefault();
+                    showBlockMessage("cắt");
+                };
+                document.onpaste = function (e) {
+                    e.preventDefault();
+                    showBlockMessage("dán");
+                };
+            }
+            if (config.blockTextSelection) {
+                document.onselectstart = function (e) {
+                    e.preventDefault();
+                    return false;
+                };
+            }
+            if (config.blockRightClick) {
+                document.oncontextmenu = function (e) {
+                    e.preventDefault();
+                    return false;
+                };
+            }
+        }
+
 
           function startProgressBeat(connection) {
             return setInterval(() => {
@@ -457,6 +504,8 @@
             })
             .catch(err => console.error("SignalR connection error:", err));
 
+        connection.on("ReceiveAntiCheatConfig", setupAntiCheat);
+
           connection.onclose(() => {
             if (!hasSubmitted) {
               setTimeout(() => {
@@ -488,6 +537,28 @@
           window.ITExamEssay = {
             pushEssayDelta: () => pushEssayDelta(connection)
           };
+
+          document.addEventListener('keydown', function(e) {
+            if (!hasSubmitted) {
+                // Chặn F5
+                if (e.keyCode === 116) {
+                    e.preventDefault();
+                    return false;
+                }
+
+                // Chặn Ctrl+R hoặc Cmd+R
+                if ((e.ctrlKey || e.metaKey) && e.keyCode === 82) {
+                    e.preventDefault();
+                    return false;
+                }
+
+                // Chặn Ctrl+F5
+                if (e.ctrlKey && e.keyCode === 116) {
+                    e.preventDefault();
+                    return false;
+                }
+            }
+        });
         })();
     </script>
     <script>
