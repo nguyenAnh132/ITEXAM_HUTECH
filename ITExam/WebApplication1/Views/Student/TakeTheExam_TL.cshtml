@@ -311,6 +311,12 @@
 
           @using Newtonsoft.Json
           @{
+                int index = 1;
+                foreach (var question in Model.Questions)
+                {
+                        question.QuestionId = index;
+                        index++;
+                }
                   var essayStruct = Model.Questions.Select(q => new
                 {
                           questionId = q.QuestionId,

@@ -1367,14 +1367,24 @@
               const countEl = modal.querySelector('#ac-enabled-count');
               const resetBtn = modal.querySelector('#ac-reset');
 
-              const updateCount = () => {
-                const n = toggles.filter(t => t && t.checked).length;
-                if (countEl) countEl.textContent = n;
-                if (selectAll){
-                  selectAll.indeterminate = (n>0 && n<toggles.length);
-                  selectAll.checked = (n===toggles.length);
-                }
-              };
+                const updateCount = () => {
+                  const n = toggles.filter(t => t && t.checked).length;
+                  if (countEl) countEl.textContent = n;
+
+                  if (selectAll) {
+                    if (n === toggles.length) {
+                      selectAll.checked = true;
+                      selectAll.indeterminate = false;
+                    } else if (n === 0) {
+                      selectAll.checked = false;
+                      selectAll.indeterminate = false;
+                    } else {
+                      selectAll.checked = false;   
+                      selectAll.indeterminate = false; 
+                    }
+                  }
+                };
+
               toggles.forEach(t => t && t.addEventListener('change', updateCount));
               selectAll?.addEventListener('change', () => {
                 toggles.forEach(t => { if (t) t.checked = !!selectAll.checked; });
