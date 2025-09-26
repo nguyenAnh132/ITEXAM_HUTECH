@@ -132,20 +132,15 @@
             Chapter.Clos.forEach(clo => {
                     console.log(`CLO: ${clo.CLOTitle} | MaxCauHoi: ${clo.MaxCauHoi}`);
                 cloHTML += `
-                               <div class="my-2 d-flex flex-wrap">
-                                <div class="col-12 col-sm-8 my-1">
-                                    <input style="width:100%" value="${clo.CLOTitle}" disabled type="text" class="form-control" />
-                                </div>
-                                <div class="col-12 col-sm-3 my-1">
-                                    <input style="width:100%" type="number" value="0" class="form-control" placeholder="Số lượng" max="${clo.MaxQuestionCount}" title="Tối đa ${clo.MaxQuestionCount} câu hỏi" />
-                                </div>
-                                <div class="col-12 col-sm-12 d-flex align-items-center my-1">
-                                    <span class="text-muted">(Tối đa ${clo.MaxQuestionCount} câu hỏi)</span>
-                                </div>
+                    <div class="my-2 d-flex gap-3 ">
+                        <input style="width:70%" value="${clo.CLOTitle}" disabled type="text" class="form-control" />
 
-                                <input type="hidden" value="${clo.CLOId}" class="clo-id" />
-                            </div>
-                        `;
+                        <input style="width:10%" type="number" value="0" class="form-control" placeholder="Số lượng" max="${clo.MaxQuestionCount}" title="Tối đa ${clo.MaxQuestionCount} câu hỏi" />
+                        <span class="align-self-center text-muted">(Tối đa ${clo.MaxQuestionCount} câu hỏi)</span>
+
+
+                        <input type="hidden" value="${clo.CLOId}" class="clo-id" />
+                    </div>`;
             });
 
 
@@ -205,26 +200,15 @@
                     chuong.Clos.forEach((clo, i) => {
                         const giaTri = cloDataTam[i]?.value || 0;
                               cloHTML += `
-                                <div class="my-2 d-flex flex-wrap ">
-                                    <!-- Input CLO Title -->
-                                    <div class="col-12 col-sm-7 my-1">
-                                        <input style="width:100%" value="${clo.CLOTitle}" disabled type="text" class="form-control" />
-                                    </div>
+                        <div class="my-2 d-flex  gap-3">
+                            <input style="width:70%" value="${clo.CLOTitle}" disabled type="text" class="form-control" />
 
-                                    <!-- Input Số câu hoặc điểm -->
-                                    <div class="col-12 col-sm-3 my-1">
-                                        <input style="width:100%" type="number" value="${giaTri}" class="form-control" placeholder="Số câu hoặc điểm" min="0" max="${clo.MaxQuestionCount}" title="Tối đa ${clo.MaxQuestionCount} câu hỏi"/>
-                                    </div>
+                            <input style="width:10%" type="number" value="${giaTri}" class="form-control" placeholder="Số câu hoặc điểm" min="0" max="${clo.MaxQuestionCount}" title="Tối đa ${clo.MaxQuestionCount} câu hỏi"/>
+                            <span class="align-self-center text-muted">(Tối đa ${clo.MaxQuestionCount} câu hỏi)</span>
 
-                                    <!-- Text thông báo tối đa câu hỏi -->
-                                    <div class="col-12 col-sm-2 d-flex align-items-center my-1">
-                                        <span class="text-muted">(Tối đa ${clo.MaxQuestionCount} câu hỏi)</span>
-                                    </div>
 
-                                    <!-- Input CloId hidden -->
-                                    <input type="hidden" value="${clo.CLOId}" class="clo-id" />
-                                </div>
-                            `;
+                            <input type="hidden" value="${clo.CLOId}" class="clo-id" />
+                        </div>`;
                     });
                     cloListContainer.innerHTML = cloHTML;
                 }
@@ -383,26 +367,15 @@
                     // KHÔNG lọc CLO, render hết toàn bộ
                     chuong.CLOs.forEach(clo => {
                         html += `
-                                    <div class="my-2 d-flex flex-wrap ">
-                                        <!-- Input CLO -->
-                                        <div class="col-12 col-sm-6 my-1">
-                                            <input style="width:100%" value="${clo.CLO}" disabled type="text" class="form-control" />
-                                        </div>
+                            <div class="my-2 d-flex  gap-3">
+                                <input style="width:70%" value="${clo.CLO}" disabled type="text" class="form-control" />
 
-                                        <!-- Input Số lượng -->
-                                        <div class="col-12 col-sm-3 my-1">
-                                            <input style="width:100%" type="number" value="${clo.MaxQuestionCount}" class="form-control" placeholder="Số lượng" min="0" max="${clo.MaxQuestionCount}" />
-                                        </div>
+                                <input style="width:10%" type="number" value="${clo.MaxQuestionCount}" class="form-control" placeholder="Số lượng" min="0" max="${clo.MaxQuestionCount}" />
+                                <span class="align-self-center text-muted">(Tối đa ${clo.MaxQuestionCount} câu hỏi)</span>
 
-                                        <!-- Text thông báo tối đa câu hỏi -->
-                                        <div class="col-12 col-sm-2 d-flex align-items-center my-1">
-                                            <span class="text-muted">(Tối đa ${clo.MaxQuestionCount} câu hỏi)</span>
-                                        </div>
 
-                                        <!-- Input CloId hidden -->
-                                        <input type="hidden" value="${clo.CLOId}" class="clo-id" />
-                                    </div>
-                                `;
+                                <input type="hidden" value="${clo.CLOId}" class="clo-id" />
+                            </div>`;
                     });
 
                     html += `</div></div>`;
