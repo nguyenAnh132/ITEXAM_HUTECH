@@ -774,6 +774,7 @@ namespace ITExam.Controllers
                     Score = ls.Score,
                     ClassId = ls.ClassId,
                     ExamName = ls.Exam.ExamName,
+                    ExamType = ls.Exam.ExamType,
                     ExamId = ls.ExamId,
                     ExamDetails = ls.StudentAnswers.Select(ct => new ExamHistoryDetailVM
                     {
@@ -960,17 +961,33 @@ namespace ITExam.Controllers
                 return NotFound("Không tìm thấy bài làm");
 
             double totalScore = 0;
+            int totalQuestions = model.ListQuestions.Count;
+
+            // Tính tổng điểm đã chấm (cộng điểm từ từng câu)
             foreach (var question in model.ListQuestions)
             {
                 var answer = history.StudentAnswers.FirstOrDefault(ct => ct.QuestionId == question.QuestionId);
                 if (answer != null)
                 {
+                    // Gán điểm cho câu trả lời
                     answer.Score = question.GradedScore;
+
+                    // Cộng vào tổng điểm đã chấm
                     totalScore += question.GradedScore ?? 0;
                 }
             }
 
-            history.Score = Math.Round(totalScore, 2);
+            // Tính điểm tối đa có thể đạt được
+            double maxPossibleScore = totalQuestions * 10;
+
+            // Tính tổng điểm chuẩn hóa
+            double normalizedScore = (totalScore / maxPossibleScore) * 10;
+
+            // Log tổng điểm chuẩn hóa
+            Console.WriteLine($"Total Score: {totalScore}, Max Possible Score: {maxPossibleScore}, Normalized Score: {normalizedScore}");
+
+            // Gán điểm chuẩn hóa vào lịch sử bài thi
+            history.Score = Math.Round(normalizedScore, 2);
             history.SubmitTime = history.SubmitTime ?? DateTime.Now;
 
             await _context.SaveChangesAsync();
@@ -1542,18 +1559,33 @@ namespace ITExam.Controllers
                 }
             }
 
+            // Kiểm tra các bảng liên quan
+            var isRelatedToExams = await _context.Exams.AnyAsync(e => e.ExamBankId == MaNHD && e.ExamName.Contains(cauHoi.QuestionId.ToString()));
+            var isRelatedToAnswers = await _context.StudentAnswers.AnyAsync(sa => sa.QuestionId == maCauHoi);
+
+            // Tạo thông báo liên quan
+            string relatedInfo = "";
+            if (isRelatedToExams)
+            {
+                relatedInfo += "Câu hỏi này có liên quan đến một số bài thi.\n";
+            }
+            if (isRelatedToAnswers)
+            {
+                relatedInfo += "Câu hỏi này có liên quan đến một số câu trả lời của học sinh.\n";
+            }
+
+            if (!string.IsNullOrEmpty(relatedInfo))
+            {
+                TempData["ErrorMessage"] = $"Không thể xóa câu hỏi vì nó đang được sử dụng trong các bảng khác:\n{relatedInfo}";
+                return RedirectToAction("Exam_Bank_Add_Question_MultipleChoice", new { id = MaNHD });
+            }
+
             _context.QuestionBanks.Remove(cauHoi);
             await _context.SaveChangesAsync();
 
-            if (nganHangDe == null)
-            {
-                TempData["ErrorMessage"] = "Không tìm thấy ngân hàng đề.";
-                return RedirectToAction("Index");
-            }
-
             TempData["SuccessMessage"] = "Câu hỏi đã được xóa thành công.";
 
-            if (nganHangDe.ExamType == "Tự luận")
+            if (nganHangDe?.ExamType == "Tự luận")
             {
                 return RedirectToAction("Exam_Bank_Add_Question_Essay", new { id = MaNHD });
             }
@@ -1562,6 +1594,7 @@ namespace ITExam.Controllers
                 return RedirectToAction("Exam_Bank_Add_Question_MultipleChoice", new { id = MaNHD });
             }
         }
+
 
 
 

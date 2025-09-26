@@ -73,40 +73,44 @@
                                         </div>
 
                                         <div>
-                                            @foreach (var option in JsonConvert.DeserializeObject<List<dynamic>>(item.ChoiceContent))
+                                            @if (Model.ExamType == "Trắc nghiệm")  
                                             {
-                                                var isCorrect = option.LaDapAn != null && option.LaDapAn.ToObject<bool>();
-                                                if (item.QuestionType == "2")
+                                                @foreach (var option in JsonConvert.DeserializeObject<List<dynamic>>(item.ChoiceContent))
                                                 {
-                                                    <div class="border rounded p-2 d-flex mb-2 answer-option-multi">
-                                                        <input class="mx-2" disabled type="checkbox"
-                                                               name="answer_multi_@item.QuestionContent"
-                                                               value="@option.Id" data-correct="@(isCorrect ? "true" : "false")"
-                                                        @(isCorrect ? "checked" : "") />
-                                                        <div class="noiDungLuaChon">@Html.Raw(option.NoiDung.ToString())</div>
-                                                    </div>
-                                                }
-                                                else if (item.QuestionType == "1")
-                                                {
-                                                    <div class="border rounded p-2 d-flex mb-2 answer-option-single">
-                                                        <input class="mx-2" disabled type="radio"
-                                                               name="answer_single_@item.QuestionContent"
-                                                               value="@option.Id" data-correct="@(isCorrect ? "true" : "false")"
-                                                        @(isCorrect ? "checked" : "") />
-                                                        <div class="noiDungLuaChon">@Html.Raw(option.NoiDung.ToString())</div>
-                                                    </div>
-                                                }
-                                                else if (item.QuestionType == "3")
-                                                {
-                                                    <div class="border rounded p-2 d-flex mb-2 answer-option-truefalse">
-                                                        <input class="mx-2" disabled type="radio"
-                                                               name="answer_truefalse_@item.QuestionContent"
-                                                               value="@option.Id" data-correct="@(isCorrect ? "true" : "false")"
-                                                        @(isCorrect ? "checked" : "") />
-                                                        <div class="noiDungLuaChon">@Html.Raw(option.NoiDung.ToString())</div>
-                                                    </div>
+                                                    var isCorrect = option.LaDapAn != null && option.LaDapAn.ToObject<bool>();
+                                                    if (item.QuestionType == "2")
+                                                    {
+                                                        <div class="border rounded p-2 d-flex mb-2 answer-option-multi">
+                                                            <input class="mx-2" disabled type="checkbox"
+                                                                   name="answer_multi_@item.QuestionContent"
+                                                                   value="@option.Id" data-correct="@(isCorrect ? "true" : "false")"
+                                                            @(isCorrect ? "checked" : "") />
+                                                            <div class="noiDungLuaChon">@Html.Raw(option.NoiDung.ToString())</div>
+                                                        </div>
+                                                    }
+                                                    else if (item.QuestionType == "1")
+                                                    {
+                                                        <div class="border rounded p-2 d-flex mb-2 answer-option-single">
+                                                            <input class="mx-2" disabled type="radio"
+                                                                   name="answer_single_@item.QuestionContent"
+                                                                   value="@option.Id" data-correct="@(isCorrect ? "true" : "false")"
+                                                            @(isCorrect ? "checked" : "") />
+                                                            <div class="noiDungLuaChon">@Html.Raw(option.NoiDung.ToString())</div>
+                                                        </div>
+                                                    }
+                                                    else if (item.QuestionType == "3")
+                                                    {
+                                                        <div class="border rounded p-2 d-flex mb-2 answer-option-truefalse">
+                                                            <input class="mx-2" disabled type="radio"
+                                                                   name="answer_truefalse_@item.QuestionContent"
+                                                                   value="@option.Id" data-correct="@(isCorrect ? "true" : "false")"
+                                                            @(isCorrect ? "checked" : "") />
+                                                            <div class="noiDungLuaChon">@Html.Raw(option.NoiDung.ToString())</div>
+                                                        </div>
+                                                    }
                                                 }
                                             }
+
 
 
 
@@ -167,7 +171,7 @@
                                                 }
                                                 else if (!string.IsNullOrEmpty(item.EssayAnswer))
                                                 {
-                                                    <p class="fw-bold">Câu trả lời tự luận: @Html.Raw(item.EssayAnswer)</p>
+                                                     @Html.Raw(item.EssayAnswer)
                                                 }
                                                 else if (item.QuestionType == "2")
                                                 {

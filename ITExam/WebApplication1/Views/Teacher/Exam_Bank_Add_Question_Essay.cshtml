@@ -78,74 +78,74 @@
                                         asp-controller="Teacher" 
                                         asp-action="Exam_Bank_Add_Question_Essay" 
                                         asp-route-id="@Model.ExamBankId">Thêm câu hỏi mới</a> 
-                                 </div> 
+                                 </div>
 
-                                 @{ 
-                                     bool coChuong = Model.ChapterList != null && Model.ChapterList.Any(); 
-                                     bool coCauHoiTheoChuong = coChuong && Model.QuestionList.Any(ch => ch.ChapterId != null); 
-                                 } 
+                                @{
+                                    bool coChuong = Model.ChapterList != null && Model.ChapterList.Any();
+                                    bool coCauHoiTheoChuong = coChuong && Model.QuestionList.Any(ch => ch.ChapterId != null);
+                                    int globalIndex = 0; // thêm biến đếm toàn cục
+                                }
 
-                                 @if (coChuong && coCauHoiTheoChuong) 
-                                 { 
-                                     // Hiển thị phân theo chương 
-                                     foreach (var chuong in Model.ChapterList) 
-                                     { 
-                                         var cauHoiTheoChuong = Model.QuestionList 
-                                         .Where(ch => ch.ChapterId == chuong.Id) 
-                                         .ToList(); 
+                                @if (coChuong && coCauHoiTheoChuong)
+                                {
+                                    // Hiển thị phân theo chương
+                                    foreach (var chuong in Model.ChapterList)
+                                    {
+                                        var cauHoiTheoChuong = Model.QuestionList
+                                        .Where(ch => ch.ChapterId == chuong.Id)
+                                        .ToList();
 
-                                         if (cauHoiTheoChuong.Any()) 
-                                         { 
-                                             <div class="mt-3"> 
-                                                 <h5 class="fw-bold text-primary">Chương: @chuong.Title</h5> 
-                                                 <div class="d-flex flex-wrap gap-3"> 
-                                                     @for (int i = 0; i < cauHoiTheoChuong.Count; i++) 
-                                                     { 
-                                                         var cauHoi = cauHoiTheoChuong[i]; 
-                                                         var originalIndex = Model.QuestionList.IndexOf(cauHoi); 
-
-                                                         <div class="d-flex align-items-center gap-2"> 
-                                                             <button type="button" class="btn btn-outline-primary question-button" onclick="loadQuestion(@originalIndex)"> 
-                                                                 @(originalIndex + 1) 
-                                                             </button> 
-                                                             <button type="button" 
-                                                                     class="btn btn-danger btn-sm btn-open-delete-modal" 
-                                                                     data-macauhoi="@cauHoi.QuestionId" 
-                                                                     data-manhd="@Model.ExamBankId" 
-                                                                     data-bs-toggle="modal" 
-                                                                     data-bs-target="#deleteQuestionModal"> 
-                                                                 <i class="fa fa-trash"></i> 
-                                                             </button> 
-
-                                                         </div> 
-                                                     } 
-                                                 </div> 
-                                             </div> 
-                                         } 
-                                     } 
-                                 } 
-                                 else 
-                                 { 
-                                     // Không có chương, hiển thị danh sách như cũ 
-                                     <div class="d-flex flex-wrap gap-3 mt-3"> 
-                                         @for (int i = 0; i < Model.QuestionList.Count; i++) 
-                                         { 
-                                             var cauHoi = Model.QuestionList[i]; 
-                                             <div class="d-flex align-items-center gap-2"> 
-                                                 <button type="button" class="btn btn-outline-primary question-button" onclick="loadQuestion(@i)"> 
-                                                     @(i + 1) 
-                                                 </button> 
-                                                 <form asp-action="DeleteQuestion" asp-controller="Teacher" method="post" onsubmit="return confirm('Bạn có chắc muốn xóa câu hỏi này không?')"> 
-                                                     <input type="hidden" name="maCauHoi" value="@cauHoi.QuestionId" /> 
-                                                     <input type="hidden" name="MaNHD" value="@Model.ExamBankId" /> 
-                                                     <button type="submit" class="btn btn-danger btn-sm"> 
-                                                         <i class="fa fa-trash"></i> 
-                                                     </button> 
-                                                 </form> 
-                                             </div> 
-                                         } 
-                                     </div> 
-                                 } 
+                                        if (cauHoiTheoChuong.Any())
+                                        {
+                                            <div class="mt-3">
+                                                <h5 class="fw-bold text-primary">Chương: @chuong.Title</h5>
+                                                <div class="d-flex flex-wrap gap-3">
+                                                    @foreach (var cauHoi in cauHoiTheoChuong)
+                                                    {
+                                                        <div class="d-flex align-items-center gap-2">
+                                                            <button type="button"
+                                                                    class="btn btn-outline-primary question-button"
+                                                                    onclick="loadQuestion(@globalIndex)">
+                                                                @(globalIndex + 1)
+                                                            </button>
+                                                            <button type="button"
+                                                                    class="btn btn-danger btn-sm btn-open-delete-modal"
+                                                                    data-macauhoi="@cauHoi.QuestionId"
+                                                                    data-manhd="@Model.ExamBankId"
+                                                                    data-bs-toggle="modal"
+                                                                    data-bs-target="#deleteQuestionModal">
+                                                                <i class="fa fa-trash"></i>
+                                                            </button>
+                                                        </div>
+                                                        globalIndex++; // tăng sau mỗi câu
+                                                    }
+                                                </div>
+                                            </div>
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    // Không có chương, hiển thị danh sách như cũ
+                                    <div class="d-flex flex-wrap gap-3 mt-3">
+                                        @for (int i = 0; i < Model.QuestionList.Count; i++)
+                                        {
+                                            var cauHoi = Model.QuestionList[i];
+                                            <div class="d-flex align-items-center gap-2">
+                                                <button type="button" class="btn btn-outline-primary question-button" onclick="loadQuestion(@i)">
+                                                    @(i + 1)
+                                                </button>
+                                                <form asp-action="DeleteQuestion" asp-controller="Teacher" method="post" onsubmit="return confirm('Bạn có chắc muốn xóa câu hỏi này không?')">
+                                                    <input type="hidden" name="maCauHoi" value="@cauHoi.QuestionId" />
+                                                    <input type="hidden" name="MaNHD" value="@Model.ExamBankId" />
+                                                    <button type="submit" class="btn btn-danger btn-sm">
+                                                        <i class="fa fa-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        }
+                                    </div>
+                                }
 
 
 
