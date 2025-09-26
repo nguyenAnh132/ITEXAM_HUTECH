@@ -8,6 +8,7 @@ namespace ITExam.ViewModels.Exam
         public DateTime? SubmitTime { get; set; }                // ThoiGianNop
         public double? Score { get; set; }                       // Diem
         public string ExamName { get; set; }                    // TenDe
+        public string ExamType { get; set; }                    // TenDe
         public int ExamId { get; set; }                          // MaDe
         public int ClassId { get; set; }                         // MaLopHoc
 

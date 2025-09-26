@@ -847,6 +847,7 @@ namespace ITExam.Controllers
                     Score = ls.Score,
                     ClassId = ls.ClassId,
                     ExamName = ls.Exam.ExamName,
+                    ExamType = ls.Exam.ExamType,
                     ExamId = ls.ExamId,
                     ExamDetails = ls.StudentAnswers.Select(ct => new ExamHistoryDetailVM
                     {
@@ -864,7 +865,6 @@ namespace ITExam.Controllers
                 return NotFound("Không tìm thấy lịch sử làm bài.");
             }
 
-            // Truyền chi tiết lịch sử làm bài vào View
             return View(examHistory);
         }
 

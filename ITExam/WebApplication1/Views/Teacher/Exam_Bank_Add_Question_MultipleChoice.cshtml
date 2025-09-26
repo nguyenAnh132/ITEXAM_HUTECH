@@ -220,33 +220,35 @@
               </div>  
           </div> 
      </div> 
- </div> 
+ </div>
 
 
 
 
- <!-- Modal xác nhận xóa câu hỏi --> 
- <div class="modal fade" id="deleteQuestionModal" tabindex="-1" aria-labelledby="deleteQuestionModalLabel" aria-hidden="true"> 
-     <div class="modal-dialog modal-dialog-centered"> 
-         <div class="modal-content"> 
-             <form method="post" asp-action="DeleteQuestion" asp-controller="Teacher"> 
-                 <div class="modal-header bg-danger text-white"> 
-                     <h5 class="modal-title text-white">Xác nhận xóa câu hỏi</h5> 
-                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button> 
-                 </div> 
-                 <div class="modal-body"> 
-                     <input type="hidden" id="macauhoiToDelete" name="maCauHoi" /> 
-                     <input type="hidden" id="manhdToDelete" name="MaNHD" /> 
-                     <p>Bạn có chắc chắn muốn xóa câu hỏi này khỏi ngân hàng đề?</p> 
-                 </div> 
-                 <div class="modal-footer"> 
-                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button> 
-                     <button type="submit" class="btn btn-danger">Xác nhận xóa</button> 
-                 </div> 
-             </form> 
-         </div> 
-     </div> 
- </div> 
+<!-- Modal xác nhận xóa câu hỏi -->
+<div class="modal fade" id="deleteQuestionModal" tabindex="-1" aria-labelledby="deleteQuestionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" asp-action="DeleteQuestion" asp-controller="Teacher">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title text-white">Xác nhận xóa câu hỏi</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="macauhoiToDelete" name="maCauHoi" />
+                    <input type="hidden" id="manhdToDelete" name="MaNHD" />
+                    <p>Bạn có chắc chắn muốn xóa câu hỏi này khỏi ngân hàng đề?</p>
+                    <p id="relatedInfo"></p> <!-- Hiển thị thông tin liên quan -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-danger">Xác nhận xóa</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 
  @section Script 
   { 

@@ -27,7 +27,7 @@
     </div>
 
     <form asp-action="SaveGradingResult" asp-controller="Teacher" method="post">
-        <input type="hidden" name="LichSuId" value="@Model.HistoryId" />
+        <input type="hidden" name="HistoryId" value="@Model.HistoryId" />
 
         <table class="table table-bordered align-middle">
             <thead class="table-secondary">
@@ -47,9 +47,9 @@
                             <td>@Html.Raw(cau.QuestionContent)</td>
                             <td>@Html.Raw(cau.StudentAnswer)</td>
                             <td>
-                                <input type="hidden" name="DanhSachCauHoi[@i].MaCauHoi" value="@cau.QuestionId" />
+                            <input type="hidden" name="ListQuestions[@i].QuestionId" value="@cau.QuestionId" />
                                 <input class="form-control" type="number" step="0.25" min="0" max="10"
-                                       name="DanhSachCauHoi[@i].DiemDuocCham"
+                                   name="ListQuestions[@i].GradedScore"
                                        value="@cau.GradedScore" />
                             </td>
                         </tr>
