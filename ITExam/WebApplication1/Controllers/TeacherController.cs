@@ -278,7 +278,7 @@ namespace ITExam.Controllers
                     StartTime = lichSu.StartTime,
                     SubmitTime = lichSu.SubmitTime ?? DateTime.MinValue,
                     Duration = lichSu.Duration,
-                    Score = (float)lichSu.Score,
+                    Score = lichSu.Score,
                     ExamHistoryId = lichSu.ExamHistoryId
                 } : null;
             })

@@ -8,7 +8,7 @@
         public DateTime StartTime { get; set; }
         public DateTime SubmitTime { get; set; }
         public int Duration { get; set; }
-        public float Score { get; set; }
+        public double? Score { get; set; }
         public int ExamHistoryId { get; set; }
     }
 }

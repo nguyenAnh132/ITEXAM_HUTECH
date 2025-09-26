@@ -455,7 +455,6 @@ namespace ITExam.Controllers
                     ExamId = maDe,
                     ClassId = maLop,
                     StartTime = DateTime.Now,
-                    Score = 0
                 };
                 _context.ExamHistories.Add(lichSu);
                 await _context.SaveChangesAsync();
