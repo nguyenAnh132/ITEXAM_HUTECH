@@ -127,13 +127,13 @@
                      </div> 
 
                      <div class="mt-4 d-flex flex-wrap"> 
-                         @foreach (var dt in Model.Exams) 
-                         { 
-                             if(dt.Type == true) 
-                             { 
-                             var tenDe = dt.ExamName.Length > 25 ? dt.ExamName.Substring(0, 25) + "..." : dt.ExamName; 
-                                 <div class="col-lg-4 col-md-6  p-0" data-ten="@dt.ExamName"> 
-                                 <div class="card h-80 shadow-sm border-0"> 
+                         @foreach (var dt in Model.Exams)
+                        {
+                            if (dt.Type == true)
+                            {
+                                var tenDe = dt.ExamName.Length > 25 ? dt.ExamName.Substring(0, 25) + "..." : dt.ExamName;
+                                <div class="col-lg-4 col-md-6 mb-4" data-ten="@dt.ExamName">
+                                    <div class="card h-80 shadow-sm border-0"> 
                                      <div style="height: 200px; overflow: hidden"> 
                                          <img src="~/img/exam1-avatar.png" 
                                               class="card-img-top" 
