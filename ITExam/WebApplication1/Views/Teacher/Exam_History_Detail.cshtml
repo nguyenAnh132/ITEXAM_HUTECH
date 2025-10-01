@@ -108,11 +108,14 @@
                                                             <div class="noiDungLuaChon">@Html.Raw(option.NoiDung.ToString())</div>
                                                         </div>
                                                     }
+                                                    else if (item.QuestionType == "4")
+                                                    {
+                                                        <div class="border rounded p-2 d-flex mb-2">
+                                                            <div class="noiDungLuaChon"><b>Đáp án chính xác: @Html.Raw(option.NoiDung.ToString())</b></div>
+                                                        </div>
+                                                    }
                                                 }
                                             }
-
-
-
 
                                         </div>
 
@@ -169,10 +172,35 @@
                                                         }
                                                     }
                                                 }
-                                                else if (!string.IsNullOrEmpty(item.EssayAnswer))
+                                                else if (!string.IsNullOrEmpty(item.EssayAnswer) && item.QuestionType == "4")
                                                 {
-                                                     @Html.Raw(item.EssayAnswer)
+                                                    var studentAnswer = item.EssayAnswer.Trim();
+                                                    var options = JsonConvert.DeserializeObject<List<dynamic>>(item.ChoiceContent);
+
+                                                    foreach (var option in options)
+                                                    {
+                                                        var correctAnswer = option.NoiDung.ToString().Trim();
+
+                                                        <div class="d-flex fw-bold">
+                                                            <span class="me-2">@studentAnswer</span>
+
+                                                            @if (("<p>"+studentAnswer+"</p>").Equals(correctAnswer, StringComparison.OrdinalIgnoreCase))
+                                                            {
+                                                                <span class="text-success">[Đúng]</span>
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="text-danger">[Sai]</span>
+                                                            }
+                                                        </div>
+                                                    }
                                                 }
+
+                                                else if (!string.IsNullOrEmpty(item.EssayAnswer) && item.QuestionType == null)
+                                                {
+                                                    @Html.Raw(item.EssayAnswer)
+                                                }
+
                                                 else if (item.QuestionType == "2")
                                                 {
                                                     var luaChonList = JsonConvert.DeserializeObject<List<dynamic>>(item.ChoiceContent);
@@ -291,8 +319,6 @@
                 });
             });
         });
-
-
 
 
     </script>

@@ -12,6 +12,7 @@ namespace ITExam.ViewModels.Exam
         public string StudentId { get; set; }           // MSSV
         public string FullName { get; set; }              // HoTen
         public List<MultipleChoiceQuestionVM>? Questions { get; set; } // DanhSachCauHoi
+        
         public int ClassId { get; set; }                  // MaLop
         public string ClassName { get; set; }             // TenLop
     }
@@ -21,6 +22,7 @@ namespace ITExam.ViewModels.Exam
         public int QuestionId { get; set; }               // MaCauHoi
         public string QuestionContent { get; set; }       // NoiDungCauHoi
         public string QuestionType { get; set; }          // LoaiCauHoi
+        public string FillInAns { get; set; } = string.Empty; //CauHoiDienTu
         public List<ChoiceVM> Choices { get; set; }       // DanhSachLuaChon
     }
 

@@ -1080,7 +1080,7 @@ namespace ITExam.Controllers
             if (monHoc == null) return NotFound();
             var danhSachChuong = monHoc?.Chapters ?? new List<ChapterDto>();
 
-            var thongTinNHD = await _context.ExamBanks
+            var thongTinNHD = await _context.ExamBanks.AsNoTracking()
                 .Where(ch => ch.ExamBankId == id)
                 .Select(ch => new
                 {
@@ -1091,7 +1091,7 @@ namespace ITExam.Controllers
                 .FirstOrDefaultAsync();
 
             // Lấy danh sách câu hỏi từ ngân hàng đề
-            var examQuestions = await _context.QuestionBanks
+            var examQuestions = await _context.QuestionBanks.AsNoTracking()
                 .Where(q => q.ExamBankId == id)
                 .Select(q => new ExamBankQuestionVM
                 {

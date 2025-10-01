@@ -9,8 +9,12 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 using System.ComponentModel.DataAnnotations;
+using System.Globalization;
+using System.Net;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using WebApplication1.Models;
 namespace ITExam.Controllers
 {
@@ -353,11 +357,19 @@ namespace ITExam.Controllers
 
             var lopHoc = await _context.Classes.FindAsync(maLop);
 
-            var key = $"exam:{maDe}:{user.UserId}";
+            // Load câu trả lời trắc nghiệm từ Redis
+            var key = $"multiChoiceAns:{maDe}:{user.UserId}";
             var cacheData = await _redis.GetStringAsync(key);
             var luuLuaChon = string.IsNullOrEmpty(cacheData)
                 ? new Dictionary<int, List<int>>()
                 : JsonSerializer.Deserialize<Dictionary<int, List<int>>>(cacheData);
+
+            // Load câu trả lời tự luận từ Redis
+            var essayKey = $"essayAns:{maDe}:{user.UserId}";
+            var essayCacheData = await _redis.GetStringAsync(essayKey);
+            var luuCauTraLoiTuLuan = string.IsNullOrEmpty(essayCacheData)
+                ? new Dictionary<int, string>()
+                : JsonSerializer.Deserialize<Dictionary<int, string>>(essayCacheData);
 
             int thoiGianLamBai = deThi.Duration * 60;
             int thoiGianDaTroiQua = (int)(DateTime.Now - lichSu.StartTime).TotalSeconds;
@@ -378,6 +390,10 @@ namespace ITExam.Controllers
                     QuestionId = ch.QuestionId,
                     QuestionContent = ch.QuestionContent,
                     QuestionType = ch.QuestionType,
+                    // Load lại giá trị cho textarea nếu là câu hỏi loại 4 (điền từ)
+                    FillInAns = ch.QuestionType == "4" && luuCauTraLoiTuLuan.ContainsKey(ch.QuestionId)
+                        ? luuCauTraLoiTuLuan[ch.QuestionId]
+                        : string.Empty,
                     Choices = Newtonsoft.Json.JsonConvert.DeserializeObject<List<QuestionOptionVM>>(ch.ChoiceContent)
                         .Select(lc => new ChoiceVM
                         {
@@ -393,7 +409,6 @@ namespace ITExam.Controllers
             return View(vm);
         }
 
-
         //Đề thi : Lưu redis tự luận
         [HttpPost]
         public async Task<IActionResult> SaveEssayAnswer([FromBody] LuuTuLuan data)
@@ -406,7 +421,7 @@ namespace ITExam.Controllers
                 return RedirectToAction("Logout", "Auth");
             }
 
-            string key = $"exam:{data.MaDe}:{user.UserId}";
+            string key = $"essayAns:{data.MaDe}:{user.UserId}";
 
             var json = JsonSerializer.Serialize(data.CauTraLoi);
             await _redis.SetStringAsync(key, json, new DistributedCacheEntryOptions
@@ -504,7 +519,7 @@ namespace ITExam.Controllers
 
             var lopHoc = await _context.Classes.FindAsync(maLop);
 
-            var key = $"exam:{maDe}:{user.UserId}";
+            var key = $"essayAns:{maDe}:{user.UserId}";
             var cacheData = await _redis.GetStringAsync(key);
             var luuCauTraLoi = string.IsNullOrEmpty(cacheData)
                 ? new Dictionary<int, string>()
@@ -542,7 +557,7 @@ namespace ITExam.Controllers
         [HttpPost]
         public async Task<IActionResult> SaveAnswer([FromBody] LuuLuaChon request)
         {
-            var key = $"exam:{request.MaDe}:{request.UserId}";
+            var key = $"multiChoiceAns:{request.MaDe}:{request.UserId}";
             var cacheData = await _redis.GetStringAsync(key);
 
             var answer = string.IsNullOrEmpty(cacheData)
@@ -589,6 +604,63 @@ namespace ITExam.Controllers
             return Ok(new { success = true });
         }
 
+        // Loại bỏ HTML tags, decode entities
+        private static string StripHtml(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input)) return string.Empty;
+            // decode entities like &nbsp;
+            string decoded = WebUtility.HtmlDecode(input);
+            // remove tags like <p> ... </p>
+            string noTags = Regex.Replace(decoded, "<.*?>", string.Empty);
+            return noTags;
+        }
+
+        private static string RemoveInvisibleAndCollapseSpaces(string input)
+        {
+            if (string.IsNullOrEmpty(input)) return string.Empty;
+            string s = input.Replace("\u00A0", " ")   // non-breaking space
+                            .Replace("\u200B", "");   // zero-width space
+            s = Regex.Replace(s, @"\s+", " ").Trim();   // collapse multiple spaces
+            return s;
+        }
+
+        private static string RemoveDiacritics(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return text;
+            var normalized = text.Normalize(NormalizationForm.FormD);
+            var sb = new StringBuilder();
+            foreach (var ch in normalized)
+            {
+                var cat = CharUnicodeInfo.GetUnicodeCategory(ch);
+                if (cat != UnicodeCategory.NonSpacingMark)
+                    sb.Append(ch);
+            }
+            return sb.ToString().Normalize(NormalizationForm.FormC);
+        }
+
+
+        /// Normalize chuẩn để so sánh: strip html, decode, remove invisible, remove punctuation (but keep spaces),
+        /// tùy chọn có bỏ dấu không, sau đó ToUpper với ngôn ngữ vi-VN.
+        private static string NormalizeForComparison(string input, bool removeDiacritics = false)
+        {
+            if (string.IsNullOrWhiteSpace(input)) return string.Empty;
+
+            string s = StripHtml(input);
+            s = RemoveInvisibleAndCollapseSpaces(s);
+
+            // Loại bỏ punctuation (.,;:!?()[]{}<>'"...) nhưng giữ khoảng trắng
+            s = new string(s.Where(c => !char.IsPunctuation(c)).ToArray());
+
+            if (removeDiacritics)
+                s = RemoveDiacritics(s);
+
+            // Chuyển hết về uppercase theo culture Việt Nam (an toàn với tiếng Việt)
+            s = s.ToUpper(new CultureInfo("vi-VN"));
+
+            return s;
+        }
+
+
         // Đề thi : Kết quả thi trắc nghiệm của sinh viên
         [HttpPost]
         public async Task<IActionResult> ExamResult_TN(int maDe, int maLop)
@@ -604,12 +676,17 @@ namespace ITExam.Controllers
             var deThi = await _context.Exams.FindAsync(maDe);
             if (deThi == null) return NotFound();
 
-            var lichSuLamBai = await _context.ExamHistories
+            var examHistory = await _context.ExamHistories
                 .FirstOrDefaultAsync(ls => ls.UserId == user.UserId && ls.ExamId == maDe);
-            if (lichSuLamBai == null) return NotFound();
+            if (examHistory == null) return NotFound();
 
-            var key = $"exam:{maDe}:{user.UserId}";
-            var cacheData = await _redis.GetStringAsync(key);
+            // Lấy dữ liệu câu trả lời trắc nghiệm
+            var multiChoiceKey = $"multiChoiceAns:{maDe}:{user.UserId}";
+            var multiChoiceCacheData = await _redis.GetStringAsync(multiChoiceKey);
+
+            // Lấy dữ liệu câu trả lời điền từ
+            var essayKey = $"essayAns:{maDe}:{user.UserId}";
+            var essayCacheData = await _redis.GetStringAsync(essayKey);
 
             var tongCauHoi = await _context.ExamMatrices
                 .Where(mt => mt.ExamId == maDe)
@@ -619,60 +696,87 @@ namespace ITExam.Controllers
             double tongDiem = 0;
             int soCauDung = 0;
 
-            if (string.IsNullOrEmpty(cacheData))
+            // Xử lý câu trả lời trắc nghiệm
+            if (!string.IsNullOrEmpty(multiChoiceCacheData))
             {
-                var vm = new MultipleChoiceExamResultVM
+                var multiChoiceAnsList = JsonSerializer.Deserialize<Dictionary<int, List<int>>>(multiChoiceCacheData);
+
+                if (multiChoiceAnsList != null && multiChoiceAnsList.Count > 0)
                 {
-                    Score = Math.Round(0.0, 2),
-                    QuestionCount = tongCauHoi,
-                    CorrectAnswers = 0,
-                    AccuracyRate = 0.0,
-                    ExamDate = DateTime.Now,
-                    Duration = (int)(DateTime.Now - lichSuLamBai.StartTime).TotalSeconds,
-                    ClassId = maLop
-                };
-                return View(vm);
-            }
+                    foreach (var cauTraLoi in multiChoiceAnsList)
+                    {
+                        int maCauHoi = cauTraLoi.Key;
+                        List<int> luaChonSV = cauTraLoi.Value.OrderBy(x => x).ToList();
 
-            var danhSachCauTraLoi = JsonSerializer.Deserialize<Dictionary<int, List<int>>>(cacheData);
+                        var cauHoi = await _context.QuestionBanks
+                            .SingleOrDefaultAsync(ch => ch.QuestionId == maCauHoi);
+                        if (cauHoi == null) continue;
 
-            if (danhSachCauTraLoi == null || danhSachCauTraLoi.Count == 0)
-            {
-                var vm = new MultipleChoiceExamResultVM
-                {
-                    Score = Math.Round(0.0, 2),
-                    QuestionCount = tongCauHoi,
-                    CorrectAnswers = 0,
-                    AccuracyRate = 0.0,
-                    ExamDate = DateTime.Now,
-                    Duration = (int)(DateTime.Now - lichSuLamBai.StartTime).TotalSeconds,
-                    ClassId = maLop
-                };
-                return View(vm);
-            }
+                        // Chỉ xử lý câu trắc nghiệm (loại 1, 2, 3)
+                        if (cauHoi.QuestionType == "1" || cauHoi.QuestionType == "2" || cauHoi.QuestionType == "3")
+                        {
+                            var dapAnDung = Newtonsoft.Json.JsonConvert.DeserializeObject<List<QuestionOptionVM>>(cauHoi.ChoiceContent)
+                                .Where(lc => lc.IsCorrectAnswer)
+                                .Select(lc => lc.ChoiceId)
+                                .OrderBy(x => x)
+                                .ToList();
 
-            foreach (var cauTraLoi in danhSachCauTraLoi)
-            {
-                int maCauHoi = cauTraLoi.Key;
-                List<int> luaChonSV = cauTraLoi.Value.OrderBy(x => x).ToList();
-
-                var cauHoi = await _context.QuestionBanks
-                    .SingleOrDefaultAsync(ch => ch.QuestionId == maCauHoi);
-                if (cauHoi == null) continue;
-
-                var dapAnDung = Newtonsoft.Json.JsonConvert.DeserializeObject<List<QuestionOptionVM>>(cauHoi.ChoiceContent)
-                    .Where(lc => lc.IsCorrectAnswer)
-                    .Select(lc => lc.ChoiceId)
-                    .OrderBy(x => x)
-                    .ToList();
-
-                bool isCorrect = luaChonSV.SequenceEqual(dapAnDung);
-                if (isCorrect)
-                {
-                    tongDiem += diemMoiCau;
-                    soCauDung++;
+                            bool isCorrect = luaChonSV.SequenceEqual(dapAnDung);
+                            if (isCorrect)
+                            {
+                                tongDiem += diemMoiCau;
+                                soCauDung++;
+                            }
+                        }
+                    }
                 }
             }
+
+            // Xử lý câu trả lời điền từ
+            if (!string.IsNullOrEmpty(essayCacheData))
+            {
+                var fillInAnsList = JsonSerializer.Deserialize<Dictionary<int, string>>(essayCacheData);
+
+                if (fillInAnsList != null && fillInAnsList.Count > 0)
+                {
+                    foreach (var cauTraLoi in fillInAnsList)
+                    {
+                        int maCauHoi = cauTraLoi.Key;
+                        string cauTraLoiSV = cauTraLoi.Value ?? "";
+                        if (string.IsNullOrWhiteSpace(cauTraLoiSV)) continue;
+
+                        var cauHoi = await _context.QuestionBanks
+                            .SingleOrDefaultAsync(ch => ch.QuestionId == maCauHoi);
+                        if (cauHoi == null) continue;
+
+                        if (cauHoi.QuestionType == "4")
+                        {
+                            // Lấy đáp án đúng từ ChoiceContent (có thể chứa HTML)
+                            var dapAnDungList = Newtonsoft.Json.JsonConvert
+                                .DeserializeObject<List<QuestionOptionVM>>(cauHoi.ChoiceContent)
+                                .Where(lc => lc.IsCorrectAnswer)
+                                .Select(lc => lc.ChoiceContent ?? "")
+                                .Where(x => !string.IsNullOrWhiteSpace(x))
+                                .Select(x => NormalizeForComparison(x, removeDiacritics: false)) // true nếu muốn so sánh bỏ dấu (Hà nội = Ha noi)
+                                .Where(x => !string.IsNullOrEmpty(x))
+                                .ToList();
+
+                            // Chuẩn hóa câu trả lời SV
+                            string cauTraLoiSVNorm = NormalizeForComparison(cauTraLoiSV, removeDiacritics: false);
+
+                            // So sánh chính xác giữa các string đã normalize
+                            bool isCorrect = dapAnDungList.Any(dapAn => string.Equals(dapAn, cauTraLoiSVNorm, StringComparison.Ordinal));
+
+                            if (isCorrect)
+                            {
+                                tongDiem += diemMoiCau;
+                                soCauDung++;
+                            }
+                        }
+                    }
+                }
+            }
+
 
             var viewModel = new MultipleChoiceExamResultVM
             {
@@ -681,38 +785,68 @@ namespace ITExam.Controllers
                 CorrectAnswers = soCauDung,
                 AccuracyRate = tongCauHoi > 0 ? Math.Round((double)soCauDung * 100 / tongCauHoi, 2) : 0,
                 ExamDate = DateTime.Now,
-                Duration = (int)(DateTime.Now - lichSuLamBai.StartTime).TotalSeconds,
+                Duration = (int)(DateTime.Now - examHistory.StartTime).TotalSeconds,
                 ClassId = maLop
             };
 
             // Lưu lịch sử làm bài
-            lichSuLamBai.Score = viewModel.Score;
-            lichSuLamBai.SubmitTime = DateTime.Now;
-            lichSuLamBai.Duration = viewModel.Duration;
-            _context.ExamHistories.Update(lichSuLamBai);
+            examHistory.Score = viewModel.Score;
+            examHistory.SubmitTime = DateTime.Now;
+            examHistory.Duration = viewModel.Duration;
+            _context.ExamHistories.Update(examHistory);
 
-            // Lưu chi tiết làm bài
-            foreach (var ch in danhSachCauTraLoi)
+            // Lưu chi tiết làm bài - Trắc nghiệm
+            if (!string.IsNullOrEmpty(multiChoiceCacheData))
             {
-                var cauHoi = ch.Key;
-                var luaChon = ch.Value;
-
-                var chiTietBaiLam = await _context.StudentAnswers
-                    .FirstOrDefaultAsync(ct => ct.ExamHistoryId == lichSuLamBai.ExamHistoryId && ct.QuestionId == cauHoi);
-                if (chiTietBaiLam != null)
+                var multiChoiceAnsList = JsonSerializer.Deserialize<Dictionary<int, List<int>>>(multiChoiceCacheData);
+                if (multiChoiceAnsList != null)
                 {
-                    chiTietBaiLam.MultipleChoiceAnswer = string.Join(",", luaChon);
-                    _context.StudentAnswers.Update(chiTietBaiLam);
+                    foreach (var ch in multiChoiceAnsList)
+                    {
+                        var cauHoi = ch.Key;
+                        var luaChon = ch.Value;
+
+                        var chiTietBaiLam = await _context.StudentAnswers
+                            .FirstOrDefaultAsync(ct => ct.ExamHistoryId == examHistory.ExamHistoryId && ct.QuestionId == cauHoi);
+                        if (chiTietBaiLam != null)
+                        {
+                            chiTietBaiLam.MultipleChoiceAnswer = string.Join(",", luaChon);
+                            _context.StudentAnswers.Update(chiTietBaiLam);
+                        }
+                    }
+                }
+            }
+
+            // Lưu chi tiết làm bài - Điền từ
+            if (!string.IsNullOrEmpty(essayCacheData))
+            {
+                var fillInAnsList = JsonSerializer.Deserialize<Dictionary<int, string>>(essayCacheData);
+                if (fillInAnsList != null)
+                {
+                    foreach (var ch in fillInAnsList)
+                    {
+                        var cauHoi = ch.Key;
+                        var cauTraLoi = ch.Value;
+
+                        var chiTietBaiLam = await _context.StudentAnswers
+                            .FirstOrDefaultAsync(ct => ct.ExamHistoryId == examHistory.ExamHistoryId && ct.QuestionId == cauHoi);
+                        if (chiTietBaiLam != null)
+                        {
+                            chiTietBaiLam.EssayAnswer = cauTraLoi; 
+                            _context.StudentAnswers.Update(chiTietBaiLam);
+                        }
+                    }
                 }
             }
 
             await _context.SaveChangesAsync();
 
             // Xóa Redis
-            await _redis.RemoveAsync(key);
+            await _redis.RemoveAsync(multiChoiceKey);
+            await _redis.RemoveAsync(essayKey);
 
             await _hubContext.Clients
-                    .Group($"exam:{maDe}:class:{maLop}")
+                    .Group($"multiChoiceAns:{maDe}:class:{maLop}")
                     .SendAsync("StudentScoreUpdated", new
                     {
                         ExamId = maDe.ToString(),
@@ -726,6 +860,7 @@ namespace ITExam.Controllers
                         Duration = viewModel.Duration,
                         SubmittedAt = DateTime.UtcNow
                     });
+
             return View(viewModel);
         }
 
@@ -764,7 +899,7 @@ namespace ITExam.Controllers
                 return RedirectToAction("ClassDetail", new { id = maLop });
             }
 
-            var key = $"exam:{maDe}:{user.UserId}";
+            var key = $"essayAns:{maDe}:{user.UserId}";
             var cacheData = await _redis.GetStringAsync(key);
             var savedAnswers = string.IsNullOrEmpty(cacheData)
                 ? new Dictionary<int, string>()

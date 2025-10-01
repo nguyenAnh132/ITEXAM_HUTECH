@@ -178,7 +178,7 @@
           .then(r => r.json())
           .then(d => {
             if (d.success) {
-              // ✅ Lưu Redis xong thì đẩy delta để ghi log & cập nhật giám sát
+              // Lưu Redis xong thì đẩy delta để ghi log & cập nhật giám sát
               window.ITExamEssay?.pushEssayDelta?.();
             }
           });

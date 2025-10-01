@@ -89,9 +89,18 @@
                                                     {
                                                         <input class="form-check-input mt-2" type="checkbox" name="@ch.QuestionId" id="opt_@i@da.ChoiceId" value="@da.ChoiceId" @(da.IsSelected ? "checked" : "")  />
                                                     }
-                                                    <label class="form-check-label" for="opt_@i@da.ChoiceId">
-                                                        @choice: @Html.Raw(da.ChoiceContent)
-                                                    </label>
+                                                    @if (ch.QuestionType == "4")
+                                                    {
+                                                        <textarea class="form-control" id="opt_@i@da.ChoiceId"
+                                                      name="@ch.QuestionId"
+                                                      rows="5">@ch.FillInAns</textarea>
+                                                    }
+                                                    @if(ch.QuestionType != "4")
+                                                    {
+                                                        <label class="form-check-label" for="opt_@i@da.ChoiceId">
+                                                            @choice: @Html.Raw(da.ChoiceContent)
+                                                        </label>
+                                                    }
                                                 </div>
                                             </div>
                                             choice++;
@@ -233,7 +242,7 @@
         const currentUser = @Model.UserId;
         const currentExam = @Model.ExamId;
 
-        document.addEventListener("DOMContentLoaded", () => {
+        document.addEventListener("DOMContentLoaded", async () => {
             const lastChecked = {};
             document.querySelectorAll("input[type=radio]:checked").forEach(input => {
                 const maCauHoi = parseInt(input.name);
@@ -279,6 +288,134 @@
                 const anyChecked = container.querySelector("input:checked");
                 if (anyChecked) {
                     markAnswered(qNumber);
+                }
+            });
+
+            let essayAnswers = {};
+            let essayChanged = false;
+            await loadFilledAnswersFromServer();
+
+            // Xử lý textarea cho câu hỏi điền từ (loại 4)
+            document.querySelectorAll("textarea").forEach(textarea => {
+                const questionId = parseInt(textarea.name);
+                let saveTimeout;
+
+                // Load giá trị ban đầu nếu có
+                if (textarea.value.trim()) {
+                    essayAnswers[questionId] = textarea.value.trim();
+                    const questionNumber = textarea.closest('.question-container')?.dataset.question;
+                    if (questionNumber) {
+                        markAnswered(questionNumber);
+                    }
+                }
+
+                textarea.addEventListener("input", function() {
+                    const questionContainer = this.closest('.question-container');
+                    const questionNumber = questionContainer?.dataset.question;
+                    const answer = this.value.trim();
+
+                    // Cập nhật vào memory ngay lập tức
+                    if (answer) {
+                        essayAnswers[questionId] = answer;
+                    } else {
+                        delete essayAnswers[questionId];
+                    }
+                    essayChanged = true;
+
+                    // Đánh dấu câu đã trả lời/chưa trả lời
+                    if (questionNumber) {
+                        if (answer) {
+                            markAnswered(questionNumber);
+                        } else {
+                            const btn = document.getElementById(`qBtn_${questionNumber}`);
+                            btn?.classList.remove("answered");
+                        }
+                    }
+
+                    // Debounce gửi SignalR
+                    clearTimeout(saveTimeout);
+                    saveTimeout = setTimeout(() => {
+                        sendFilledAnswerToHub(questionId, questionNumber, answer);
+                    }, 1000);
+                });
+            });
+
+            // Auto-save mỗi 5 giây
+            setInterval(() => {
+                if (essayChanged && !hasSubmitted) {
+                    saveFilledAnswersToServer();
+                    essayChanged = false;
+                }
+            }, 5000);
+
+            // Hàm lưu lên server
+            function saveFilledAnswersToServer() {
+                if (Object.keys(essayAnswers).length === 0) return;
+
+                fetch("/Student/SaveEssayAnswer", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        MaDe: currentExam,
+                        CauTraLoi: essayAnswers
+                    })
+                }).then(response => {
+                    if (response.ok) {
+                        console.log("Đã lưu câu trả lời tự luận:", Object.keys(essayAnswers).length, "câu");
+                    }
+                }).catch(err => {
+                    console.error("Lỗi lưu câu trả lời tự luận:", err);
+                });
+            }
+
+        async function loadFilledAnswersFromServer() {
+            try {
+                console.log("Đang load câu trả lời tự luận...");
+                const response = await fetch(`/Student/GetEssayAnswers/${currentExam}`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.answers) {
+                        // Cập nhật cache
+                        essayAnswers = data.answers;
+                        console.log("Đã load câu trả lời tự luận:", Object.keys(essayAnswers).length, "câu");
+
+                        // Điền vào các textarea
+                        Object.entries(data.answers).forEach(([questionId, answer]) => {
+                            const textarea = document.querySelector(`textarea[name="${questionId}"]`);
+                            if (textarea && answer) {
+                                textarea.value = answer;
+
+                                // Đánh dấu câu đã trả lời
+                                const questionNumber = textarea.closest('.question-container')?.dataset.question;
+                                if (questionNumber) {
+                                    markAnswered(questionNumber);
+                                }
+                            }
+                        });
+                    } else {
+                        console.log("Không có câu trả lời tự luận nào được lưu trước đó");
+                    }
+                } else {
+                    console.error("Lỗi load câu trả lời:", response.status);
+                }
+            } catch (error) {
+                console.error("Lỗi load câu trả lời tự luận:", error);
+            }
+        }
+
+            // Lưu khi rời khỏi trang
+            window.addEventListener("beforeunload", () => {
+                if (essayChanged && !hasSubmitted) {
+                    navigator.sendBeacon("/Student/SaveEssayAnswer",
+                        JSON.stringify({
+                            MaDe: currentExam,
+                            CauTraLoi: essayAnswers
+                        })
+                    );
                 }
             });
         });
@@ -351,6 +488,25 @@
             }
         ));
 
+        // Hàm gửi qua SignalR
+        function sendFilledAnswerToHub(questionId, questionNumber, answer) {
+            if (!questionId || hasSubmitted) return;
+
+            const questionContainer = document.querySelector(`.question-container[data-question='${questionNumber}']`);
+            const questionContent = questionContainer?.querySelector('.question-title h3')?.innerHTML.trim();
+
+            if (!examId || !studentId || !studentName || !questionContent) return;
+
+            const logContent = answer ?
+                `Trả lời: "${answer.substring(0, 100)}${answer.length > 100 ? '...' : ''}"` :
+                "Xóa câu trả lời";
+
+            connection.invoke("SelectAnswer", examId, classId, studentId, studentName,
+                             questionId.toString(), questionContent, answer, logContent)
+                .then(() => console.log("Gửi filled answer:", questionId, answer.substring(0, 50)))
+                .catch(err => console.error("Lỗi gửi filled answer:", err));
+        }
+
         function sendAnswerToHub(input) {
             if (!input || hasSubmitted) return;
 
@@ -374,13 +530,22 @@
                 .catch(err => console.error("Lỗi gửi SelectAnswer:", err));
         }
 
+        // Đếm câu hỏi đã làm (bao gồm điền từ)
         function countAnsweredQuestions() {
             const questionContainers = document.querySelectorAll(".question-container");
             let answeredCount = 0;
 
             questionContainers.forEach(container => {
+                // Kiểm tra radio/checkbox
                 if (container.querySelector("input:checked")) {
                     answeredCount++;
+                }
+                // Kiểm tra textarea (câu điền từ)
+                else {
+                    const textarea = container.querySelector("textarea");
+                    if (textarea && textarea.value.trim()) {
+                        answeredCount++;
+                    }
                 }
             });
 
