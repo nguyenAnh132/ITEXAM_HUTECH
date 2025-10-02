@@ -62,7 +62,7 @@ pipeline {
         sh '''
           sudo systemctl start ${SERVICE_NAME}
           sleep 2
-          curl -fsS http://127.0.0.1:5000/ >/dev/null || (echo "❌ Health check fail" && exit 1)
+          curl -fsS http://127.0.0.1/ >/dev/null || (echo "❌ Health check fail" && exit 1)
           echo "✅ Deployed OK"
         '''
       }
