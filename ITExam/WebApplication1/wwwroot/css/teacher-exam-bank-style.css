@@ -32,3 +32,13 @@ input {
 .btn_action {
     width: 120px;
 }
+.nav-tabs .nav-link {
+    color: #646cff;
+    background-color: #fff; /* mặc định nền trắng */
+}
+
+    .nav-tabs .nav-link.active {
+        color: #646cff;
+        box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px; /* đổ bóng xanh nhẹ */
+    }
+
