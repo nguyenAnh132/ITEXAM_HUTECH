@@ -14,7 +14,7 @@ pipeline {
     stage('Checkout') {
       steps {
         git(
-          url: 'https://github.com/nguyenAnh132/ITExamHUTECH_NCKH.git',
+          url: 'https://github.com/nguyenAnh132/ITExam_HUTECH.git',
           branch: 'main',
           credentialsId: 'github_pat'   // đổi ID đúng với credential của bạn
         )
