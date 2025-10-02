@@ -57,16 +57,20 @@ pipeline {
       }
     }
 
-    stage('Start & Health') {
-      steps {
-        sh '''
-          sudo systemctl start ${SERVICE_NAME}
-          sleep 2
-          curl -fsS http://127.0.0.1:5000/ >/dev/null || (echo "❌ Health check fail" && exit 1)
-          echo "✅ Deployed OK"
-        '''
-      }
-    }
+    stage('Wait for DB') {
+  steps {
+    sh '''
+      for i in {1..30}; do
+        /opt/mssql-tools18/bin/sqlcmd -S 127.0.0.1,1433 -U sa -P 'YourStrong!Passw0rd' -Q "SELECT 1" -C && exit 0
+        echo "⏳ Waiting for SQL Server..."
+        sleep 2
+      done
+      echo "❌ SQL Server not ready"
+      exit 1
+    '''
+  }
+}
+
   }
 
   post {
