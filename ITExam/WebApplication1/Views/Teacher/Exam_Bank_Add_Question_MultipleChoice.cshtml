@@ -170,6 +170,7 @@
                                               <option value="1" selected>Một đáp án</option>  
                                               <option value="2">Nhiều đáp án</option>  
                                               <option value="3">Đúng sai</option>  
+                                              <option value="4">Điền từ</option>  
                                           </select>  
                                       </div> 
                                      <!--    CHƯƠNG --> 
@@ -324,43 +325,85 @@
 
                  addAnswer(inputVal, isChecked); 
              }); 
-         } 
+         }
 
+        function updateAnswerType() {
+            const questionType = document.getElementById('QuestionType').value;
+            const container = document.getElementById('answersContainer');
+            const addButton = document.getElementById('addAnswerButton');
 
-         function updateAnswerType() { 
-             const questionType = document.getElementById('QuestionType').value; 
-             const container = document.getElementById('answersContainer'); 
-             const addButton = document.getElementById('addAnswerButton'); 
+            // Destroy tất cả editor hiện tại trong answersContainer trước khi xóa
+            Object.keys(editors).forEach(editorId => {
+                if (editorId.startsWith('editor_answer_') && editors[editorId]) {
+                    editors[editorId].destroy().catch(err => console.error(err));
+                    delete editors[editorId];
+                }
+            });
 
-             // Xóa hết các đáp án trước đó 
-             container.innerHTML = ""; 
-             answerCount = 0; 
+            // Xóa hết các đáp án trước đó
+            container.innerHTML = "";
+            answerCount = 0;
 
-             if (questionType === "3") { 
-                 // Nếu chọn "Đúng/Sai" 
-                 addButton.style.display = "none"; // Ẩn nút thêm đáp án 
+            if (questionType === "3") {
+                // Nếu chọn "Đúng/Sai"
+                addButton.style.display = "none";
 
-                 const trueAnswer = ` 
-                     <div class="mb-3 ms-5"> 
-                         <input type="hidden" id="hiddenCorrectAnswers_0" name="CorrectAnswers[0]" value="false" /> 
-                         <input type="radio" name="selectedAnswer" id="radioCorrectAnswers_0" onchange="updateHiddenInputYesNo(0)" /> 
-                         <label class="form-label fs-5 fw-semibold">Đúng</label> 
-                         <input type="hidden" name="ChoiceContents[0]" value="Đúng" /> 
-                     </div>`; 
+                const trueAnswer = `
+                    <div class="mb-3 ms-5">
+                        <input type="hidden" id="hiddenCorrectAnswers_0" name="CorrectAnswers[0]" value="false" />
+                        <input type="radio" name="selectedAnswer" id="radioCorrectAnswers_0" onchange="updateHiddenInputYesNo(0)" />
+                        <label class="form-label fs-5 fw-semibold">Đúng</label>
+                        <input type="hidden" name="ChoiceContents[0]" value="Đúng" />
+                    </div>`;
 
-                 const falseAnswer = ` 
-                     <div class="mb-3 ms-5"> 
-                         <input type="hidden" id="hiddenCorrectAnswers_1" name="CorrectAnswers[1]" value="false" /> 
-                         <input type="radio" name="selectedAnswer" id="radioCorrectAnswers_1" onchange="updateHiddenInputYesNo(1)" /> 
-                         <label class="form-label fs-5 fw-semibold">Sai</label> 
-                         <input type="hidden" name="ChoiceContents[1]" value="Sai" /> 
-                     </div>`; 
+                const falseAnswer = `
+                    <div class="mb-3 ms-5">
+                        <input type="hidden" id="hiddenCorrectAnswers_1" name="CorrectAnswers[1]" value="false" />
+                        <input type="radio" name="selectedAnswer" id="radioCorrectAnswers_1" onchange="updateHiddenInputYesNo(1)" />
+                        <label class="form-label fs-5 fw-semibold">Sai</label>
+                        <input type="hidden" name="ChoiceContents[1]" value="Sai" />
+                    </div>`;
 
-                 container.innerHTML = trueAnswer + falseAnswer; 
-             } else { 
-                 addButton.style.display = "inline-block"; // Hiện nút thêm đáp án 
-             } 
-         } 
+                container.innerHTML = trueAnswer + falseAnswer;
+            }
+            else if (questionType === "4") {
+                // Nếu chọn "Điền từ"
+                addButton.style.display = "none";
+
+                const fillInBlankAnswer = `
+                    <div class="mb-3 p-3 border rounded bg-light" id="answer_0">
+                        <input type="hidden" id="hiddenCorrectAnswers_0" name="CorrectAnswers[0]" value="true" />
+                        <label class="form-label fs-5 fw-semibold text-primary">
+                            <i class="fas fa-key me-2"></i>Từ khóa đáp án
+                        </label>
+                        <div class="alert alert-info py-2 mb-2">
+                            <small><i class="fas fa-info-circle me-1"></i>Nhập từ khóa hoặc cụm từ chính xác mà học sinh cần điền vào chỗ trống</small>
+                        </div>
+                        <textarea class="form-control" id="editor_answer_0" name="ChoiceContents[0]" placeholder="Nhập từ khóa đáp án..."></textarea>
+                    </div>
+                `;
+
+                container.innerHTML = fillInBlankAnswer;
+                answerCount = 1;
+
+                // Khởi tạo CKEditor cho textarea từ khóa
+                setTimeout(() => {
+                    const editorElement = document.getElementById('editor_answer_0');
+                    if (editorElement && !editors['editor_answer_0']) {
+                        ClassicEditor.create(editorElement, {
+                            simpleUpload: {
+                                uploadUrl: '/Upload/UploadImage'
+                            }
+                        }).then(editor => {
+                            editors['editor_answer_0'] = editor;
+                        }).catch(error => console.error(error));
+                    }
+                }, 100);
+            }
+            else {
+                addButton.style.display = "inline-block";
+            }
+        }
 
          function updateHiddenInput(index) { 
              const questionType = document.getElementById('QuestionType').value; 
@@ -420,40 +463,95 @@
      <script> 
          let questions = @Html.Raw(Json.Serialize(Model.QuestionDTOList)); 
 
-         console.log(questions); 
+         console.log(questions);
 
-         function loadQuestion(index) { 
-             if (!questions || questions.length <= index) return; 
+        function validateFillInBlankQuestion() {
+            const questionType = document.getElementById('QuestionType').value;
 
-             let question = questions[index]; 
+            if (questionType === "4") {
+                const questionContent = editors['QuestionContent'] ? editors['QuestionContent'].getData().trim() : "";
+                const keywordContent = editors['editor_answer_0'] ? editors['editor_answer_0'].getData().trim() : "";
 
-             // Gán giá trị cho các input 
-             if (editors['QuestionContent']) { 
-                 editors['QuestionContent'].setData(question.questionContent || ""); 
-             }
+                if (!questionContent) {
+                    alert("Vui lòng nhập nội dung câu hỏi!");
+                    return false;
+                }
+
+                if (!keywordContent) {
+                    alert("Vui lòng nhập từ khóa đáp án!");
+                    return false;
+                }
+
+                // Kiểm tra xem câu hỏi có chứa ký hiệu chỗ trống không (có thể là _____ hoặc [...])
+                if (!questionContent.includes("_____") && !questionContent.includes("[...]") && !questionContent.includes("______")) {
+                    const confirmResult = confirm("Câu hỏi điền từ nên có ký hiệu chỗ trống (ví dụ: _____ hoặc [...]). Bạn có muốn tiếp tục không?");
+                    if (!confirmResult) {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        // Cập nhật sự kiện submit form để bao gồm validation
+        document.addEventListener("DOMContentLoaded", function() {
+            const form = document.querySelector("form[asp-action='Exam_Bank_Add_Question_MultipleChoice']");
+            if (form) {
+                form.addEventListener("submit", function(e) {
+                    // Đảm bảo tất cả nội dung CKEditor được cập nhật trước khi gửi
+                    for (let editorId in editors) {
+                        if (editors[editorId]) {
+                            editors[editorId].updateSourceElement();
+                        }
+                    }
+
+                    // Kiểm tra validation cho câu hỏi điền từ
+                    if (!validateFillInBlankQuestion()) {
+                        e.preventDefault();
+                        return false;
+                    }
+                });
+            }
+        });
+
+        function loadQuestion(index) {
+            if (!questions || questions.length <= index) return;
+
+            let question = questions[index];
+
+            // Gán giá trị cho các input
+            if (editors['QuestionContent']) {
+                editors['QuestionContent'].setData(question.questionContent || "");
+            }
 
             document.getElementById("QuestionType").value = question.questionType || "";
-          document.getElementById("QuestionId").value = question.questionId || "";
-           document.getElementById("ChapterId").value = question.chapterId || "";
-            updateCLOOptions(); // Cập nhật danh sách CLO sau khi chọn chương 
+            document.getElementById("QuestionId").value = question.questionId || "";
+            document.getElementById("ChapterId").value = question.chapterId || "";
+            updateCLOOptions();
 
-             setTimeout(() => {
+            setTimeout(() => {
                 document.getElementById("CLOId").value = question.cloId || "";
-            }) // Chờ 100ms để CLO dropdown cập nhật xong mới gán giá trị 
+            }, 100);
 
+            // Destroy tất cả editor cũ trong answersContainer trước khi load mới
+            Object.keys(editors).forEach(editorId => {
+                if (editorId.startsWith('editor_answer_') && editors[editorId]) {
+                    editors[editorId].destroy().catch(err => console.error(err));
+                    delete editors[editorId];
+                }
+            });
 
-             updateAnswerType(); // Cập nhật giao diện theo loại câu hỏi 
+            updateAnswerType(); // Cập nhật giao diện theo loại câu hỏi
 
-             let answersContainer = document.getElementById("answersContainer"); 
-             answersContainer.innerHTML = ""; 
-             answerCount = 0; 
+            let answersContainer = document.getElementById("answersContainer");
+            answerCount = 0;
 
-             // Load danh sách đáp án
+            // Load danh sách đáp án
             if (question.choiceContent) {
-               const danhSachDapAn = JSON.parse(question.choiceContent);
-              updateAnswerType();
+                const danhSachDapAn = JSON.parse(question.choiceContent);
 
-               if (question.questionType === "3") {   // nhớ so sánh string "3"
+                if (question.questionType === "3") {   // Đúng/Sai
                     const trueInput = document.getElementById("radioCorrectAnswers_0");
                     const falseInput = document.getElementById("radioCorrectAnswers_1");
                     const trueHidden = document.getElementById("hiddenCorrectAnswers_0");
@@ -469,18 +567,35 @@
                             falseHidden.value = ans.LaDapAn ? "true" : "false";
                         }
                     });
-                } else {
+                }
+                else if (question.questionType === "4") {   // Điền từ
+                    if (danhSachDapAn.length > 0) {
+                        const dapAn = danhSachDapAn[0];
+
+                        // Chờ CKEditor được khởi tạo xong
+                        setTimeout(() => {
+                            if (editors['editor_answer_0']) {
+                                editors['editor_answer_0'].setData(dapAn.NoiDung || "");
+                            } else {
+                                // Nếu editor chưa sẵn sàng, thử lại
+                                setTimeout(() => {
+                                    if (editors['editor_answer_0']) {
+                                        editors['editor_answer_0'].setData(dapAn.NoiDung || "");
+                                    }
+                                }, 300);
+                            }
+                        }, 200);
+                    }
+                }
+                else {
+                    // Các loại câu hỏi khác (một đáp án, nhiều đáp án)
+                    answersContainer.innerHTML = ""; // Clear trước khi add
                     danhSachDapAn.forEach((dapAn, i) => {
                         addAnswerFromData(dapAn.NoiDung, dapAn.LaDapAn, i);
                     });
                 }
-
-             } 
-
-
-
-         } 
-
+            }
+        }
          function addAnswerFromData(answerHtml, isCorrect, index) { 
              const container = document.getElementById('answersContainer'); 
              const questionType = document.getElementById('QuestionType').value; 
@@ -538,7 +653,7 @@
          } 
      </script> 
      <script> 
-                 document.addEventListener("DOMContentLoaded", function () { 
+            document.addEventListener("DOMContentLoaded", function () { 
              const ChapterGroup = document.getElementById("ChapterGroup"); 
              const cloGroup = document.getElementById("CLOGroup"); 
 
