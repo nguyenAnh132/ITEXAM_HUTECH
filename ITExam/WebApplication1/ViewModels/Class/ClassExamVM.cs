@@ -6,13 +6,11 @@ namespace ITExam.ViewModels.Class
     {
         public int ExamId { get; set; }
         public string ExamName { get; set; }
-        public bool Type { get; set; }
         public bool Access { get; set; }
-        public DateTime CreatedDate { get; set; }
-        public DateTime StartDate { get; set; }
-        public DateTime EndDate { get; set; }
+        public DateTime StartTime { get; set; }
+        public DateTime EndTime { get; set; }
         public int Duration { get; set; }
-        public DateTime? ExamDate { get; set; }
+        public DateTime? AddedDate { get; set; }
         public string ExamType { get; set; }
         public int? QuestionCount { get; set; }
         public int? ClassId { get; set; }

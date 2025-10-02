@@ -170,55 +170,58 @@ namespace ITExam.Controllers
             }
 
             //Truy vấn lớp học và bao gồm các thông tin liên quan: chi tiết lớp học,danh sách sinh viên, danh sách đề thi, lịch sử làm bài
-            var lopHoc = await _context.Classes
-                .Include(l => l.User)
-                .Include(l => l.ClassDetails)
-                    .ThenInclude(st => st.User)
-                .Include(l => l.ClassExams)
-                    .ThenInclude(dt => dt.Exam)
-                        .ThenInclude(ls => ls.ExamHistories)
-                .Include(l => l.ClassExams)
-                    .ThenInclude(dt => dt.Exam)
-                        .ThenInclude(mt => mt.ExamMatrices)
-                .FirstOrDefaultAsync(l => l.ClassId == id);
+            var classInfo = await _context.Classes
+                .AsNoTracking()
+                .Where(cl => cl.ClassId == id)
+                .Select(cl => new StudentClassInfoVM
+                {
+                    ClassId = cl.ClassId,
+                    ClassName = cl.ClassName,
+                    Description = cl.Description,
+                    InstructorName = cl.User.FullName
+                })
+                .FirstOrDefaultAsync();
 
-            if (lopHoc == null)
+            if (classInfo is null)
             {
                 return NotFound();
             }
-
-            var danhSachSV = lopHoc.ClassDetails
-                .Select(l => l.User)
-                .Where(sv => sv != null)
-                .Select(sv => new ClassStudentVM
+            
+            var studentListOfClass = await _context.ClassDetails
+                .AsNoTracking()
+                .Where(cd => cd.ClassId == id)
+                .Include(cd => cd.User)
+                .Select(cd => new ClassStudentVM
                 {
-                    StudentId = sv.Username,
-                    FullName = sv.FullName
-                }).ToList();
+                    StudentId = cd.User.Username,
+                    FullName = cd.User.FullName
+                })
+                .ToListAsync();
 
-            var danhSachDT = lopHoc.ClassExams.Select(ct => new ClassExamVM
-            {
-                ExamId = ct.Exam.ExamId,
-                ExamName = ct.Exam.ExamName,
-                Type = ct.IsExam,
-                CreatedDate = ct.AddedDate,
-                StartDate = ct.StartTime,
-                EndDate = ct.EndTime,
-                Duration = ct.Exam.Duration,
-                ExamType = ct.Exam.ExamType,
-                ExamDate = ct.Exam.ExamHistories
-                    .FirstOrDefault(ls => ls.UserId == user.UserId && ls.ExamId == ct.Exam.ExamId && ls.ClassId == id)
-                    ?.SubmitTime,
-                QuestionCount = ct.Exam.ExamMatrices.Sum(sl => sl.QuestionCount)
-            }).ToList();
+            var examsInClass = await _context.ClassExams
+                .AsNoTracking()
+                .Where(ce => ce.ClassId == id)
+                .Select(ce => new StudentClassExamVM
+                {
+                    ExamId = ce.Exam.ExamId,
+                    ExamName = ce.Exam.ExamName,
+                    StartTime = ce.StartTime,
+                    EndTime = ce.EndTime,
+                    Duration = ce.Exam.Duration,
+                    ExamType = ce.Exam.ExamType,
+                    SubmitTime = ce.Exam.ExamHistories
+                    .FirstOrDefault(ls => ls.UserId == user.UserId && ls.ExamId == ce.Exam.ExamId && ls.ClassId == id).SubmitTime,
+                    QuestionCount = ce.Exam.ExamMatrices.Sum(sl => sl.QuestionCount)
+                })
+                .ToListAsync();
 
-            var viewModel = new ClassDetailVM
+            var viewModel = new StudentClassDetailVM
             {
-                ClassInfo = lopHoc,
-                Students = danhSachSV,
-                Exams = danhSachDT,
-                StudentCount = danhSachSV.Count(),
-                ExamCount = danhSachDT.Count(dt => dt.Type == true)
+                ClassInfo = classInfo,
+                Students = studentListOfClass,
+                Exams = examsInClass,
+                StudentCount = examsInClass.Count(),
+                ExamCount = examsInClass.Count()
             };
 
             return View(viewModel);

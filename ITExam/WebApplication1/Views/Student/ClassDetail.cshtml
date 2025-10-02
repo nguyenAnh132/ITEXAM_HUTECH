@@ -1,5 +1,5 @@
 ﻿ @using ITExam.ViewModels.Class 
-  @model ClassDetailVM
+  @model StudentClassDetailVM
  <!-- Import cai layout -->  
  @{  
      Layout = "_StudentLayout";  
@@ -47,7 +47,7 @@
                  <div class="tab-panel" role="tabpanel" id="panel-1" aria-labelledby="tab-1" aria-hidden="false"> 
                      <h2>Tên lớp: @Model.ClassInfo.ClassName</h2> 
                      <p><b>Mô tả: </b>@Model.ClassInfo.Description</p> 
-                     <p><b>Giảng viên phụ trách: </b>@Model.ClassInfo.User.FullName</p> 
+                     <p><b>Giảng viên phụ trách: </b>@Model.ClassInfo.InstructorName</p> 
                      <button type="button" 
                              class="btn btn-danger mt-2" 
                              data-bs-toggle="modal" 
@@ -129,84 +129,83 @@
                      <div class="mt-4 d-flex flex-wrap"> 
                          @foreach (var dt in Model.Exams)
                         {
-                            if (dt.Type == true)
-                            {
-                                var tenDe = dt.ExamName.Length > 25 ? dt.ExamName.Substring(0, 25) + "..." : dt.ExamName;
-                                <div class="col-lg-4 col-md-6 mb-4" data-ten="@dt.ExamName">
-                                    <div class="card h-80 shadow-sm border-0"> 
-                                     <div style="height: 200px; overflow: hidden"> 
-                                         <img src="~/img/exam1-avatar.png" 
-                                              class="card-img-top" 
-                                              style="object-fit: cover; height: 100%; width: 100%" 
-                                              alt="Đề thi" /> 
-                                     </div> 
-                                     <div class="card-body p-1"> 
-                                         <h5 class="card-title text-primary font-weight-bold" title="@dt.ExamName"> 
-                                             @tenDe 
-                                         </h5> 
-                                         <p class="card-text mb-2"> 
-                                             <i class="fa fa-tags text-dark mr-2"></i> 
-                                             <strong>Loại đề:</strong> @dt.ExamType 
-                                         </p> 
-                                         <p class="card-text mb-2"> 
-                                             <i class="fa fa-clock text-dark mr-2"></i> 
-                                             <strong>Thời gian làm bài:</strong> @dt.Duration 
-                                         </p> 
-                                         <p class="card-text mb-2"> 
-                                             <i class="fa fa-users mr-2 text-black"></i> 
-                                             <strong>Số lượng câu hỏi: @dt.QuestionCount</strong> 
-                                         </p> 
-                                         <p class="card-text mb-2"> 
-                                             <i class="fa fa-calendar-alt text-dark mr-2"></i> 
-                                             <strong>Bắt đầu:</strong> @dt.StartDate.ToString("HH:mm:ss dd/MM/yyyy") 
-                                         </p> 
-                                         <p class="card-text mb-2"> 
-                                             <i class="fa fa-calendar-check text-dark mr-2"></i> 
-                                             <strong>Kết thúc:</strong> @dt.EndDate.ToString("HH:mm:ss dd/MM/yyyy") 
-                                         </p> 
-                                         <div class="text-danger fw-bold mb-2" id="countdown-@dt.ExamId"> 
-                                             <i class="fa-solid fa-stopwatch fa-beat" style="color: #313590;"></i> 
-                                              Đang tính thời gian... 
-                                         </div> 
-                                     </div> 
-                                             <div class="col-auto px-3 py-3"> 
-                                                 @{ 
-                                                     var buttonStyle = "width: 120px; height: 36px; font-size: 14px; font-weight: 600;padding: 4px 8px;"; 
-                                                     var buttonClass = "btn btn-sm btn-primary"; 
-                                                 } 
 
-                                                 @if (dt.ExamDate != DateTime.MinValue && dt.ExamDate != null) 
-                                                 { 
-                                                     <button class="@buttonClass, btn-outline-success" style="@buttonStyle"> 
-                                                         <i class="fa-solid fa-circle-check me-1"></i> Đã thi 
-                                                     </button> 
-                                                 } 
-                                                 else if (DateTime.Now < dt.StartDate) 
-                                                 { 
-                                                     <button class="@buttonClass" style="@buttonStyle"> 
-                                                         <i class="fa-solid fa-circle-xmark me-1"></i> Chưa mở 
-                                                     </button> 
-                                                 } 
-                                                 else if (DateTime.Now > dt.EndDate) 
-                                                 { 
-                                                     <button class="@buttonClass, btn-danger" style="@buttonStyle"> 
-                                                         <i class="fa-solid fa-circle-xmark me-1"></i> Đã đóng 
-                                                     </button> 
-                                                 } 
-                                                 else 
-                                                 { 
-                                                     <form asp-controller="Student" asp-action="ExamInfo" class="m-0"> 
-                                                         <input type="hidden" name="maDe" value="@dt.ExamId" /> 
-                                                         <input type="hidden" name="maLop" value="@Model.ClassInfo.ClassId" /> 
-                                                         <button type="submit" class="@buttonClass" style="@buttonStyle"> 
-                                                             <i class="fa-solid fa-arrow-right-to-bracket me-1"></i> Vào thi 
-                                                         </button> 
-                                                     </form> 
-                                                 } 
-                                             </div> 
-                                         </div> 
-                                     </div> 
-                             } 
+                            var tenDe = dt.ExamName.Length > 25 ? dt.ExamName.Substring(0, 25) + "..." : dt.ExamName;
+                            <div class="col-lg-4 col-md-6 mb-4" data-ten="@dt.ExamName">
+                                <div class="card h-80 shadow-sm border-0"> 
+                                    <div style="height: 200px; overflow: hidden"> 
+                                        <img src="~/img/exam1-avatar.png" 
+                                            class="card-img-top" 
+                                            style="object-fit: cover; height: 100%; width: 100%" 
+                                            alt="Đề thi" /> 
+                                    </div> 
+                                    <div class="card-body p-1"> 
+                                        <h5 class="card-title text-primary font-weight-bold" title="@dt.ExamName"> 
+                                            @tenDe 
+                                        </h5> 
+                                        <p class="card-text mb-2"> 
+                                            <i class="fa fa-tags text-dark mr-2"></i> 
+                                            <strong>Loại đề:</strong> @dt.ExamType 
+                                        </p> 
+                                        <p class="card-text mb-2"> 
+                                            <i class="fa fa-clock text-dark mr-2"></i> 
+                                            <strong>Thời gian làm bài:</strong> @dt.Duration 
+                                        </p> 
+                                        <p class="card-text mb-2"> 
+                                            <i class="fa fa-users mr-2 text-black"></i> 
+                                            <strong>Số lượng câu hỏi: @dt.QuestionCount</strong> 
+                                        </p> 
+                                        <p class="card-text mb-2"> 
+                                            <i class="fa fa-calendar-alt text-dark mr-2"></i> 
+                                            <strong>Bắt đầu:</strong> @dt.StartTime.ToString("HH:mm:ss dd/MM/yyyy") 
+                                        </p> 
+                                        <p class="card-text mb-2"> 
+                                            <i class="fa fa-calendar-check text-dark mr-2"></i> 
+                                            <strong>Kết thúc:</strong> @dt.EndTime.ToString("HH:mm:ss dd/MM/yyyy") 
+                                        </p> 
+                                        <div class="text-danger fw-bold mb-2" id="countdown-@dt.ExamId"> 
+                                            <i class="fa-solid fa-stopwatch fa-beat" style="color: #313590;"></i> 
+                                            Đang tính thời gian... 
+                                        </div> 
+                                    </div> 
+                                            <div class="col-auto px-3 py-3"> 
+                                                @{ 
+                                                    var buttonStyle = "width: 120px; height: 36px; font-size: 14px; font-weight: 600;padding: 4px 8px;"; 
+                                                    var buttonClass = "btn btn-sm btn-primary"; 
+                                                } 
+
+                                                @if (dt.SubmitTime != DateTime.MinValue && dt.SubmitTime != null) 
+                                                { 
+                                                    <button class="@buttonClass, btn-outline-success" style="@buttonStyle"> 
+                                                        <i class="fa-solid fa-circle-check me-1"></i> Đã thi 
+                                                    </button> 
+                                                } 
+                                                else if (DateTime.Now < dt.StartTime) 
+                                                { 
+                                                    <button class="@buttonClass" style="@buttonStyle"> 
+                                                        <i class="fa-solid fa-circle-xmark me-1"></i> Chưa mở 
+                                                    </button> 
+                                                } 
+                                                else if (DateTime.Now > dt.EndTime) 
+                                                { 
+                                                    <button class="@buttonClass, btn-danger" style="@buttonStyle"> 
+                                                        <i class="fa-solid fa-circle-xmark me-1"></i> Đã đóng 
+                                                    </button> 
+                                                } 
+                                                else 
+                                                { 
+                                                    <form asp-controller="Student" asp-action="ExamInfo" class="m-0"> 
+                                                        <input type="hidden" name="maDe" value="@dt.ExamId" /> 
+                                                        <input type="hidden" name="maLop" value="@Model.ClassInfo.ClassId" /> 
+                                                        <button type="submit" class="@buttonClass" style="@buttonStyle"> 
+                                                            <i class="fa-solid fa-arrow-right-to-bracket me-1"></i> Vào thi 
+                                                        </button> 
+                                                    </form> 
+                                                } 
+                                            </div> 
+                                        </div> 
+                                    </div> 
+
                          } 
 
                      </div> 
@@ -267,8 +266,8 @@
              exams.forEach(function (exam) {
                     const countdownElement = document.getElementById(`countdown-${exam.ExamId}`); //constant  getElementByClassName
                     const now = new Date().getTime();
-                    const endTime = new Date(exam.EndDate).getTime();
-                    const startTime = new Date(exam.StartDate).getTime(); 
+                    const endTime = new Date(exam.EndTime).getTime();
+                    const startTime = new Date(exam.StartTime).getTime(); 
 
                  if (!countdownElement) return; 
 

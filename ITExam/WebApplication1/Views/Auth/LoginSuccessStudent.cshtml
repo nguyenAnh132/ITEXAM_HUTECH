@@ -94,10 +94,10 @@
                         </h6>
                     </div>
                 </div>
-                @if (Model.DanhSachDeThi.Any(deThi => DateTime.Now >= deThi.StartDate && DateTime.Now <= deThi.EndDate))
+                @if (Model.DanhSachDeThi.Any(deThi => DateTime.Now >= deThi.StartTime && DateTime.Now <= deThi.EndTime))
                 {
                     <div class="d-flex flex-wrap">
-                        @foreach (var deThi in Model.DanhSachDeThi.Where(d => DateTime.Now >= d.StartDate && DateTime.Now <= d.EndDate && !d.IsDone))
+                        @foreach (var deThi in Model.DanhSachDeThi.Where(d => DateTime.Now >= d.StartTime && DateTime.Now <= d.EndTime && !d.IsDone))
                         {
                             var tenDe = deThi.ExamName.Length > 25 ? deThi.ExamName.Substring(0, 25) + "..." : deThi.ExamName;
                             var tenLop = deThi.ClassName.Length > 27 ? deThi.ClassName.Substring(0, 27) + "..." : deThi.ClassName;
@@ -127,11 +127,11 @@
                                         </p>
                                         <p class="card-text mb-2">
                                             <i class="fa fa-calendar-alt text-dark mr-2"></i>
-                                            <strong>Bắt đầu:</strong> @deThi.StartDate.ToString("HH:mm:ss dd/MM/yyyy")
+                                            <strong>Bắt đầu:</strong> @deThi.StartTime.ToString("HH:mm:ss dd/MM/yyyy")
                                         </p>
                                         <p class="card-text mb-2">
                                             <i class="fa fa-calendar-check text-dark mr-2"></i>
-                                            <strong>Kết thúc:</strong> @deThi.EndDate.ToString("HH:mm:ss dd/MM/yyyy")
+                                            <strong>Kết thúc:</strong> @deThi.EndTime.ToString("HH:mm:ss dd/MM/yyyy")
                                         </p>
                                     </div>
                                     <div class="card-footer bg-transparent border-top-0">

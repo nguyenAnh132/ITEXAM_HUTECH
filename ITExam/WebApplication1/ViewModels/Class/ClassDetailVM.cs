@@ -6,7 +6,7 @@ namespace ITExam.ViewModels.Class
 {
     public class ClassDetailVM
     {
-        public Models.Class ClassInfo { get; set; }
+        public ClassInfoVM ClassInfo { get; set; }
         public List<ClassStudentVM> Students { get; set; }
         public List<ClassExamVM> Exams { get; set; }
         public List<UnassignedExamVM> UnassignedExams { get; set; }

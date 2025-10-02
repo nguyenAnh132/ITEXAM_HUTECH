@@ -50,9 +50,11 @@ namespace ITExam.Controllers
             var access_token = Request.Cookies["access_token"];
             var user = await _context.Users
                 .AsNoTracking()
-                .FirstOrDefaultAsync(us => us.AccessToken == access_token);
+                .Where(us => us.AccessToken == access_token)
+                .Select(us => new { us.UserId })
+                .FirstOrDefaultAsync();
 
-            if (user == null)
+            if (user is null)
             {
                 return RedirectToAction("Logout", "Auth");
             }
@@ -103,7 +105,9 @@ namespace ITExam.Controllers
             var access_token = Request.Cookies["access_token"];
             var user = await _context.Users
                 .AsNoTracking()
-                .FirstOrDefaultAsync(us => us.AccessToken == access_token);
+                .Where(us => us.AccessToken == access_token)
+                .Select(us => new { us.UserId }) //SELECT userId
+                .FirstOrDefaultAsync();
             if (user == null)
             {
                 return RedirectToAction("Logout", "Auth");
@@ -129,100 +133,110 @@ namespace ITExam.Controllers
             var user = await _context.Users
                 .AsNoTracking()
                 .FirstOrDefaultAsync(us => us.AccessToken == access_token);
-            if (user == null)
+            if (user is null)
                 return RedirectToAction("Logout", "Auth");
 
             // Truy vấn lớp học theo Id
-            var thisClass = await _context.Classes
-                .Include(l => l.ClassDetails)
-                    .ThenInclude(ct => ct.User)
-                .Include(l => l.ClassExams)
-                    .ThenInclude(dt => dt.Exam)
-                        .ThenInclude(d => d.ExamMatrices)
-                .Include(l => l.ClassExams)
-                    .ThenInclude(dt => dt.Exam)
-                        .ThenInclude(d => d.ExamHistories)
-                .FirstOrDefaultAsync(l => l.ClassId == id);
+            var classInfo = await _context.Classes
+                .AsNoTracking()
+                .Where(cl => cl.ClassId == id)
+                .Select(cl => new ClassInfoVM
+                {
+                    ClassId = cl.ClassId,
+                    ClassName = cl.ClassName,
+                    ClassCode = cl.ClassCode,
+                    CreatedDate = cl.CreatedDate,
+                    Description = cl.Description,
+                    UserId = cl.UserId,
+                    UserFullName = cl.User.FullName,
+                })
+                .FirstOrDefaultAsync();
 
-            if (thisClass == null)
+            if (classInfo is null)
                 return NotFound();
 
             // Danh sách sinh viên
-            var danhSachSV = thisClass.ClassDetails
-                .Where(ct => ct.User != null)
-                .Select(ct => new ClassStudentVM
+            var studentListOfClass = await _context.ClassDetails
+                .AsNoTracking()
+                .Where(cd => cd.ClassId == id)
+                .OrderBy(cd => cd.JoinDate)
+                .Select(cd => new ClassStudentVM
                 {
-                    StudentId = ct.User.Username,
-                    FullName = ct.User.FullName,
-                    Email = ct.User.Email,
-                    JoinDate = ct.JoinDate
-                }).ToList();
+                    StudentId = cd.User.Username,
+                    FullName = cd.User.FullName,
+                    Email = cd.User.Email,
+                    JoinDate = cd.JoinDate
+                })
+                .ToListAsync();
 
             // Danh sách đề thi đã thêm vào lớp
-            var danhSachDT = thisClass.ClassExams
-                .Where(dt => dt.Exam != null)
-                .Select(dt => new ClassExamVM
+            var examsInClass = await _context.ClassExams
+                .AsNoTracking()
+                .Where(ec => ec.ClassId == id)
+                .OrderBy(ce => ce.AddedDate)
+                .Select(ce => new ClassExamVM
                 {
-                    ExamId = dt.Exam.ExamId,
-                    ExamName = dt.Exam.ExamName,
-                    Type = dt.IsExam,  //Sua sau
-                    CreatedDate = dt.AddedDate,
-                    ExamType = dt.Exam.ExamType,
-                    StartDate = dt.StartTime,
-                    EndDate = dt.EndTime,
-                    Duration = dt.Exam.Duration,
-                    QuestionCount = dt.Exam.ExamMatrices?.Sum(m => m.QuestionCount) ?? 0,
-                    Access = dt.Access ?? false,
+                    ExamId = ce.ExamId,
+                    ExamName = ce.Exam.ExamName,
+                    Duration = ce.Exam.Duration,
+                    AddedDate = ce.AddedDate,
+                    StartTime = ce.StartTime,
+                    EndTime = ce.EndTime,
+                    QuestionCount = ce.Exam.ExamMatrices.Sum(m => m.QuestionCount),
+                    Access = ce.Access ?? false,
+                    ExamType = ce.Exam.ExamType,
                     UngradedStudentCount =
-                        dt.Exam.ExamType?.ToLower() == "tự luận" && dt.Exam.ExamHistories != null
-                        ? dt.Exam.ExamHistories
+                        ce.Exam.ExamType == "Tự luận" && ce.Exam.ExamHistories != null
+                        ? ce.Exam.ExamHistories
                             .Count(ls => ls.ClassId == id && ls.SubmitTime != null && ls.Score == null)
                         : 0
-                }).ToList();
+                })
+                .ToListAsync();
 
             // Danh sách đề thi chưa thêm vào lớp
-            var danhSachDeThiChuaThem = await _context.Exams
-                 .Where(dt => !_context.ClassExams.Any(ct => ct.ExamId == dt.ExamId && ct.ClassId == id)
-                              && dt.UserId == user.UserId)
-                 .Select(dt => new UnassignedExamVM
-                 {
-                     InstructorId = dt.UserId,
-                     ExamId = dt.ExamId,
-                     ExamName = dt.ExamName,
-                     Duration = dt.Duration,
-                     CreatedDate = dt.CreatedDate,
-                     QuestionCount = dt.ExamMatrices.Sum(m => m.QuestionCount)
-                 }).ToListAsync();
+            var unassignedExams = await _context.Exams
+                .AsNoTracking()
+                .Where(e => e.UserId == user.UserId
+                            && !_context.ClassExams.Any(ce => ce.ExamId == e.ExamId && ce.ClassId == id))
+                .OrderByDescending(e => e.CreatedDate)
+                .Select(e => new UnassignedExamVM
+                {
+                    InstructorId = e.UserId,
+                    ExamId = e.ExamId,
+                    ExamName = e.ExamName,
+                    Duration = e.Duration,
+                    CreatedDate = e.CreatedDate,
+                    QuestionCount = e.ExamMatrices.Select(m => (int?)m.QuestionCount).Sum() ?? 0
+                })
+                .ToListAsync();
 
 
             var logs = await _context.ActivityLogs
-                .Where(lop => lop.ClassId == id)
-                .Include(x => x.User)
-                .Include(x => x.Exam)
-                .Include(x => x.Class)
-                .OrderByDescending(x => x.LogDate)
-                .Select(log => new ExamLogEntryVM
+                .AsNoTracking()
+                .Where(l => l.ClassId == id)
+                .OrderByDescending(l => l.LogDate)
+                .Select(l => new ExamLogEntryVM
                 {
-                    LogId = log.ActivityLogId,
-                    StudentFullName = log.User.FullName,
-                    InstructorName = log.InstructorName, //TeacherName
-                    ExamName = log.Exam.ExamName,
-                    ClassName = log.Class.ClassName,
-                    LoggedDate= log.LogDate,
-                    LogContent = log.LogContent
+                    LogId = l.ActivityLogId,
+                    StudentFullName = l.User.FullName,
+                    InstructorName = l.InstructorName,
+                    ExamName = l.Exam.ExamName,
+                    ClassName = l.Class.ClassName,
+                    LoggedDate = l.LogDate,
+                    LogContent = l.LogContent
                 })
                 .ToListAsync();
 
             var viewModel = new ClassDetailVM
             {
-                ClassInfo = thisClass,
-                Students = danhSachSV,
+                ClassInfo = classInfo,
+                Students = studentListOfClass,
                 Logs = logs,
-                Exams = danhSachDT,
-                UnassignedExams = danhSachDeThiChuaThem,
-                StudentCount = danhSachSV.Count,
-                ExamCount = danhSachDT.Count(dt => dt.Type),
-                ClassCode = thisClass.ClassCode
+                Exams = examsInClass,
+                UnassignedExams = unassignedExams,
+                StudentCount = studentListOfClass.Count,
+                ExamCount = examsInClass.Count(),
+                ClassCode = classInfo.ClassCode
             };
 
             return View(viewModel);
@@ -1008,7 +1022,9 @@ namespace ITExam.Controllers
         {
             // Kiểm tra tài khoản giảng viên
             var access_token = Request.Cookies["access_token"];
-            var user = await _context.Users.FirstOrDefaultAsync(us => us.AccessToken == access_token);
+            var user = await _context.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(us => us.AccessToken == access_token);
             if (user == null)
             {
                 return RedirectToAction("Logout", "Auth");

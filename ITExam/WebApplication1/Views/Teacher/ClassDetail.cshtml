@@ -54,7 +54,7 @@
                     <p><b>Mã lớp học: </b>@Model.ClassInfo.ClassCode</p>
                     <p><b>Mô tả: </b>@Model.ClassInfo.Description</p>
                     <p><b>Ngày tạo: </b>@Model.ClassInfo.CreatedDate.ToString("dd/MM/yyyy HH:mm")</p>
-                    <p><b>Giảng viên: </b>@Model.ClassInfo.User.FullName</p>
+                    <p><b>Giảng viên: </b>@Model.ClassInfo.UserFullName</p>
                 </div>
 
                 <div class="tab-panel px-1 px-md-4 py-2" role="tabpanel" id="panel-2" aria-labelledby="tab-2" aria-hidden="true">
@@ -163,96 +163,95 @@
                     <div id="deThi" class="mt-4 d-flex flex-wrap">
                         @foreach (var dt in Model.Exams)
                         {
-                            if (dt.Type == true)
-                            {
-                                var tenDe = dt.ExamName.Length > 25 ? dt.ExamName.Substring(0, 25) + "..." : dt.ExamName;
-                                <div class="col-lg-4 col-md-6 mb-4">
-                                    <div class="card shadow-sm border-0 h-100">
-                                        <div style="height: 200px; overflow: hidden">
-                                            <img src="~/img/exam1-avatar.png"
-                                                 class="card-img-top"
-                                                 style="object-fit: cover; height: 100%; width: 100%"
-                                                 alt="Đề thi" />
-                                        </div>
-                                        <div class="card-body">
-                                            <h5 class="card-title text-primary font-weight-bold" title="@dt.ExamName">@tenDe</h5>
 
-                                            <p class="card-text mb-2">
-                                                <i class="fa fa-tags text-dark me-2"></i>
-                                                <strong>Loại đề:</strong> @dt.ExamType
-                                            </p>
-                                            <p class="card-text mb-2">
-                                                <i class="fa fa-calendar-alt text-dark me-2"></i>
-                                                <strong>Ngày thêm:</strong> @dt.CreatedDate.ToString("HH:mm:ss dd/MM/yyyy")
-                                            </p>
-                                            <p class="card-text mb-2">
-                                                <i class="fa fa-clock text-dark me-2"></i>
-                                                <strong>Thời gian làm bài:</strong> @dt.Duration phút
-                                            </p>
-                                            <p class="card-text mb-2">
-                                                <i class="fa fa-calendar-alt text-dark me-2"></i>
-                                                <strong>Bắt đầu:</strong> @dt.StartDate.ToString("HH:mm:ss dd/MM/yyyy")
-                                            </p>
-                                            <p class="card-text mb-2">
-                                                <i class="fa fa-calendar-check text-dark me-2"></i>
-                                                <strong>Kết thúc:</strong> @dt.EndDate.ToString("HH:mm:ss dd/MM/yyyy")
-                                            </p>
+                            var tenDe = dt.ExamName.Length > 25 ? dt.ExamName.Substring(0, 25) + "..." : dt.ExamName;
+                            <div class="col-lg-4 col-md-6 mb-4">
+                                <div class="card shadow-sm border-0 h-100">
+                                    <div style="height: 200px; overflow: hidden">
+                                        <img src="~/img/exam1-avatar.png"
+                                                class="card-img-top"
+                                                style="object-fit: cover; height: 100%; width: 100%"
+                                                alt="Đề thi" />
+                                    </div>
+                                    <div class="card-body">
+                                        <h5 class="card-title text-primary font-weight-bold" title="@dt.ExamName">@tenDe</h5>
 
-                                            <div class="d-flex gap-3 mt-2 text-muted small">
-                                                <div data-bs-toggle="tooltip" data-bs-placement="top" title="Số lượng câu hỏi">
-                                                    <i class="fa-solid fa-circle-question text-primary"></i> @dt.QuestionCount
-                                                </div>
-                                                <div data-bs-toggle="tooltip" data-bs-placement="top" title="Lượt xem">
-                                                    <i class="fa-solid fa-eye"></i> 0
-                                                </div>
-                                                <div data-bs-toggle="tooltip" data-bs-placement="top" title="Lượt thi">
-                                                    <i class="fa-solid fa-right-from-bracket"></i> 0
-                                                </div>
+                                        <p class="card-text mb-2">
+                                            <i class="fa fa-tags text-dark me-2"></i>
+                                            <strong>Loại đề:</strong> @dt.ExamType
+                                        </p>
+                                        <p class="card-text mb-2">
+                                            <i class="fa fa-calendar-alt text-dark me-2"></i>
+                                            <strong>Ngày thêm:</strong> @dt.AddedDate?.ToString("HH:mm:ss dd/MM/yyyy")
+                                        </p>
+                                        <p class="card-text mb-2">
+                                            <i class="fa fa-clock text-dark me-2"></i>
+                                            <strong>Thời gian làm bài:</strong> @dt.Duration phút
+                                        </p>
+                                        <p class="card-text mb-2">
+                                            <i class="fa fa-calendar-alt text-dark me-2"></i>
+                                            <strong>Bắt đầu:</strong> @dt.StartTime.ToString("HH:mm:ss dd/MM/yyyy")
+                                        </p>
+                                        <p class="card-text mb-2">
+                                            <i class="fa fa-calendar-check text-dark me-2"></i>
+                                            <strong>Kết thúc:</strong> @dt.EndTime.ToString("HH:mm:ss dd/MM/yyyy")
+                                        </p>
+
+                                        <div class="d-flex gap-3 mt-2 text-muted small">
+                                            <div data-bs-toggle="tooltip" data-bs-placement="top" title="Số lượng câu hỏi">
+                                                <i class="fa-solid fa-circle-question text-primary"></i> @dt.QuestionCount
                                             </div>
-                                        </div>
-
-                                        <div class="px-3 pb-3 text-center">
-                                            <div class="d-flex justify-content-center gap-3 mb-2 btn_action">
-                                                @if (DateTime.Now > dt.StartDate && DateTime.Now < dt.EndDate)
-                                                {
-                                                    <a asp-controller="Teacher" asp-action="Monitoring"
-                                                       asp-route-examId="@dt.ExamId"
-                                                       asp-route-classId="@Model.ClassInfo.ClassId"
-                                                       class="btn btn-sm btn-primary" title="Giám sát" target="_blank">
-                                                        <i class="fa-duotone fa-regular fa-eye"></i>
-                                                    </a>
-                                                }
-
-                                                <button class="border-0 bg-transparent" title="Chỉnh sửa"
-                                                        onclick="openEditModal(@dt.ExamId, '@dt.StartDate.ToString("yyyy-MM-ddTHH:mm")', '@dt.EndDate.ToString("yyyy-MM-ddTHH:mm")')">
-                                                    <i class="fa-regular fa-pen-to-square text-warning fs-5"></i>
-                                                </button>
-
-                                                <button class="border-0 bg-transparent" title="Xóa"
-                                                        onclick="openDeleteModal(@dt.ExamId)">
-                                                    <i class="fa-solid fa-trash-can text-danger fs-5"></i>
-                                                </button>
-
-                                                <div class="form-check form-switch">
-                                                    <input class="form-check-input" type="checkbox"
-                                                           id="switch-access-@dt.ExamId"
-                                                           onchange="capNhatAccess(@Model.ClassInfo.ClassId, @dt.ExamId, this.checked)"
-                                                           @(dt.Access ? "checked" : null) />
-                                                </div>
+                                            <div data-bs-toggle="tooltip" data-bs-placement="top" title="Lượt xem">
+                                                <i class="fa-solid fa-eye"></i> 0
                                             </div>
-
-                                            <div class="btn_action">
-                                                <a asp-controller="Teacher" asp-action="List_Student_Do_Test"
-                                                   asp-route-id="@dt.ExamId"
-                                                   asp-route-maLopHoc="@(Model.ClassInfo.ClassId)"
-                                                   class="btn btn-sm btn-primary w-100">
-                                                    Chi tiết
-                                                </a>
+                                            <div data-bs-toggle="tooltip" data-bs-placement="top" title="Lượt thi">
+                                                <i class="fa-solid fa-right-from-bracket"></i> 0
                                             </div>
                                         </div>
                                     </div>
+
+                                    <div class="px-3 pb-3 text-center">
+                                        <div class="d-flex justify-content-center gap-3 mb-2 btn_action">
+                                            @if (DateTime.Now > dt.StartTime && DateTime.Now < dt.EndTime)
+                                            {
+                                                <a asp-controller="Teacher" asp-action="Monitoring"
+                                                    asp-route-examId="@dt.ExamId"
+                                                    asp-route-classId="@Model.ClassInfo.ClassId"
+                                                    class="btn btn-sm btn-primary" title="Giám sát" target="_blank">
+                                                    <i class="fa-duotone fa-regular fa-eye"></i>
+                                                </a>
+                                            }
+
+                                            <button class="border-0 bg-transparent" title="Chỉnh sửa"
+                                                    onclick="openEditModal(@dt.ExamId, '@dt.StartTime.ToString("yyyy-MM-ddTHH:mm")', '@dt.EndTime.ToString("yyyy-MM-ddTHH:mm")')">
+                                                <i class="fa-regular fa-pen-to-square text-warning fs-5"></i>
+                                            </button>
+
+                                            <button class="border-0 bg-transparent" title="Xóa"
+                                                    onclick="openDeleteModal(@dt.ExamId)">
+                                                <i class="fa-solid fa-trash-can text-danger fs-5"></i>
+                                            </button>
+
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox"
+                                                        id="switch-access-@dt.ExamId"
+                                                        onchange="capNhatAccess(@Model.ClassInfo.ClassId, @dt.ExamId, this.checked)"
+                                                        @(dt.Access ? "checked" : null) />
+                                            </div>
+                                        </div>
+
+                                        <div class="btn_action">
+                                            <a asp-controller="Teacher" asp-action="List_Student_Do_Test"
+                                                asp-route-id="@dt.ExamId"
+                                                asp-route-maLopHoc="@(Model.ClassInfo.ClassId)"
+                                                class="btn btn-sm btn-primary w-100">
+                                                Chi tiết
+                                            </a>
+                                        </div>
+                                    </div>
                                 </div>
-                            }
+                            </div>
+
                         }
                     </div>
                 </div>
@@ -278,8 +277,8 @@
                                         <tr>
                                             <td>@dt.ExamName</td>
                                             <td>@dt.ExamType</td>
-                                            <td>@dt.StartDate.ToString("dd/MM/yyyy HH:mm")</td>
-                                            <td>@dt.EndDate.ToString("dd/MM/yyyy HH:mm")</td>
+                                            <td>@dt.StartTime.ToString("dd/MM/yyyy HH:mm")</td>
+                                            <td>@dt.EndTime.ToString("dd/MM/yyyy HH:mm")</td>
                                             <td>@dt.UngradedStudentCount / @Model.StudentCount</td>
                                             <td>
                                                 <form asp-controller="Teacher" asp-action="Grading_The_Exam" method="post">
@@ -615,119 +614,6 @@
     </div>
 
     <div class="modal fade"
-         id="staticBackdrop-add-review-exam"
-         data-bs-backdrop="static"
-         data-bs-keyboard="false"
-         tabindex="-1"
-         aria-labelledby="staticBackdropLabel"
-         aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
-                    <h1 class="modal-title fs-5 text-white" id="staticBackdropLabel">
-                        THÊM ĐỀ ÔN TẬP
-                    </h1>
-                    <button type="button"
-                            class="btn-close bg-white"
-                            data-bs-dismiss="modal"
-                            aria-label="Close"></button>
-                </div>
-
-                @if (Model.Exams.Count == 0 && Model.UnassignedExams.Count == 0)
-                {
-                    <h5 class="text-center m-2">Chưa có đề ôn tập nào được tạo!</h5>
-                }
-                else
-                {
-                    @foreach (var dt in Model.UnassignedExams)
-                    {
-                        if (dt.InstructorId == @Model.ClassInfo.User.UserId)
-                        {
-                            <div class="test_item d-flex align-items-center border rounded p-3">
-                                <div class="test_image flex-shrink-0 me-3">
-                                    <img src="~/img/exam-avatar.png" alt="Exam Thumbnail" class="rounded" style="width: 80px; height: 80px;">
-                                </div>
-                                <div class="test_info flex-grow-1">
-                                    <p class="fw-bold text-primary mb-1">Tên đề thi: <span class="text-dark"> @dt.ExamName</span></p>
-                                    <div class="d-flex align-items-center mb-2">
-                                        <i class="fa-solid fa-clock me-2 text-muted"></i>
-                                        <span class="text-dark">Ngày tạo: @dt.CreatedDate.ToString("dd-MM-yyyy")</span>
-                                    </div>
-                                    <div class="d-flex gap-4">
-                                        <div class="d-flex align-items-center" data-bs-toggle="tooltip" title="Số lượng câu hỏi">
-                                            <i class="fa-solid fa-circle-question text-primary me-1"></i>
-                                            <span class="fw-bold text-dark">@dt.QuestionCount</span>
-                                        </div>
-                                        <div class="d-flex align-items-center" data-bs-toggle="tooltip" title="Lượt xem">
-                                            <i class="fa-solid fa-eye text-secondary me-1"></i>
-                                            <span class="fw-bold text-dark">0</span>
-                                        </div>
-                                        <div class="d-flex align-items-center" data-bs-toggle="tooltip" title="Lượt thi">
-                                            <i class="fa-solid fa-right-from-bracket text-success me-1"></i>
-                                            <span class="fw-bold text-dark">0</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="test_item_action ms-3">
-                                    <button class="btn btn-primary" onclick="closeAndOpenGanDeModal(@dt.ExamId, 'staticBackdrop-add-review-exam')">
-                                        <i class="fa-solid fa-plus me-1"></i> Thêm
-                                    </button>
-                                </div>
-                            </div>
-                        }
-                    }
-
-                    @foreach (var dt in Model.Exams)
-                    {
-                        <div class="test_item d-flex align-items-center border rounded p-3">
-                            <div class="test_image flex-shrink-0 me-3">
-                                <img src="~/img/exam-avatar.png" alt="Exam Thumbnail" class="rounded" style="width: 80px; height: 80px;">
-                            </div>
-                            <div class="test_info flex-grow-1">
-                                <p class="fw-bold text-primary mb-1">Tên đề thi: <span class="text-dark"> @dt.ExamName</span></p>
-                                <div class="d-flex align-items-center mb-2">
-                                    <i class="fa-solid fa-clock me-2 text-muted"></i>
-                                    <span class="text-dark">Ngày thêm: @dt.CreatedDate.ToString("dd-MM-yyyy")</span>
-                                </div>
-                                <div class="d-flex gap-4">
-                                    <div class="d-flex align-items-center" data-bs-toggle="tooltip" title="Số lượng câu hỏi">
-                                        <i class="fa-solid fa-circle-question text-primary me-1"></i>
-                                        <span class="fw-bold text-dark">@dt.QuestionCount</span>
-                                    </div>
-                                    <div class="d-flex align-items-center" data-bs-toggle="tooltip" title="Lượt xem">
-                                        <i class="fa-solid fa-eye text-secondary me-1"></i>
-                                        <span class="fw-bold text-dark">0</span>
-                                    </div>
-                                    <div class="d-flex align-items-center" data-bs-toggle="tooltip" title="Lượt thi">
-                                        <i class="fa-solid fa-right-from-bracket text-success me-1"></i>
-                                        <span class="fw-bold text-dark">0</span>
-                                    </div>
-                                </div>
-                            </div>
-                            @if (dt.Type == true)
-                            {
-                                <div class="test_item_action ms-3">
-                                    <button class="btn btn-info">
-                                        Đề thi
-                                    </button>
-                                </div>
-                            }
-                            else
-                            {
-                                <div class="test_item_action ms-3">
-                                    <button class="btn btn-info">
-                                        Ôn tập
-                                    </button>
-                                </div>
-                            }
-                        </div>
-                    }
-                }
-            </div>
-        </div>
-    </div>
-
-    <div class="modal fade"
          id="staticBackdrop-add-exam"
          data-bs-backdrop="static"
          data-bs-keyboard="false"
@@ -802,7 +688,7 @@
                                 <p class="fw-bold text-primary mb-1">Tên đề thi: <span class="text-dark"> @dt.ExamName</span></p>
                                 <div class="d-flex align-items-center mb-2">
                                     <i class="fa-solid fa-clock me-2 text-muted"></i>
-                                    <span class="text-dark">Ngày thêm: @dt.CreatedDate.ToString("dd-MM-yyyy")</span>
+                                    <span class="text-dark">Ngày thêm: @dt.AddedDate?.ToString("dd-MM-yyyy")</span>
                                 </div>
                                 <div class="d-flex gap-4">
                                     <div class="d-flex align-items-center" data-bs-toggle="tooltip" title="Số lượng câu hỏi">
@@ -819,22 +705,13 @@
                                     </div>
                                 </div>
                             </div>
-                            @if (dt.Type == true)
-                            {
-                                <div class="test_item_action ms-3">
-                                    <button class="btn btn-info">
-                                        Đã thêm
-                                    </button>
-                                </div>
-                            }
-                            else
-                            {
-                                <div class="test_item_action ms-3">
-                                    <button class="btn btn-info">
-                                        Ôn tập
-                                    </button>
-                                </div>
-                            }
+
+                            <div class="test_item_action ms-3">
+                                <button class="btn btn-info">
+                                    Đã thêm
+                                </button>
+                            </div>
+
                         </div>
                     }
                 }
