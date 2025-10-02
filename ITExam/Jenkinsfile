@@ -58,24 +58,15 @@ pipeline {
     }
 
     stage('Start & Health') {
-  steps {
-    sh '''
-      sudo -n systemctl start ${SERVICE_NAME}
-      # đợi app mở cổng 5000 tối đa 60s
-      for i in {1..30}; do
-        if curl -fsS http://127.0.0.1:5000/ >/dev/null; then
-          echo "✅ Health OK"
-          exit 0
-        fi
-        echo "⏳ waiting for app..."
-        sleep 2
-      done
-      echo "❌ Health check fail"
-      exit 1
-    '''
-  }
-}
-
+      steps {
+        sh '''
+          sudo systemctl start ${SERVICE_NAME}
+          sleep 2
+          curl -fsS http://127.0.0.1:5000/ >/dev/null || (echo "❌ Health check fail" && exit 1)
+          echo "✅ Deployed OK"
+        '''
+      }
+    }
   }
 
   post {
