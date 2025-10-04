@@ -1235,7 +1235,13 @@ namespace ITExam.Controllers
         public async Task<IActionResult> Exam_Bank_Add_Question_MultipleChoice(int id)
         {
             // Truy vấn ngân hàng đề bằng id
-            var examBank = await _context.ExamBanks.FindAsync(id);
+            var examBank = await _context.ExamBanks.AsNoTracking().Where(e => e.ExamBankId == id)
+                .Select(e => new
+                {
+                    e.SubjectId,
+                    e.ExamBankName,
+                    e.Status
+                }).FirstOrDefaultAsync();
             if (examBank == null)
             {
                 return NotFound("Không tìm thấy ngân hàng đề.");
@@ -1415,7 +1421,14 @@ namespace ITExam.Controllers
         //Ngân hàng đề : Câu hỏi : Thêm câu hỏi tự luận
         public async Task<IActionResult> Exam_Bank_Add_Question_Essay(int id)
         {
-            var examBank = await _context.ExamBanks.FindAsync(id);
+            var examBank = await _context.ExamBanks.AsNoTracking().Where(e => e.ExamBankId == id)
+                .Select(e => new
+            {
+                e.ExamBankName,
+                e.Status, 
+                e.SubjectId
+            }).FirstOrDefaultAsync();
+
             if (examBank == null)
             {
                 return NotFound("Không tìm thấy ngân hàng đề.");
@@ -1444,7 +1457,7 @@ namespace ITExam.Controllers
 
             var danhSachChuong = subject.Chapters ?? new List<ChapterDto>();
 
-            var danhSachCauHoi = await _context.QuestionBanks
+            var danhSachCauHoi = await _context.QuestionBanks.AsNoTracking()
                 .Where(ch => ch.ExamBankId == id)
                 .ToListAsync();
 
@@ -1466,7 +1479,6 @@ namespace ITExam.Controllers
                 QuestionDTOList = danhSachCauHoiDTO,
                 ChapterList = danhSachChuong
             };
-
             return View(viewModel);
         }
 
@@ -1773,10 +1785,11 @@ namespace ITExam.Controllers
         //================================================================
 
         #region Monitoring
-        public IActionResult Monitoring(int examId, int classId)
+        public async Task<IActionResult> Monitoring(int examId, int classId)
         {
             var access_token = Request.Cookies["access_token"];
-            var user = _context.Users.SingleOrDefault(us => us.AccessToken == access_token);
+            var user = _context.Users.AsNoTracking().Where(us => us.AccessToken == access_token)
+                .Select(us => new {us.Role, us.FullName}).FirstOrDefault();
             if (user == null)
             {
                 return RedirectToAction("Logout", "Auth");
@@ -1787,12 +1800,26 @@ namespace ITExam.Controllers
                 return NotFound();
             }
 
-            var Class = _context.Classes
-                .Include(l => l.ClassDetails)
-                .ThenInclude(cd => cd.User)
-                .FirstOrDefault(l => l.ClassId == classId);
+            var classInfo = await _context.Classes
+                .AsNoTracking()
+                .Where(c => c.ClassId == classId)
+                .Select(c => new
+                {
+                    c.ClassId,
+                    c.ClassName,
+                    Students = c.ClassDetails
+                        .Where(cd => cd.User != null)
+                        .Select(cd => new StudentVM
+                        {
+                            UserId = cd.UserId,
+                            FullName = cd.User.FullName,
+                            Username = cd.User.Username
+                        })
+                        .ToList()
+                })
+                .FirstOrDefaultAsync();
 
-            if (Class == null)
+            if (classInfo == null)
             {
                 return NotFound();
             }
@@ -1805,24 +1832,32 @@ namespace ITExam.Controllers
 
             ViewBag.Instructor = user.FullName;
 
-            var StudentList = Class.ClassDetails
-                .Where(cd => cd.User != null)
-                .Select(cd => new StudentVM
+            var exam = await _context.Exams
+                .AsNoTracking()
+                .Where(e => e.ExamId == examId)
+                .Select(e => new
                 {
-                    UserId = cd.UserId,
-                    FullName = cd.User.FullName,
-                    Username = cd.User.Username
-                }).ToList();
+                    e.ExamId,
+                    e.ExamName,
+                    e.ExamType,
+                    e.Duration
+                })
+                .FirstOrDefaultAsync();
+
+            if (exam == null)
+            {
+                return NotFound();
+            }
 
             var viewModel = new MonitoringVM
             {
-                ExamId = Exam.ExamId,
-                ExamName = Exam.ExamName,
-                ExamType = Exam.ExamType,
-                Duration = Exam.Duration,
-                ClassId = Class.ClassId,
-                ClassName = Class.ClassName,
-                StudentList = StudentList
+                ExamId = exam.ExamId,
+                ExamName = exam.ExamName,
+                ExamType = exam.ExamType,
+                Duration = exam.Duration,
+                ClassId = classInfo.ClassId,
+                ClassName = classInfo.ClassName,
+                StudentList = classInfo.Students
             };
 
             return View(viewModel);

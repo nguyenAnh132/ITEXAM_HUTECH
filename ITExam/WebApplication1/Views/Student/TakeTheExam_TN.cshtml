@@ -611,36 +611,55 @@
             }
         }
 
+        async function initializeConnection() {
+            try {
+                await connection.start();
+                console.log("SignalR connected");
 
-        connection.start().then(() => {
-            console.log("SignalR connected");
-            console.log(examStructureRaw);
-            return connection.invoke("JoinExam", examId, classId, studentId, studentName);
-        }).then(() => {
-            return Promise.all([
-                connection.invoke("SendFullExamStructure", examId, classId, studentId, studentName, examStructureRaw),
-                sendClientInfoToHub()
-            ]);
-        }).catch(err => {
-            console.error("SignalR connection error:", err);
+                // B1: Join exam
+                await connection.invoke("JoinExam", examId, classId, studentId, studentName);
+                console.log("Joined exam");
+
+                // B2: Gửi cấu trúc đề
+                await connection.invoke("SendFullExamStructure", examId, classId, studentId, studentName, examStructureRaw);
+                console.log("Sent exam structure");
+
+                // B3: Gửi thông tin client (IP, UA)
+                await sendClientInfoToHub();
+                console.log("Sent client info");
+            } catch (err) {
+                console.error("Lỗi khởi tạo connection:", err);
+            }
+        }
+
+        // Khởi động connection lần đầu
+        initializeConnection();
+
+        // Khi reconnect (ví dụ mất mạng tạm thời)
+        connection.onreconnected(async () => {
+          console.log("Reconnected, re-sync exam structure...");
+          try {
+            await connection.invoke("JoinExam", examId, classId, studentId, studentName);
+            await connection.invoke("SendFullExamStructure", examId, classId, studentId, studentName, examStructureRaw);
+            await sendClientInfoToHub();
+          } catch (err) {
+            console.error("Error resyncing after reconnect:", err);
+          }
         });
 
-        connection.on("ReceiveAntiCheatConfig", setupAntiCheat);
 
+        // Khi connection bị đóng hẳn (reload hoặc lỗi)
         connection.onclose(() => {
             if (!hasSubmitted) {
                 setTimeout(() => {
-                    connection.start().then(() => {
-                        return connection.invoke("JoinExam", examId, classId, studentId, studentName);
-                    }).catch(console.error);
+                    console.log("Connection closed, retrying...");
+                    initializeConnection();
                 }, 5000);
             }
         });
 
-        connection.onreconnected(() => {
-            console.log("Đã reconnect, gửi lại IP/UA...");
-            sendClientInfoToHub(); // Gửi lại thông tin để trang giám sát phát hiện thay đổi
-        });
+
+        connection.on("ReceiveAntiCheatConfig", setupAntiCheat);
 
         document.addEventListener('keydown', function(e) {
             if (!hasSubmitted) {
@@ -727,186 +746,246 @@
         // Detect Resize
         (function setupAntiResize() {
           // ====== Cấu hình ngưỡng ======
-          const MIN_PX_DELTA = 16;       // bỏ thay đổi < 16px
-          const MIN_RATIO_DELTA = 0.02;  // 2% thay đổi
-          const KEYBOARD_DELTA_PX = 120; // giảm cao >= 120px có thể là bàn phím
-          const STABILIZE_MS = 350;      // thời gian ổn định trước khi quyết định
-          const RATE_LIMIT_MS = 1000;    // tối đa gửi 1 lần / giây
+          const MIN_PX_DELTA = 20; // Tăng lên để tránh nhạy cảm quá
+          const MIN_RATIO_DELTA = 0.05; // 5% thay đổi mới tính
+          const KEYBOARD_MIN_DELTA = 150; // Bàn phím thường chiếm > 150px
+          const URL_BAR_MAX_DELTA = 100; // URL bar thường < 100px
+          const STABILIZE_MS = 500; // Tăng thời gian ổn định
+          const RATE_LIMIT_MS = 2000; // Rate limit 2s
+          const ZOOM_THRESHOLD = 0.05; // 5% thay đổi scale
 
           // Trạng thái ban đầu
           const initial = {
             w: document.documentElement.clientWidth,
-            h: document.documentElement.clientHeight
+            h: document.documentElement.clientHeight,
+            innerW: window.innerWidth,
+            innerH: window.innerHeight,
+            outerW: window.outerWidth,
+            outerH: window.outerHeight
           };
           initial.area = initial.w * initial.h;
 
           const vv = window.visualViewport || null;
           const initialVVH = vv ? vv.height : null;
+          const initialVVW = vv ? vv.width : null;
           const initialScale = vv ? vv.scale : 1;
 
           let resizeAlertSent = false;
           let debounceTimer, lastSentAt = 0;
+          let orientationAngle = getOrientation();
 
-          // Giữ một snapshot "last" để so sánh ổn định
+          // Snapshot cuối cùng
           const last = {
             clientW: initial.w,
             clientH: initial.h,
-            innerW: window.innerWidth,
-            innerH: window.innerHeight,
-            outerW: window.outerWidth,
-            outerH: window.outerHeight,
+            innerW: initial.innerW,
+            innerH: initial.innerH,
+            outerW: initial.outerW,
+            outerH: initial.outerH,
             vvW: vv ? vv.width : null,
             vvH: vv ? vv.height : null,
             vvScale: vv ? vv.scale : 1,
-            vvTop: vv ? vv.offsetTop : 0
+            vvTop: vv ? vv.offsetTop : 0,
+            vvLeft: vv ? vv.offsetLeft : 0
           };
 
+          function getOrientation() {
+            if (screen.orientation && screen.orientation.angle !== undefined) {
+              return screen.orientation.angle;
+            }
+            return window.orientation || 0;
+          }
+
           function hasEditorFocus() {
+            // Kiểm tra CKEditor
             if (document.querySelector('.ck-focused')) return true;
+
             const ae = document.activeElement;
             if (!ae) return false;
+
             const tag = (ae.tagName || '').toUpperCase();
             if (tag === 'INPUT' || tag === 'TEXTAREA') return true;
             if (ae.isContentEditable) return true;
+
             return false;
           }
 
           const percentDelta = (oldV, newV) => {
-            if (!oldV) return 1;
+            if (!oldV || oldV === 0) return 1;
             return Math.abs(newV - oldV) / oldV;
           };
 
-          const overThreshold = (oldV, newV) => {
-            return (
-              Math.abs(newV - oldV) >= MIN_PX_DELTA ||
-              percentDelta(oldV, newV) >= MIN_RATIO_DELTA
-            );
-          };
+          function isMobile() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+          }
 
           function classify() {
             const clientW = document.documentElement.clientWidth;
             const clientH = document.documentElement.clientHeight;
-            const innerW  = window.innerWidth;
-            const innerH  = window.innerHeight;
-            const outerW  = window.outerWidth;
-            const outerH  = window.outerHeight;
+            const innerW = window.innerWidth;
+            const innerH = window.innerHeight;
+            const outerW = window.outerWidth;
+            const outerH = window.outerHeight;
 
             const hasVV = !!vv;
             const vvW = hasVV ? vv.width : null;
             const vvH = hasVV ? vv.height : null;
             const scale = hasVV ? vv.scale : 1;
             const vvTop = hasVV ? vv.offsetTop : 0;
+            const vvLeft = hasVV ? vv.offsetLeft : 0;
 
-            const widthChanged  = overThreshold(last.clientW, clientW);
-            const heightChanged = overThreshold(last.clientH, clientH);
+            // Delta calculations
+            const clientWDelta = Math.abs(clientW - last.clientW);
+            const clientHDelta = Math.abs(clientH - last.clientH);
+            const innerHDelta = Math.abs(innerH - last.innerH);
+            const vvHDelta = hasVV && last.vvH ? Math.abs(vvH - last.vvH) : 0;
+            const scaleDelta = Math.abs(scale - last.vvScale);
+            const vvTopDelta = Math.abs(vvTop - last.vvTop);
+            const vvLeftDelta = Math.abs(vvLeft - last.vvLeft);
 
-            // 1) Pinch-zoom?
-            const pinchZoomLikely = hasVV && Math.abs(scale - last.vvScale) > 0.001;
+            // Orientation change
+            const currentAngle = getOrientation();
+            const orientationChanged = currentAngle !== orientationAngle;
+            if (orientationChanged) orientationAngle = currentAngle;
 
-            // 2) Bàn phím ảo?
-            const keyboardLikely =
-              hasEditorFocus() &&
-              (
-                (hasVV && last.vvH !== null && (last.vvH - vvH) >= KEYBOARD_DELTA_PX) ||
-                (last.innerH - innerH) >= KEYBOARD_DELTA_PX
-              ) &&
-              percentDelta(last.clientW, clientW) < 0.01; // chiều rộng hầu như không đổi
+            const mobile = isMobile();
 
-            // 3) Thanh URL ẩn/hiện (mobile)
-            const urlBarLikely =
-              !hasEditorFocus() &&
-              !pinchZoomLikely &&
-              widthChanged === false &&
-              heightChanged === true &&
-              (
-                (hasVV && Math.abs(vvTop - last.vvTop) > 0) ||
-                Math.abs(last.innerH - innerH) >= MIN_PX_DELTA
-              );
+            // ==== 1) PINCH ZOOM ====
+            // Scale thay đổi hoặc visual viewport offset thay đổi (pan after zoom)
+            const pinchZoomLikely = hasVV && (
+              scaleDelta > ZOOM_THRESHOLD ||
+              (scale !== 1 && (vvTopDelta > 5 || vvLeftDelta > 5))
+            );
 
-            // 4) Orientation change (coi như resize thật)
-            const angle = (screen.orientation && screen.orientation.angle !== undefined)
-              ? screen.orientation.angle
-              : (window.orientation || 0);
-            classify._lastAngle ??= angle;
-            const orientationChanged = angle !== classify._lastAngle;
-            classify._lastAngle = angle;
+            // ==== 2) KEYBOARD ẢO ====
+            // - Có focus vào input/textarea
+            // - Chiều cao giảm đáng kể (>= 150px)
+            // - Chiều rộng gần như không đổi
+            // - Scale không đổi
+            const keyboardLikely = mobile && hasEditorFocus() &&
+              (vvHDelta >= KEYBOARD_MIN_DELTA || innerHDelta >= KEYBOARD_MIN_DELTA) &&
+              clientWDelta < 20 &&
+              scaleDelta < 0.01;
 
-            // 5) Desktop: outer size thay đổi là resize thật
-            const desktopRealByOuter =
-              overThreshold(last.outerW, outerW) || overThreshold(last.outerH, outerH);
+            // ==== 3) URL BAR ẨN/HIỆN ====
+            // Mobile: height thay đổi nhỏ (<100px), width không đổi, không focus input
+            // visualViewport offsetTop thay đổi là dấu hiệu URL bar (iOS)
+            const urlBarLikely = mobile && !hasEditorFocus() &&
+              clientHDelta > 0 && clientHDelta <= URL_BAR_MAX_DELTA &&
+              clientWDelta < 20 &&
+              scaleDelta < 0.01 &&
+              (vvTopDelta > 0 || innerHDelta <= URL_BAR_MAX_DELTA);
 
-            // 6) Quyết định "real resize"
-            const realResize =
-              !pinchZoomLikely &&
-              !keyboardLikely &&
-              !urlBarLikely &&
-              (
-                orientationChanged ||
-                desktopRealByOuter ||
-                widthChanged ||
-                (heightChanged && percentDelta(last.clientH, clientH) >= 0.03) // cao đổi >3%
-              );
+            // ==== 4) DESKTOP RESIZE ====
+            const desktopRealResize = !mobile && (
+              Math.abs(outerW - last.outerW) >= MIN_PX_DELTA ||
+              Math.abs(outerH - last.outerH) >= MIN_PX_DELTA
+            );
 
+            // ==== 5) MOBILE REAL RESIZE ====
+            // Orientation change hoặc thay đổi lớn về width/height
+            const mobileRealResize = mobile && (
+              orientationChanged ||
+              (clientWDelta >= MIN_PX_DELTA && percentDelta(last.clientW, clientW) >= MIN_RATIO_DELTA) ||
+              (clientHDelta >= MIN_PX_DELTA && percentDelta(last.clientH, clientH) >= MIN_RATIO_DELTA &&
+               clientHDelta > URL_BAR_MAX_DELTA) // Phải lớn hơn ngưỡng URL bar
+            );
+
+            // ==== QUYẾT ĐỊNH CUỐI ====
+            const realResize = !pinchZoomLikely &&
+                               !keyboardLikely &&
+                               !urlBarLikely &&
+                               (desktopRealResize || mobileRealResize);
+
+            // Payload debug
             const payload = {
-              initialWidth:  initial.w,
+              initialWidth: initial.w,
               initialHeight: initial.h,
-              currentWidth:  clientW,
+              currentWidth: clientW,
               currentHeight: clientH,
               innerWidth: innerW,
               innerHeight: innerH,
               outerWidth: outerW,
               outerHeight: outerH,
               visualViewport: hasVV ? {
-                width: vvW, height: vvH, scale: scale, offsetTop: vvTop,
-                initialHeight: initialVVH, initialScale: initialScale
+                width: vvW,
+                height: vvH,
+                scale: scale,
+                offsetTop: vvTop,
+                offsetLeft: vvLeft,
+                initialHeight: initialVVH,
+                initialWidth: initialVVW,
+                initialScale: initialScale
               } : null,
+              deltas: {
+                clientWidth: clientWDelta,
+                clientHeight: clientHDelta,
+                innerHeight: innerHDelta,
+                vvHeight: vvHDelta,
+                scale: scaleDelta,
+                vvTop: vvTopDelta,
+                vvLeft: vvLeftDelta
+              },
               flags: {
                 pinchZoomLikely,
                 keyboardLikely,
                 urlBarLikely,
                 orientationChanged,
-                desktopRealByOuter
+                desktopRealResize,
+                mobileRealResize,
+                isMobile: mobile,
+                hasEditorFocus: hasEditorFocus()
               },
               timestamp: new Date().toISOString(),
               userAgent: navigator.userAgent
             };
 
-            return { realResize, payload, snapshot: { clientW, clientH, innerW, innerH, outerW, outerH, vvW, vvH, vvScale: scale, vvTop } };
+            return {
+              realResize,
+              payload,
+              snapshot: {
+                clientW, clientH, innerW, innerH, outerW, outerH,
+                vvW, vvH, vvScale: scale, vvTop, vvLeft
+              }
+            };
           }
 
           function checkResize() {
-            if (resizeAlertSent || typeof hasSubmitted === "boolean" && hasSubmitted) return;
+            if (resizeAlertSent || (typeof hasSubmitted === "boolean" && hasSubmitted)) return;
 
             const { realResize, payload, snapshot } = classify();
 
-            // Cập nhật "last" để so sánh lần sau
-            last.clientW = snapshot.clientW;
-            last.clientH = snapshot.clientH;
-            last.innerW  = snapshot.innerW;
-            last.innerH  = snapshot.innerH;
-            last.outerW  = snapshot.outerW;
-            last.outerH  = snapshot.outerH;
-            last.vvW     = snapshot.vvW;
-            last.vvH     = snapshot.vvH;
-            last.vvScale = snapshot.vvScale;
-            last.vvTop   = snapshot.vvTop;
+            // Cập nhật snapshot
+            Object.assign(last, snapshot);
 
-            if (!realResize) return;
+            if (!realResize) {
+              // Log để debug (có thể bỏ trong production)
+              // console.log('[Resize] Ignored:', payload.flags);
+              return;
+            }
 
+            // Rate limiting
             const now = Date.now();
-            if (now - lastSentAt < RATE_LIMIT_MS) return; // rate-limit
+            if (now - lastSentAt < RATE_LIMIT_MS) return;
             lastSentAt = now;
 
             resizeAlertSent = true;
 
-            // Gửi log lên Hub (giữ nguyên keyword, tham số)
+            // Gửi log lên Hub
             try {
-              connection?.invoke?.(
-                "DetectWindowResize",
-                examId, classId, studentId, studentName,
-                payload
-              );
-            } catch (e) { console.error("DetectWindowResize error:", e); }
+              if (typeof connection !== 'undefined' && connection.invoke) {
+                connection.invoke(
+                  "DetectWindowResize",
+                  examId,
+                  classId,
+                  studentId,
+                  studentName,
+                  payload
+                );
+              }
+            } catch (e) {
+              console.error("DetectWindowResize error:", e);
+            }
 
             alert("CẢNH BÁO! Phát hiện thay đổi kích thước cửa sổ đáng kể. Trang sẽ được làm mới.");
             setTimeout(() => location.reload(), 1000);
@@ -917,17 +996,27 @@
             debounceTimer = setTimeout(checkResize, STABILIZE_MS);
           }
 
-          // Lắng nghe sự kiện
+          // Event listeners
           window.addEventListener("resize", debouncedCheck, { passive: true });
           window.addEventListener("orientationchange", debouncedCheck, { passive: true });
+
           if (vv) {
             vv.addEventListener("resize", debouncedCheck, { passive: true });
-            vv.addEventListener("scroll", debouncedCheck, { passive: true }); // iOS URL bar làm offsetTop đổi
+            vv.addEventListener("scroll", debouncedCheck, { passive: true });
           }
-          // Khi focus/blur input — giúp phân biệt bàn phím ảo
+
+          // Focus/blur để detect bàn phím
           window.addEventListener("focus", debouncedCheck, true);
           window.addEventListener("blur", debouncedCheck, true);
+
           document.addEventListener("visibilitychange", debouncedCheck, { passive: true });
+
+          // Log initial state (debug)
+          console.log('[AntiResize] Initialized:', {
+            isMobile: isMobile(),
+            hasVisualViewport: !!vv,
+            initial
+          });
         })();
     </script>
 </body>

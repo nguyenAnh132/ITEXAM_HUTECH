@@ -12,7 +12,6 @@
     {
         public int Id { get; set; }
         public string Title { get; set; }
-        public int Index { get; set; }
         public List<CloDto> Clos { get; set; }
     }
 

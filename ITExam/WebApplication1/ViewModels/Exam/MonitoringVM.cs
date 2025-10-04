@@ -5,8 +5,6 @@
         public int UserId { get; set; }
         public string FullName { get; set; }
         public string Username { get; set; }
-        public string? Ip { get; set; }
-        public string? Brower { get; set; }
     }
 
     public class MonitoringVM

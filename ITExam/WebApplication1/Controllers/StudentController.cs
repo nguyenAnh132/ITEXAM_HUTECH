@@ -849,7 +849,7 @@ namespace ITExam.Controllers
             await _redis.RemoveAsync(essayKey);
 
             await _hubContext.Clients
-                    .Group($"multiChoiceAns:{maDe}:class:{maLop}")
+                    .Group($"exam:{maDe}:class:{maLop}")
                     .SendAsync("StudentScoreUpdated", new
                     {
                         ExamId = maDe.ToString(),
