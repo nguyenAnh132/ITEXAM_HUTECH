@@ -61,7 +61,7 @@
                     </a>
 
                     <a asp-controller="Student" asp-action="List_History_Detail"
-                       class="nav-item nav-link @(currentController == "Student" && currentAction == "ExamHistory" ? "active" : "")">
+                       class="nav-item nav-link @(currentController == "Student" && currentAction == "List_History_Detail" ? "active" : "")">
                         Lịch sử làm bài
                     </a>
 
@@ -166,7 +166,7 @@
             crossorigin="anonymous"></script>
 
     <!-- JavaScript Libraries -->
-    
+
     <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
     <script src="lib/easing/easing.min.js"></script>
     <script src="lib/waypoints/waypoints.min.js"></script>
@@ -176,7 +176,6 @@
     <!--toastify -->
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <!-- Template Javascript -->
-    
     @RenderSection("Script", required: false)
     <script src="~/js/main.js"></script>
 </body>
