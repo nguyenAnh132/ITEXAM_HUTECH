@@ -23,7 +23,12 @@ builder.Services.AddStackExchangeRedisCache(options =>
 }); 
 
 builder.Services.AddHttpClient();
-builder.Services.AddSignalR();
+builder.Services.AddSignalR(options =>
+{
+    options.MaximumReceiveMessageSize = 10 * 1024 * 1024;
+    options.KeepAliveInterval = TimeSpan.FromSeconds(15);
+    options.ClientTimeoutInterval = TimeSpan.FromSeconds(60);
+});
 
 builder.Services.AddTransient<EmailService>();
 
@@ -53,6 +58,8 @@ builder.Services.AddSession(options =>
 });
 
 
+builder.Services.AddScoped<GoogleDriveService>();
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
@@ -60,6 +67,8 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<ITExamDbContext>();
     db.Database.Migrate();
 }
+
+
 
 
 // Configure the HTTP request pipeline.

@@ -16,6 +16,12 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using WebApplication1.Models;
+using Microsoft.Extensions.Logging;
+using Google.Apis.Auth.OAuth2.Flows;
+using Google.Apis.Auth.OAuth2.Responses;
+using Google.Apis.Auth.OAuth2;
+using Google.Apis.Drive.v3;
+using Microsoft.AspNetCore.Authorization;
 namespace ITExam.Controllers
 {
     //[CheckToken]
@@ -26,13 +32,17 @@ namespace ITExam.Controllers
         private readonly ITExamDbContext _context;
         private readonly IDistributedCache _redis;
         private readonly IHubContext<ExamMonitorHub> _hubContext;
+        private readonly GoogleDriveService _driveService;
+        private readonly ILogger<StudentController> _logger;
 
 
-        public StudentController(ITExamDbContext context, IDistributedCache redis, IHubContext<ExamMonitorHub> hubContext)
+        public StudentController(ITExamDbContext context, IDistributedCache redis, IHubContext<ExamMonitorHub> hubContext, GoogleDriveService driveService, ILogger<StudentController> logger   )
         {
             _context = context;
             _redis = redis;
             _hubContext = hubContext;
+            _driveService=driveService;
+            _logger=logger;
         }
         public IActionResult Index()
         {
@@ -438,7 +448,7 @@ namespace ITExam.Controllers
 
 
         //Đề thi : Vào thi tự luận
-        public async Task<IActionResult> TakeTheExam_TL(int maDe, int maLop)
+        public async Task<IActionResult> TakeTheExam_TL(int maDe, int maLop) // Bỏ IFormFile ở đây
         {
             //Kiểm tra tài khoản của sinh viên
             var access_token = Request.Cookies["access_token"];
@@ -522,11 +532,30 @@ namespace ITExam.Controllers
 
             var lopHoc = await _context.Classes.FindAsync(maLop);
 
+            // === SỬA LỖI ĐỌC REDIS VÀ THÊM LOG ===
             var key = $"essayAns:{maDe}:{user.UserId}";
-            var cacheData = await _redis.GetStringAsync(key);
-            var luuCauTraLoi = string.IsNullOrEmpty(cacheData)
-                ? new Dictionary<int, string>()
-                : JsonSerializer.Deserialize<Dictionary<int, string>>(cacheData);
+            Dictionary<string, string> luuCauTraLoi = null;
+            try
+            {
+                var cacheData = await _redis.GetStringAsync(key);
+
+                // SỬA LỖI: PHẢI LÀ <string, string>
+                luuCauTraLoi = string.IsNullOrEmpty(cacheData)
+                    ? new Dictionary<string, string>()
+                    : JsonSerializer.Deserialize<Dictionary<string, string>>(cacheData);
+
+                if (luuCauTraLoi.Any())
+                    _logger.LogInformation(">>> REDIS (TakeTheExam_TL): Đọc thành công {Count} câu trả lời từ key {Key}", luuCauTraLoi.Count, key);
+                else
+                    _logger.LogWarning(">>> REDIS (TakeTheExam_TL): Key {Key} rỗng hoặc không tồn tại.", key);
+            }
+            catch (Exception ex)
+            {
+                // LỖI NÀY CÓ THỂ XẢY RA NẾU TRƯỚC ĐÓ BẠN LƯU BẰNG <int, string>
+                _logger.LogError(ex, ">>> LỖI (TakeTheExam_TL): Deserialize Redis key <string, string> THẤT BẠI. Key {Key}", key);
+                luuCauTraLoi = new Dictionary<string, string>(); // Khởi tạo rỗng để tránh crash
+            }
+            // === KẾT THÚC SỬA LỖI ===
 
             int thoiGianLamBai = deThi.Duration * 60;
             int thoiGianDaTroiQua = (int)(DateTime.Now - lichSu.StartTime).TotalSeconds;
@@ -542,11 +571,18 @@ namespace ITExam.Controllers
                 UserId = user.UserId,
                 StudentId = user.Username,
                 FullName = user.FullName,
-                Questions = danhSachCauHoi.Select(ch => new EssayQuestionVM
+                Questions = danhSachCauHoi.Select(ch =>
                 {
-                    QuestionId = ch.QuestionId,
-                    QuestionContent = ch.QuestionContent,
-                    EssayAnswer = luuCauTraLoi.ContainsKey(ch.QuestionId) ? luuCauTraLoi[ch.QuestionId] : null
+                    // SỬA LỖI: PHẢI DÙNG .ToString()
+                    string questionIdKey = ch.QuestionId.ToString();
+                    return new EssayQuestionVM
+                    {
+                        QuestionId = ch.QuestionId,
+                        QuestionContent = ch.QuestionContent,
+                        EssayAnswer = luuCauTraLoi.ContainsKey(questionIdKey)
+                                        ? luuCauTraLoi[questionIdKey]
+                                        : null
+                    };
                 }).ToList(),
                 ClassId = maLop,
                 ClassName = lopHoc.ClassName
@@ -927,7 +963,131 @@ namespace ITExam.Controllers
             return View();
         }
 
+        [HttpPost] // Đây là action POST để nộp bài
+        public async Task<IActionResult> ExamResult_TL(int maDe, int maLop, IFormFile uploadedFile) // THÊM IFormFile
+        {
+            _logger.LogInformation(">>> BẮT ĐẦU NỘP BÀI (ExamResult_TL): MaDe {MaDe}, MaLop {MaLop}", maDe, maLop);
 
+            //check_user
+            var access_token = Request.Cookies["access_token"];
+            var user = await _context.Users.SingleOrDefaultAsync(us => us.AccessToken == access_token);
+            if (user == null)
+            {
+                _logger.LogWarning(">>> LỖI NỘP BÀI: Không tìm thấy User với access token.");
+                return RedirectToAction("Logout", "Auth");
+            }
+
+            var examHistory = await _context.ExamHistories
+                .FirstOrDefaultAsync(ls => ls.UserId == user.UserId && ls.ExamId == maDe && ls.ClassId == maLop);
+
+            if (examHistory == null)
+            {
+                _logger.LogWarning(">>> LỖI NỘP BÀI: Không tìm thấy ExamHistory cho User {UserId}, MaDe {MaDe}", user.UserId, maDe);
+                TempData["Error"] = "Không có lịch sử làm bài cho đề thi này.";
+                return RedirectToAction("ClassDetail", new { id = maLop });
+            }
+
+            // 1. XỬ LÝ UPLOAD FILE VỚI TRY-CATCH
+            if (uploadedFile != null && uploadedFile.Length > 0)
+            {
+                _logger.LogInformation(">>> Đang upload file: {FileName}, Size: {Length} bytes", uploadedFile.FileName, uploadedFile.Length);
+                try
+                {
+                    // _driveService đã được inject trong constructor
+                    string fileId = await _driveService.UploadFileAsync(uploadedFile, user.FullName, maDe);
+                    examHistory.UploadedFileId = fileId; // Gán ID file khi thành công
+                    _logger.LogInformation(">>> UPLOAD FILE THÀNH CÔNG: FileId {FileId}", fileId);
+                }
+                catch (Exception ex)
+                {
+                    // LỖI NÀY SẼ HIỂN TRONG CONSOLE
+                    _logger.LogError(ex, ">>> LỖI GOOGLE DRIVE UPLOAD");
+                    TempData["Error"] = $"Lỗi khi upload file: {ex.Message}. Bài làm TEXT vẫn được lưu.";
+                }
+            }
+            else
+            {
+                _logger.LogWarning(">>> KHÔNG CÓ FILE được đính kèm.");
+            }
+
+            // 2. Cập nhật thời gian nộp bài
+            examHistory.SubmitTime = DateTime.Now;
+            examHistory.Duration = (int)(DateTime.Now - examHistory.StartTime).TotalSeconds;
+            _context.ExamHistories.Update(examHistory);
+
+            // 3. Lấy chi tiết
+            var studentAnswers = await _context.StudentAnswers
+                .Where(ct => ct.ExamHistoryId == examHistory.ExamHistoryId)
+                .ToListAsync();
+
+            if (studentAnswers.Count == 0)
+            {
+                _logger.LogWarning(">>> LỖI NỘP BÀI: Không tìm thấy StudentAnswers. User {UserId}, HistoryId {HistoryId}", user.UserId, examHistory.ExamHistoryId);
+                TempData["Error"] = "Bạn chưa làm bài hoặc không có lịch sử làm bài cho đề thi này.";
+                await _context.SaveChangesAsync();
+                return RedirectToAction("ClassDetail", new { id = maLop });
+            }
+
+            // 4. LƯU BÀI LÀM TỰ LUẬN (SỬA LỖI REDIS)
+            var key = $"essayAns:{maDe}:{user.UserId}";
+            try
+            {
+                var cacheData = await _redis.GetStringAsync(key);
+
+                // SỬA LỖI: PHẢI LÀ <string, string>
+                var savedAnswers = string.IsNullOrEmpty(cacheData)
+                    ? new Dictionary<string, string>()
+                    : JsonSerializer.Deserialize<Dictionary<string, string>>(cacheData);
+
+                if (savedAnswers.Any())
+                    _logger.LogInformation(">>> REDIS (ExamResult_TL): Đọc thành công {Count} câu trả lời từ key {Key}", savedAnswers.Count, key);
+                else
+                    _logger.LogWarning(">>> REDIS (ExamResult_TL): Key {Key} rỗng. Bài làm sẽ bị RỖNG.", key);
+
+
+                foreach (var answer in studentAnswers)
+                {
+                    // SỬA LỖI: PHẢI DÙNG .ToString()
+                    string questionIdKey = answer.QuestionId.ToString();
+                    if (savedAnswers.ContainsKey(questionIdKey))
+                    {
+                        answer.EssayAnswer = savedAnswers[questionIdKey];
+                    }
+                    else
+                    {
+                        answer.EssayAnswer = "";
+                    }
+                    _context.StudentAnswers.Update(answer);
+                }
+            }
+            catch (Exception ex)
+            {
+                // LỖI SẼ HIỆN TRONG CONSOLE
+                _logger.LogError(ex, ">>> LỖI ĐỌC REDIS/DESERIALIZE. Key {Key}", key);
+                TempData["Error"] = $"Lỗi đọc cache bài làm: {ex.Message}";
+            }
+
+            // 5. LƯU CSDL
+            try
+            {
+                await _context.SaveChangesAsync();
+                _logger.LogInformation(">>> LƯU CSDL THÀNH CÔNG (ExamHistory + StudentAnswers).");
+            }
+            catch (Exception ex)
+            {
+                // LỖI SẼ HIỆN TRONG CONSOLE
+                _logger.LogError(ex, ">>> LỖI NGHIÊM TRỌNG KHI SaveChangesAsync()");
+                TempData["Error"] = $"LỖI LƯU CSDL: {ex.Message}";
+                return View(); // Trả về trang lỗi nếu CSDL thất bại
+            }
+
+            // 6. Xóa cache
+            await _redis.RemoveAsync(key);
+
+            ViewBag.MaLop = maLop;
+            _logger.LogInformation(">>> NỘP BÀI THÀNH CÔNG. Chuyển đến trang kết quả.");
+            return View();
+        }
         public async Task<IActionResult> List_History_Detail()
         {
             var access_token = Request.Cookies["access_token"];
@@ -1035,6 +1195,69 @@ namespace ITExam.Controllers
 
             return Json(new { questions = result });
         }
+        [HttpPost]
+        public async Task<IActionResult> UploadEssayFile(int maDe, int maLop, IFormFile file)
+        {
+            // 1. Kiểm tra tài khoản của sinh viên
+            var access_token = Request.Cookies["access_token"];
+            var user = await _context.Users.SingleOrDefaultAsync(us => us.AccessToken == access_token);
+            if (user == null)
+            {
+                return Unauthorized(new { success = false, message = "Chưa đăng nhập" });
+            }
+
+            // 2. Kiểm tra file
+            if (file == null || file.Length == 0)
+            {
+                return BadRequest(new { success = false, message = "Không có file nào được chọn" });
+            }
+
+            // 3. Truy vấn lịch sử làm bài (PHẢI TỒN TẠI)
+            var lichSu = await _context.ExamHistories
+                .FirstOrDefaultAsync(ls => ls.UserId == user.UserId && ls.ExamId == maDe && ls.ClassId == maLop);
+
+            if (lichSu == null)
+            {
+                // Lỗi này không nên xảy ra nếu sinh viên đang ở trang làm bài
+                return NotFound(new { success = false, message = "Không tìm thấy lịch sử làm bài" });
+            }
+
+            // 4. Nếu sinh viên đã nộp bài thì không cho upload đè
+            if (lichSu.SubmitTime.HasValue)
+            {
+                return BadRequest(new { success = false, message = "Bạn đã nộp bài, không thể upload lại" });
+            }
+
+            // 5. XỬ LÝ UPLOAD FILE LÊN GOOGLE DRIVE
+            string fileId;
+            try
+            {
+                // Giả sử bạn đã inject _driveService vào Controller
+                fileId = await _driveService.UploadFileAsync(file, user.FullName, maDe);
+            }
+            catch (System.Exception ex)
+            {
+                // Ghi log lỗi (ex.Message)
+                _logger.LogError(ex, ">>> LỖI (UploadEssayFile) GOOGLE DRIVE UPLOAD");
+                return StatusCode(500, new { success = false, message = "Lỗi khi tải file lên Google Drive." });
+            }
+
+            // 6. Cập nhật File ID vào CSDL
+            lichSu.UploadedFileId = fileId;
+            _context.ExamHistories.Update(lichSu);
+            await _context.SaveChangesAsync();
+
+            // 7. Trả về kết quả thành công cho JavaScript
+            return Ok(new
+            {
+                success = true,
+                message = "Upload file thành công!",
+                fileId = fileId,
+                fileName = file.FileName
+            });
+        }
+
+
     }
 }
 

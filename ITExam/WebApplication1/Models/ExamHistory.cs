@@ -36,6 +36,8 @@ namespace ITExam.Models
         [ForeignKey("Class")]
         public int ClassId { get; set; }
 
+        [Column(TypeName = "varchar(max)")] // Tùy chọn: Giới hạn độ dài trong CSDL
+        public string? UploadedFileId { get; set; }
         public Exam Exam { get; set; }
         public Class Class { get; set; }
         public User User { get; set; }
