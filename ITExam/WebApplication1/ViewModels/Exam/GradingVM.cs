@@ -36,5 +36,6 @@
         public string ExamTitle { get; set; }         // TenDeThi
         public DateTime? SubmissionTime { get; set; } // ThoiGianNop
         public List<GradedEssayQuestionVM> ListQuestions { get; set; } // DanhSachCauHoi
+        public string? UploadedFileLink { get; set; }
     }
 }

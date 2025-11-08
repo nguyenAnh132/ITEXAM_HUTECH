@@ -67,7 +67,14 @@
                                 stt++;
                             }
                         </form>
-                        
+                        <div class="mb-3 text-start">
+                            <label for="formFileModal" class="form-label">Tải lên bài làm (nếu có):</label>
+                            <input class="form-control"
+                                   type="file"
+                                   id="formFileModal"
+                                   name="uploadedFile"
+                                   form="form-nop-bai">
+                        </div>
                     </div>
                     <div class="bullets text-center mb-3">
                         
@@ -98,14 +105,12 @@
                         <i class="fa-solid fa-xmark me-1"></i> Hủy
                     </button>
 
-                    <form asp-action="ExamResult_TL" method="post" enctype="multipart/form-data" id="form-nop-bai">
+                    <form asp-action="ExamResult_TL"
+                          method="post"
+                          enctype="multipart/form-data"
+                          id="form-nop-bai">
                         <input type="hidden" name="maDe" value="@Model.ExamId" />
                         <input type="hidden" name="maLop" value="@Model.ClassId" />
-
-                        <div class="mb-3 text-start">
-                            <label for="formFileModal" class="form-label">Tải lên bài làm (nếu có):</label>
-                            <input class="form-control" type="file" id="formFileModal" name="uploadedFile">
-                        </div>
 
                         <button type="submit" class="btn btn-danger fw-bold px-4">
                             <i class="fa-solid fa-paper-plane me-1"></i> Nộp bài ngay

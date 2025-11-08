@@ -144,4 +144,25 @@ public class GoogleDriveService
             throw new Exception($"LỖI UPLOAD GOOGLE DRIVE: {ex.Message}", ex);
         }
     }
+    public async Task<string> GetFileWebViewLinkAsync(string fileId)
+    {
+        try
+        {
+            // _service đã được khởi tạo trong constructor
+            var request = _service.Files.Get(fileId);
+
+            // Yêu cầu Google API chỉ trả về trường 'webViewLink'
+            request.Fields = "webViewLink";
+
+            var file = await request.ExecuteAsync();
+
+            // file.WebViewLink là link xem file (không phải link download)
+            return file.WebViewLink;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi khi lấy webViewLink cho fileId {FileId}", fileId);
+            return null;
+        }
+    }
 }
