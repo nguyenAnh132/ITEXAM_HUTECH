@@ -1,4 +1,5 @@
 ﻿using Azure.Core;
+using Google.Apis.Drive.v3;
 using Hangfire;
 using ITExam.ExternalModels;
 using ITExam.ExternalModels.Subject;
@@ -33,11 +34,16 @@ namespace ITExam.Controllers
         private readonly ITExamDbContext _context;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IClassCodeService _classCodeService;
-        public TeacherController(IHttpClientFactory httpClientFactory, ITExamDbContext context, IClassCodeService classCodeService)
+        private readonly ILogger<TeacherController> _logger;
+        private readonly GoogleDriveService _driveService;
+        public TeacherController(IHttpClientFactory httpClientFactory, ITExamDbContext context, IClassCodeService classCodeService, ILogger<TeacherController> logger, GoogleDriveService driveService)
         {
             _httpClientFactory = httpClientFactory;
             _context = context;
             _classCodeService = classCodeService;
+            _logger = logger;
+            _driveService = driveService;
+
         }
 
         //================================================================
@@ -957,6 +963,30 @@ namespace ITExam.Controllers
                     GradedScore = ct.Score
                 }).ToList()
             };
+
+            if (!string.IsNullOrEmpty(history.UploadedFileId))
+            {
+                _logger.LogInformation("Đang lấy link file cho FileId: {FileId}", history.UploadedFileId);
+                try
+                {
+                    // 2. Gọi service để lấy link xem file
+                    string fileLink = await _driveService.GetFileWebViewLinkAsync(history.UploadedFileId);
+
+                    // 3. Gán link vào ViewModel (để View có thể hiển thị)
+                    vm.UploadedFileLink = fileLink;
+                }
+                catch (Exception ex)
+                {
+                    // 4. Xử lý nếu có lỗi (ví dụ: file đã bị xóa hoặc lỗi API)
+                    _logger.LogError(ex, "Lỗi khi lấy link file từ Google Drive. FileId: {FileId}", history.UploadedFileId);
+                    TempData["Error"] = "Không thể lấy link file đính kèm của sinh viên. File có thể đã bị xóa hoặc lỗi API.";
+                }
+            }
+            else
+            {
+                // (Phần này chỉ để log, không bắt buộc)
+                _logger.LogInformation("Sinh viên không nộp file (UploadedFileId rỗng) cho HistoryId: {HistoryId}", id);
+            }
 
             return View(vm);
         }
