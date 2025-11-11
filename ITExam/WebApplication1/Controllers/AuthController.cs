@@ -59,7 +59,7 @@ namespace ITExam.Controllers
                 PropertyNameCaseInsensitive = true
             });
 
-            var userInfo = apiResponse.data.user_info;
+            var userInfo = apiResponse!.data.user_info;
             var token = apiResponse.data.token.access_token;
 
             var user = _context.Users.SingleOrDefault(u => u.Username == userInfo.username);

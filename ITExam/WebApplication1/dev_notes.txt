@@ -1,0 +1,30 @@
+﻿Ngày:
+	- Ai làm:
+		File nào - Mô tả
+		File nào - Mô tả
+
+==================================================================================
+
+10/11/2025:
+	- TuAnh:
+		ApiQuestionController - Sửa prompt để thêm hướng dẫn rõ ràng hơn cho Gemini tạo câu hỏi.
+		ViewModels - Thêm EditClassVM
+
+==================================================================================
+
+Đăng: Làm page hướng dẫn, tối ngày mai
+Tú Anh: Teacher tối ưu
+Phát: Student tối ưu
+Phương: Cải tiến giám sát
+Tòng: Thiết kế luồng cho nghiệp vụ xóa ngân hàng đề, lớp học, đề thi, lịch sử làm bài,... (Mô tả file word)
+
+==================================================================================
+
+var accessToken = Request.Cookies["access_token"];
+            var userId = await _context.Users
+                .AsNoTracking()
+                .Where(u => u.AccessToken == accessToken)
+                .Select(u => u.UserId)
+                .FirstOrDefaultAsync();
+            if (userId == 0)
+                return RedirectToAction("Logout", "Auth");

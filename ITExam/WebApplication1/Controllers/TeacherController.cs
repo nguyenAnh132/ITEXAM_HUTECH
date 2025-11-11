@@ -7,20 +7,15 @@ using ITExam.Models;
 using ITExam.Services;
 using ITExam.ViewModels;
 using ITExam.ViewModels.Class;
+using ITExam.ViewModels.Class.NewVM;
 using ITExam.ViewModels.Exam;
 using ITExam.ViewModels.ExamBank;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Org.BouncyCastle.Utilities;
-using System.ComponentModel.DataAnnotations;
 using System.Net.Http.Headers;
-using System.Reflection.Metadata.Ecma335;
-using System.Runtime.InteropServices;
-using System.Security.Claims;
 using System.Text;
-using WebApplication1.Models;
 using ChapterCLOVM = ITExam.ViewModels.Exam.ChapterCLOVM;
 using CLOItem = ITExam.ViewModels.Exam.CLOItem;
 
@@ -43,25 +38,21 @@ namespace ITExam.Controllers
         //================================================================
 
         #region LopHoc
-        //Lớp học : Danh sách lớp học -
+        //Lớp học : Danh sách lớp học - OK
         public async Task<IActionResult> Class()
         {
-            // Check tài khoản giảng viên
-            var access_token = Request.Cookies["access_token"];
-            var user = await _context.Users
+            var accessToken = Request.Cookies["access_token"];
+            var userId = await _context.Users
                 .AsNoTracking()
-                .Where(us => us.AccessToken == access_token)
-                .Select(us => new { us.UserId })
+                .Where(u => u.AccessToken == accessToken)
+                .Select(u => u.UserId)
                 .FirstOrDefaultAsync();
-
-            if (user is null)
-            {
+            if (userId == 0)
                 return RedirectToAction("Logout", "Auth");
-            }
 
             var viewModel = await _context.Classes
                 .AsNoTracking()
-                .Where(cl => cl.UserId == user.UserId)
+                .Where(cl => cl.UserId == userId)
                 .Select(cl => new ClassVM
                 {
                     ClassId = cl.ClassId,
@@ -75,18 +66,15 @@ namespace ITExam.Controllers
         }
 
 
-        //Lớp học : Chỉnh sửa lớp học -
+        //Lớp học : Chỉnh sửa lớp học - OK
         [HttpPost]
-        public async Task<IActionResult> EditClass(ClassVM model)
+        public async Task<IActionResult> EditClass(EditClassVM model)
         {
-            //Truy vấn lớp học để chỉnh sửa
             var classEdit = await _context.Classes.FindAsync(model.ClassId);
             if (classEdit == null)
             {
                 return NotFound();
             }
-
-            //Cập nhật tên lớp học và mô tả
             classEdit.ClassName = model.ClassName;
             classEdit.Description = model.Description;
 
@@ -97,25 +85,22 @@ namespace ITExam.Controllers
         }
 
 
-        //Lớp học : Thêm lớp học -
+        //Lớp học : Thêm lớp học - OK
         [HttpPost]
         public async Task<IActionResult> Class(Class model)
         {
             //Kiểm tra tài khoản giảng viên
-            var access_token = Request.Cookies["access_token"];
-            var user = await _context.Users
+            var accessToken = Request.Cookies["access_token"];
+            var userId = await _context.Users
                 .AsNoTracking()
-                .Where(us => us.AccessToken == access_token)
-                .Select(us => new { us.UserId }) //SELECT userId
+                .Where(u => u.AccessToken == accessToken)
+                .Select(u => u.UserId)
                 .FirstOrDefaultAsync();
-            if (user == null)
-            {
+            if (userId == 0)
                 return RedirectToAction("Logout", "Auth");
-            }
 
-            //Set ngày tạo và người tạo lớp học
             model.CreatedDate = DateTime.Now;
-            model.UserId = user.UserId;
+            model.UserId = userId;
             model.ClassCode = await _classCodeService.GenerateUniqueClassCodeAsync();
 
             _context.Classes.Add(model);
@@ -125,18 +110,19 @@ namespace ITExam.Controllers
         }
 
 
-        //Lớp học : Chi tiết lớp học -
+        //Lớp học : Chi tiết lớp học - OK
         public async Task<IActionResult> ClassDetail(int id)
         {
             // Kiểm tra tài khoản giảng viên
-            var access_token = Request.Cookies["access_token"];
-            var user = await _context.Users
+            var accessToken = Request.Cookies["access_token"];
+            var userId = await _context.Users
                 .AsNoTracking()
-                .FirstOrDefaultAsync(us => us.AccessToken == access_token);
-            if (user is null)
+                .Where(u => u.AccessToken == accessToken)
+                .Select(u => u.UserId)
+                .FirstOrDefaultAsync();
+            if (userId == 0)
                 return RedirectToAction("Logout", "Auth");
 
-            // Truy vấn lớp học theo Id
             var classInfo = await _context.Classes
                 .AsNoTracking()
                 .Where(cl => cl.ClassId == id)
@@ -196,7 +182,7 @@ namespace ITExam.Controllers
             // Danh sách đề thi chưa thêm vào lớp
             var unassignedExams = await _context.Exams
                 .AsNoTracking()
-                .Where(e => e.UserId == user.UserId
+                .Where(e => e.UserId == userId
                             && !_context.ClassExams.Any(ce => ce.ExamId == e.ExamId && ce.ClassId == id))
                 .OrderByDescending(e => e.CreatedDate)
                 .Select(e => new UnassignedExamVM
@@ -219,11 +205,11 @@ namespace ITExam.Controllers
                 {
                     LogId = l.ActivityLogId,
                     StudentFullName = l.User.FullName,
-                    InstructorName = l.InstructorName,
+                    InstructorName = l.InstructorName!,
                     ExamName = l.Exam.ExamName,
                     ClassName = l.Class.ClassName,
                     LoggedDate = l.LogDate,
-                    LogContent = l.LogContent
+                    LogContent = l.LogContent!
                 })
                 .ToListAsync();
 
@@ -246,67 +232,95 @@ namespace ITExam.Controllers
         //Lớp học : Danh sách sinh viên đã làm bài
         public async Task<IActionResult> List_Student_Do_Test(int id, int maLopHoc)
         {
-            // Kiểm tra tài khoản giảng viên
-            var access_token = Request.Cookies["access_token"];
-            var user = _context.Users.SingleOrDefault(us => us.AccessToken == access_token);
-            if (user == null)
-            {
+            var accessToken = Request.Cookies["access_token"];
+            var userId = await _context.Users
+                .AsNoTracking()
+                .Where(u => u.AccessToken == accessToken)
+                .Select(u => u.UserId)
+                .FirstOrDefaultAsync();
+            if (userId == 0)
                 return RedirectToAction("Logout", "Auth");
-            }
 
-            // Truy vấn lớp học theo mã lớp học (maLopHoc)
-            var thisClass = await _context.Classes
-            .Include(l => l.ClassDetails) // Join bảng ChiTietLopHoc để lấy danh sách sinh viên
-            .ThenInclude(st => st.User) // Join bảng User để lấy thông tin sinh viên
-            .Include(ct => ct.ClassExams)  // Join bảng DanhSachDeThiCuaLopHoc để lấy danh sách đề thi
-            .ThenInclude(dt => dt.Exam)
-            .ThenInclude(ls => ls.ExamHistories) // Join bảng LichSuLamBai để kiểm tra sinh viên nào đã làm bài
-            .FirstOrDefaultAsync(l => l.ClassId == maLopHoc); // Truy vấn lớp học bằng maLopHoc
 
-            if (thisClass == null || thisClass.ClassDetails == null || thisClass.ClassExams == null)
-                return NotFound();
-
-            // Kiểm tra xem đề thi có tồn tại trong lớp học không bằng cách kiểm tra MaDe và MaLopHoc
-            var isExamInClass = thisClass.ClassExams
-                .Any(deThi => deThi.ClassId == maLopHoc && deThi.ExamId == id); // Kiểm tra cả MaLopHoc và MaDe
-
-            if (!isExamInClass)
-            {
-                return NotFound("Đề thi không tồn tại trong lớp học này.");
-            }
-
-            var danhSachSV = thisClass.ClassDetails
-            .Select(l => l.User)
-            .Where(sv => sv != null)
-            .Select(sv =>
-            {
-                // Tìm bản ghi LichSuLamBai tương ứng với sinh viên, đề thi và lớp học
-                var lichSu = thisClass.ClassExams
-                    .SelectMany(d => d.Exam.ExamHistories)
-                    .FirstOrDefault(ls => ls.UserId == sv.UserId && ls.ExamId == id && ls.ClassId == maLopHoc);
-
-                return lichSu != null ? new StudentSubmissionInClassVM
+            var classInfo = await _context.Classes
+                .AsNoTracking()
+                .Where(c => c.ClassId == maLopHoc)
+                .Select(c => new
                 {
-                    StudentId = sv.Username,
-                    FullName = sv.FullName,
-                    StartTime = lichSu.StartTime,
-                    SubmitTime = lichSu.SubmitTime ?? DateTime.MinValue,
-                    Duration = lichSu.Duration,
-                    Score = lichSu.Score,
-                    ExamHistoryId = lichSu.ExamHistoryId
-                } : null;
-            })
-            .Where(vm => vm != null) // Bỏ qua sinh viên chưa làm bài
-            .ToList();
+                    c.ClassId,
+                    c.ClassName
+                })
+                .FirstOrDefaultAsync();
+            if (classInfo == null)
+                return NotFound("Không tìm thấy lớp học.");
+
+
+            bool isExamInClass = await _context.ClassExams
+                .AsNoTracking()
+                .AnyAsync(ce => ce.ClassId == maLopHoc && ce.ExamId == id);
+            if (!isExamInClass)
+                return NotFound("Đề thi không tồn tại trong lớp học này.");
+
+
+            var studentsInClass = await _context.ClassDetails
+                .AsNoTracking()
+                .Where(cd => cd.ClassId == maLopHoc)
+                .Select(cd => new
+                {
+                    cd.User.UserId,
+                    cd.User.Username,
+                    cd.User.FullName
+                })
+                .ToListAsync();
+            if (studentsInClass.Count == 0)
+                return View(new StudentSubmissionList
+                {
+                    ClassInfo = null,
+                    Students = new List<StudentSubmissionInClassVM>()
+                });
+
+            var examHistories = await _context.ExamHistories
+                .AsNoTracking()
+                .Where(eh => eh.ExamId == id && eh.ClassId == maLopHoc)
+                .Select(eh => new
+                {
+                    eh.UserId,
+                    eh.StartTime,
+                    eh.SubmitTime,
+                    eh.Duration,
+                    eh.Score,
+                    eh.ExamHistoryId
+                })
+                .ToListAsync();
+
+            var danhSachSV = studentsInClass
+                .Join(examHistories,
+                      sv => sv.UserId,
+                      ls => ls.UserId,
+                      (sv, ls) => new StudentSubmissionInClassVM
+                      {
+                          StudentId = sv.Username,
+                          FullName = sv.FullName,
+                          StartTime = ls.StartTime,
+                          SubmitTime = ls.SubmitTime ?? DateTime.MinValue,
+                          Duration = ls.Duration,
+                          Score = ls.Score,
+                          ExamHistoryId = ls.ExamHistoryId
+                      })
+                .ToList();
 
             var viewModel = new StudentSubmissionList
             {
-                ClassInfo = thisClass,
+                ClassInfo = new Class
+                {
+                    ClassId = classInfo.ClassId,
+                    ClassName = classInfo.ClassName
+                },
                 Students = danhSachSV
             };
-
             return View(viewModel);
         }
+
 
         #endregion
 
@@ -1864,6 +1878,8 @@ namespace ITExam.Controllers
         }
 
         #endregion
+
+        //================================================================
 
         #region ExamLogs
         [HttpPost]

@@ -104,9 +104,10 @@ namespace ITExam.Controllers
                     string prompt = $"Tạo cho tôi {cloInput.QuestionCount} câu hỏi trắc nghiệm (gồm 4 lựa chọn, chỉ có 1 đáp án đúng) về chuyên đề sau:\n" +
                                     $"- Môn học: {subject.Name}\n" +
                                     $"- Nội dung chính thuộc Chương: {chapter.Title}\n" +
-                                    $"- Câu hỏi phải đánh giá được Chuẩn đầu ra (CLO): [{clo.Title}] {clo.Description}\n" +
+                                    $"- Các chương sẽ có 4 mức độ CLO. Câu hỏi phải đánh giá được Chuẩn đầu ra (CLO): [{clo.Title}]\n" +
                                     $"Yêu cầu câu hỏi phải phù hợp và trực tiếp liên quan đến CLO đã nêu." +
-                                    $"Yêu cầu thêm là: " + requests;
+                                    $"Yêu cầu thêm là: " + requests +
+                                    $"Nếu trong yêu cầu thêm có chứa yêu cầu về số lượng thì bỏ qua, chỉ lấy số lượng của dòng đầu tiên đã nêu";
                     try
                     {
                         var questionsFromAI = await _geminiService.GetQuestionsFromGeminiAsync(prompt);
