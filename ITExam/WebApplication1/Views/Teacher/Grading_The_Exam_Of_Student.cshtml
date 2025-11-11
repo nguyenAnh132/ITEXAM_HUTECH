@@ -13,7 +13,12 @@
             </div>
         </div>
     </div>
- 
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+
     <div class="bg-primary mb-5 py-3">
         <h3 class="text-white py-3 px-4 m-0">Thông tin sinh viên</h3>
         <div class="d-flex justify-content-between border-bottom px-4">
@@ -24,6 +29,25 @@
             <h6 class="text-white my-3">Thời gian nộp: </h6>
             <h6 class="text-white my-3">@Model.SubmissionTime</h6>
         </div>
+
+        @if (!string.IsNullOrEmpty(Model.UploadedFileLink))
+        {
+            <div class="d-flex justify-content-between border-bottom px-4">
+                <h6 class="text-white my-3">File đính kèm: </h6>
+                <h6 class="text-white my-3">
+                    <a href="@Model.UploadedFileLink" target="_blank" class="btn btn-light btn-sm fw-bold">
+                        <i class="fa-solid fa-eye me-1"></i> Xem File
+                    </a>
+                </h6>
+            </div>
+        }
+        else
+        {
+            <div class="d-flex justify-content-between border-bottom px-4">
+                <h6 class="text-white my-3">File đính kèm: </h6>
+                <h6 class="text-white my-3 fst-italic"> (Không có file)</h6>
+            </div>
+        }
     </div>
 
     <form asp-action="SaveGradingResult" asp-controller="Teacher" method="post">
@@ -42,17 +66,17 @@
                 @for (int i = 0; i < Model.ListQuestions.Count; i++)
                 {
                     var cau = Model.ListQuestions[i];
-                        <tr>
-                            <td>@(i + 1)</td>
-                            <td>@Html.Raw(cau.QuestionContent)</td>
-                            <td>@Html.Raw(cau.StudentAnswer)</td>
-                            <td>
+                    <tr>
+                        <td>@(i + 1)</td>
+                        <td>@Html.Raw(cau.QuestionContent)</td>
+                        <td>@Html.Raw(cau.StudentAnswer)</td>
+                        <td>
                             <input type="hidden" name="ListQuestions[@i].QuestionId" value="@cau.QuestionId" />
-                                <input class="form-control" type="number" step="0.25" min="0" max="10"
+                            <input class="form-control" type="number" step="0.25" min="0" max="10"
                                    name="ListQuestions[@i].GradedScore"
-                                       value="@cau.GradedScore" />
-                            </td>
-                        </tr>
+                                   value="@cau.GradedScore" />
+                        </td>
+                    </tr>
                 }
             </tbody>
         </table>

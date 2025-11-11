@@ -245,6 +245,9 @@ namespace ITExam.Migrations
                     b.Property<DateTime?>("SubmitTime")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("UploadedFileId")
+                        .HasColumnType("varchar(max)");
+
                     b.Property<int>("UserId")
                         .HasColumnType("int");
 
