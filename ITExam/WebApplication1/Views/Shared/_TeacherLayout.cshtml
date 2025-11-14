@@ -34,7 +34,7 @@
 
 </head>  
 
-<body>  
+<body data-success-message="@TempData["SuccessMessage"]" data-error-message="@TempData["ErrorMessage"]">
     <div id="loading-overlay">
         <div class="row">
             <div class="col-lg-12 text-center">
@@ -203,7 +203,7 @@
     <!--toastify -->
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <!-- Template Javascript -->
-    @RenderSection("Script", required: false) 
+    @await RenderSectionAsync("Script", required: false)
     <script src="~/js/main.js"></script>
 </body>  
 </html>  
