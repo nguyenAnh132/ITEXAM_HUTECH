@@ -34,7 +34,7 @@
 
 </head>
 
-<body>
+<body data-success-message="@TempData["SuccessMessage"]">
     <!-- Navbar Start -->
     @{
         var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
@@ -176,7 +176,7 @@
     <!--toastify -->
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <!-- Template Javascript -->
-    @RenderSection("Script", required: false)
+    @await RenderSectionAsync("Script", required: false)
     <script src="~/js/main.js"></script>
 </body>
 </html>

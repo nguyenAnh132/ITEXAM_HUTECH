@@ -93,7 +93,7 @@
     </div>
 </div>
 @section Script {
-
+    <script src="~/js/notification.js"></script>
     <script>
         const chuongData = @Html.Raw(ViewData["ChuongJson"]);
         console.log(chuongData);
@@ -420,24 +420,6 @@
                     showToast("❌ Lỗi kết nối máy chủ.", "#dc3545");
                 });
             }
-
-            document.addEventListener("DOMContentLoaded", function () {
-                    const message = @Html.Raw(Json.Serialize(TempData["SuccessMessage"]));
-                    if (message) {
-                        Toastify({
-                            text: message,
-                            duration: 3000,
-                            close: true,
-                            gravity: "bottom",
-                            position: "right",
-                            stopOnFocus: true,
-                            style: {
-                                background: "#28a745"
-                            }
-                        }).showToast();
-                    }
-                });
-
     </script>
     <script>
         document.addEventListener("DOMContentLoaded", () => {

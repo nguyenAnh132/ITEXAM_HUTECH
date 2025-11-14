@@ -304,6 +304,7 @@
 }
 @section Script
 {
+    <script src="~/js/notification.js"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             let editForm = document.querySelector("#editClassForm");
@@ -412,22 +413,6 @@
                 modal.show();
             });
         });
-        document.addEventListener("DOMContentLoaded", function () {
-                const message = @Html.Raw(Json.Serialize(TempData["SuccessMessage"]));
-                if (message) {
-                    Toastify({
-                        text: message,
-                        duration: 4000,
-                        close: true,
-                        gravity: "bottom",
-                        position: "right",
-                        stopOnFocus: true,
-                        style: {
-                            background: "#28a745"
-                        }
-                    }).showToast();
-                }
-            });
     </script>
     <!-- Tìm kiếm lớp học -->
     <script>

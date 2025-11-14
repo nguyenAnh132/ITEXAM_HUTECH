@@ -153,7 +153,8 @@
      </div> 
  </div> 
 
- @section Script { 
+ @section Script {
+    <script src="~/js/notification.js"></script>
      <script> 
          document.addEventListener("DOMContentLoaded", function () { 
              const deleteButtons = document.querySelectorAll(".btn-xoa-dethi"); 
@@ -177,22 +178,6 @@
              }); 
          }); 
 
-         document.addEventListener("DOMContentLoaded", function () { 
-             const message = @Html.Raw(Json.Serialize(TempData["SuccessMessage"])); 
-             if (message) { 
-                 Toastify({ 
-                     text: message, 
-                     duration: 4000, 
-                     close: true, 
-                     gravity: "top", 
-                     position: "right", 
-                     stopOnFocus: true, 
-                     style: { 
-                         background: "#28a745" 
-                     } 
-                 }).showToast(); 
-             } 
-         }); 
          // Tìm kiếm đề thi 
      function searchItems(inputId, containerSelector) { 
      const keyword = document.getElementById(inputId).value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim(); 
