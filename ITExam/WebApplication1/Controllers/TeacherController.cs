@@ -35,14 +35,14 @@ namespace ITExam.Controllers
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IClassCodeService _classCodeService;
         private readonly ILogger<TeacherController> _logger;
-        private readonly GoogleDriveService _driveService;
-        public TeacherController(IHttpClientFactory httpClientFactory, ITExamDbContext context, IClassCodeService classCodeService, ILogger<TeacherController> logger, GoogleDriveService driveService)
+        //private readonly GoogleDriveService _driveService;
+        public TeacherController(IHttpClientFactory httpClientFactory, ITExamDbContext context, IClassCodeService classCodeService, ILogger<TeacherController> logger /*,GoogleDriveService driveService*/)
         {
             _httpClientFactory = httpClientFactory;
             _context = context;
             _classCodeService = classCodeService;
             _logger = logger;
-            _driveService = driveService;
+            /*_driveService = driveService*/;
 
         }
 
@@ -970,10 +970,10 @@ namespace ITExam.Controllers
                 try
                 {
                     // 2. Gọi service để lấy link xem file
-                    string fileLink = await _driveService.GetFileWebViewLinkAsync(history.UploadedFileId);
+                    //string fileLink = await _driveService.GetFileWebViewLinkAsync(history.UploadedFileId);
 
                     // 3. Gán link vào ViewModel (để View có thể hiển thị)
-                    vm.UploadedFileLink = fileLink;
+                    //vm.UploadedFileLink = fileLink;
                 }
                 catch (Exception ex)
                 {

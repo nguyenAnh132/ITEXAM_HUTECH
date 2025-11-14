@@ -32,16 +32,16 @@ namespace ITExam.Controllers
         private readonly ITExamDbContext _context;
         private readonly IDistributedCache _redis;
         private readonly IHubContext<ExamMonitorHub> _hubContext;
-        private readonly GoogleDriveService _driveService;
+        //private readonly GoogleDriveService _driveService;
         private readonly ILogger<StudentController> _logger;
 
 
-        public StudentController(ITExamDbContext context, IDistributedCache redis, IHubContext<ExamMonitorHub> hubContext, GoogleDriveService driveService, ILogger<StudentController> logger   )
+        public StudentController(ITExamDbContext context, IDistributedCache redis, IHubContext<ExamMonitorHub> hubContext/*, GoogleDriveService driveService*/, ILogger<StudentController> logger   )
         {
             _context = context;
             _redis = redis;
             _hubContext = hubContext;
-            _driveService=driveService;
+            //_driveService=driveService;
             _logger=logger;
         }
         public IActionResult Index()
@@ -994,9 +994,9 @@ namespace ITExam.Controllers
                 try
                 {
                     // _driveService đã được inject trong constructor
-                    string fileId = await _driveService.UploadFileAsync(uploadedFile, user.FullName, maDe);
-                    examHistory.UploadedFileId = fileId; // Gán ID file khi thành công
-                    _logger.LogInformation(">>> UPLOAD FILE THÀNH CÔNG: FileId {FileId}", fileId);
+                    //string fileId = await _driveService.UploadFileAsync(uploadedFile, user.FullName, maDe);
+                    //examHistory.UploadedFileId = fileId; // Gán ID file khi thành công
+                    //_logger.LogInformation(">>> UPLOAD FILE THÀNH CÔNG: FileId {FileId}", fileId);
                 }
                 catch (Exception ex)
                 {
@@ -1233,7 +1233,7 @@ namespace ITExam.Controllers
             try
             {
                 // Giả sử bạn đã inject _driveService vào Controller
-                fileId = await _driveService.UploadFileAsync(file, user.FullName, maDe);
+                //fileId = await _driveService.UploadFileAsync(file, user.FullName, maDe);
             }
             catch (System.Exception ex)
             {
@@ -1243,7 +1243,7 @@ namespace ITExam.Controllers
             }
 
             // 6. Cập nhật File ID vào CSDL
-            lichSu.UploadedFileId = fileId;
+            //lichSu.UploadedFileId = fileId;
             _context.ExamHistories.Update(lichSu);
             await _context.SaveChangesAsync();
 
@@ -1252,7 +1252,7 @@ namespace ITExam.Controllers
             {
                 success = true,
                 message = "Upload file thành công!",
-                fileId = fileId,
+                fileId = 0,
                 fileName = file.FileName
             });
         }
