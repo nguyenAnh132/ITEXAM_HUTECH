@@ -47,7 +47,18 @@
                                     <p><strong class="mx-2">Thời gian bắt đầu:</strong> @Model.StartTime</p>
                                     <p><strong class="mx-2">Thời gian nộp:</strong> @Model.SubmitTime</p>
                                     <p><strong class="mx-2">Điểm:</strong> @Model.Score</p>
-
+                                    @if (!string.IsNullOrEmpty(Model.UploadedFileUrl))
+                                    {
+                                        <hr />
+                                        <p>
+                                            <strong class="mx-2">Bài làm dạng file:</strong>
+                                            <a href="@Model.UploadedFileUrl"
+                                               target="_blank"
+                                               rel="noopener noreferrer">
+                                                Mở file 
+                                            </a>
+                                        </p>
+                                    }
                                     <hr />
                                     <p class="fw-bold text-warning mx-2">Lưu ý:</p>
                                     <p class="fw-bold mx-2">Bên trên câu trả lời của sinh viên là đáp án đúng</p>
