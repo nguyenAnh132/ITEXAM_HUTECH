@@ -1,13 +1,21 @@
-﻿using ITExam.Filters;
+﻿using Google.Apis.Auth.OAuth2;
+using Google.Apis.Auth.OAuth2.Flows;
+using Google.Apis.Auth.OAuth2.Responses;
+using Google.Apis.Drive.v3;
+using ITExam.Filters;
 using ITExam.Hubs;
 using ITExam.Models;
 using ITExam.ViewModels;
 using ITExam.ViewModels.Class;
 using ITExam.ViewModels.Exam;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
+using System.Collections.Concurrent;
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.Net;
@@ -16,12 +24,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using WebApplication1.Models;
-using Microsoft.Extensions.Logging;
-using Google.Apis.Auth.OAuth2.Flows;
-using Google.Apis.Auth.OAuth2.Responses;
-using Google.Apis.Auth.OAuth2;
-using Google.Apis.Drive.v3;
-using Microsoft.AspNetCore.Authorization;
+
 namespace ITExam.Controllers
 {
     //[CheckToken]
@@ -34,15 +37,17 @@ namespace ITExam.Controllers
         private readonly IHubContext<ExamMonitorHub> _hubContext;
         private readonly GoogleDriveService _driveService;
         private readonly ILogger<StudentController> _logger;
+        private readonly IMemoryCache _cache;
 
 
-        public StudentController(ITExamDbContext context, IDistributedCache redis, IHubContext<ExamMonitorHub> hubContext, GoogleDriveService driveService, ILogger<StudentController> logger   )
+        public StudentController(ITExamDbContext context, IDistributedCache redis, IHubContext<ExamMonitorHub> hubContext, GoogleDriveService driveService, ILogger<StudentController> logger, IMemoryCache cache)
         {
             _context = context;
             _redis = redis;
             _hubContext = hubContext;
             _driveService=driveService;
             _logger=logger;
+            _cache = cache;
         }
         public IActionResult Index()
         {
@@ -699,6 +704,19 @@ namespace ITExam.Controllers
             return s;
         }
 
+        private static string ExamKey(string examId, string classId) => $"{examId}:{classId}";
+        private static string GetScoresKey(string examKey) => $"scores:{examKey}";
+        private static readonly TimeSpan CacheSlidingExpiration = TimeSpan.FromHours(3);
+
+        // Helper để lấy/tạo Dictionary điểm (copy từ Hub)
+        private ConcurrentDictionary<string, double> GetScores(string examKey)
+        {
+            return _cache.GetOrCreate(GetScoresKey(examKey), entry =>
+            {
+                entry.SetSlidingExpiration(CacheSlidingExpiration);
+                return new ConcurrentDictionary<string, double>();
+            });
+        }
 
         // Đề thi : Kết quả thi trắc nghiệm của sinh viên
         [HttpPost]
@@ -883,6 +901,17 @@ namespace ITExam.Controllers
             // Xóa Redis
             await _redis.RemoveAsync(multiChoiceKey);
             await _redis.RemoveAsync(essayKey);
+
+            try
+            {
+                var examKey = ExamKey(maDe.ToString(), maLop.ToString());
+                var scoreMap = GetScores(examKey); 
+                scoreMap[user.Username] = viewModel.Score;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error saving score to IMemoryCache: {ex.Message}");
+            }
 
             await _hubContext.Clients
                     .Group($"exam:{maDe}:class:{maLop}")
