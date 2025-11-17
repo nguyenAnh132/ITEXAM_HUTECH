@@ -9,6 +9,8 @@
 	- TuAnh:
 		ApiQuestionController - Sửa prompt để thêm hướng dẫn rõ ràng hơn cho Gemini tạo câu hỏi.
 		ViewModels - Thêm EditClassVM
+        TeacherController - OK- Xem lại
+
 
 ==================================================================================
 

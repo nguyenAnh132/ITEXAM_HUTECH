@@ -1,4 +1,4 @@
-﻿  @model ITExam.Models.Exam  
+﻿@model ITExam.Models.Exam  
   @{  
       Layout = "_TeacherLayout";  
       <!-- Nhap title -->  
@@ -43,7 +43,6 @@
                                          </div> 
                                      </div> 
 
-                                     <!-- Dropdown Ngân hàng đề --> 
                                      <div class="mb-3 col-12"> 
                                          <label for="" class="form-label fw-bold">Ngân hàng đề</label> 
                                          <select asp-for="ExamBankId" class="form-select" aria-label="Ngân hàng đề" required> 
@@ -51,18 +50,30 @@
 
                                              <!-- Ngân hàng đề của tôi --> 
                                              <optgroup label="Ngân hàng đề của tôi"> 
-                                                 @foreach (var nganHangDe in ViewData["NganHangDeListCuaToi"] as List<ITExam.Models.ExamBank>) 
-                                                 { 
-                                                     <option value="@nganHangDe.ExamBankId">@nganHangDe.ExamBankName - @nganHangDe.ExamType</option> 
-                                                 } 
+                                                 @{
+                                                     var nganHangDeListCuaToi = ViewData["NganHangDeListCuaToi"] as List<ITExam.ViewModels.Exam.NewVM.CreateNewExamVM>;
+                                                     if (nganHangDeListCuaToi != null)
+                                                     {
+                                                         foreach (var nganHangDe in nganHangDeListCuaToi)
+                                                         { 
+                                                             <option value="@nganHangDe.ExamBankId">@nganHangDe.ExamBankName - @nganHangDe.ExamType</option> 
+                                                         }
+                                                     }
+                                                 }
                                              </optgroup> 
 
                                              <!-- Ngân hàng đề công khai --> 
                                              <optgroup label="Ngân hàng đề công khai"> 
-                                                 @foreach (var nganHangDe in ViewData["NganHangDeListCongKhai"] as List<ITExam.Models.ExamBank>) 
-                                                 { 
-                                                     <option value="@nganHangDe.ExamBankId">@nganHangDe.ExamBankName - @nganHangDe.ExamType</option> 
-                                                 } 
+                                                 @{
+                                                var nganHangDeListCongKhai = ViewData["NganHangDeListCongKhai"] as List<ITExam.ViewModels.Exam.NewVM.CreateNewExamVM>;
+                                                     if (nganHangDeListCongKhai != null)
+                                                     {
+                                                         foreach (var nganHangDe in nganHangDeListCongKhai)
+                                                         { 
+                                                             <option value="@nganHangDe.ExamBankId">@nganHangDe.ExamBankName - @nganHangDe.ExamType</option> 
+                                                         }
+                                                     }
+                                                 }
                                              </optgroup> 
                                          </select> 
                                      </div> 

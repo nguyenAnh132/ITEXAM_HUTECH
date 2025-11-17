@@ -1,13 +1,9 @@
 ﻿using Hangfire;
-using ITExam.Filters;
 using ITExam.Hubs;
 using ITExam.Models;
 using ITExam.Services;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using StackExchange.Redis;
-using static ITExam.Services.EmailService;
-using Azure.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -39,7 +35,7 @@ builder.Services.AddHangfire(x =>
 builder.Services.AddHangfireServer();
 
 builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
-    ConnectionMultiplexer.Connect(builder.Configuration.GetConnectionString("Redis")));
+    ConnectionMultiplexer.Connect(builder.Configuration.GetConnectionString("Redis")!));
 builder.Services.AddScoped<RedisService>();
 builder.Services.AddScoped<IRedisService, RedisService>();
 builder.Services.AddScoped<IClassCodeService, ClassCodeService>();
@@ -57,8 +53,6 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true; 
 });
 
-
-
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
@@ -66,9 +60,6 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<ITExamDbContext>();
     db.Database.Migrate();
 }
-
-
-
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
