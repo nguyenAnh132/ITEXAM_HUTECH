@@ -39,7 +39,6 @@ namespace ITExam.Controllers
         }
 
 
-        // Hàm này dùng để trích xuất ID từ các dạng link Google Drive
         private string? ExtractFileIdFromUrl(string url)
         {
             if (string.IsNullOrEmpty(url)) return null;
@@ -56,7 +55,7 @@ namespace ITExam.Controllers
                 }
                 match = System.Text.RegularExpressions.Regex.Match(
                     url,
-                    @"[?&]id=([a-zA-Z0-9_-]+)"
+                    @"[?&]examId=([a-zA-Z0-9_-]+)"
                 );
                 if (match.Success && match.Groups.Count > 1)
                 {
@@ -259,7 +258,7 @@ namespace ITExam.Controllers
                 Exams = examsInClass,
                 UnassignedExams = unassignedExams,
                 StudentCount = studentListOfClass.Count,
-                ExamCount = examsInClass.Count(),
+                ExamCount = examsInClass.Count,
                 ClassCode = classInfo.ClassCode
             };
 
@@ -267,92 +266,65 @@ namespace ITExam.Controllers
         }
 
 
-        //Lớp học : Danh sách sinh viên đã làm bài - OK
+        //Lớp học : Danh sách sinh viên đã làm bài
         public async Task<IActionResult> List_Student_Do_Test(int examId, int classId)
         {
-            var accessToken = Request.Cookies["access_token"];
-            var userId = await _context.Users
-                .AsNoTracking()
-                .Where(u => u.AccessToken == accessToken)
-                .Select(u => u.UserId)
-                .FirstOrDefaultAsync();
-            if (userId == 0)
+            // Kiểm tra tài khoản giảng viên
+            var access_token = Request.Cookies["access_token"];
+            var user = _context.Users.SingleOrDefault(us => us.AccessToken == access_token);
+            if (user == null)
+            {
                 return RedirectToAction("Logout", "Auth");
+            }
 
-            var classInfo = await _context.Classes
-                .AsNoTracking()
-                .Where(c => c.ClassId == classId)
-                .Select(c => new
-                {
-                    c.ClassId,
-                    c.ClassName
-                })
-                .FirstOrDefaultAsync();
-            if (classInfo == null)
-                return NotFound("Không tìm thấy lớp học.");
+            var thisClass = await _context.Classes
+            .Include(l => l.ClassDetails)
+            .ThenInclude(st => st.User)
+            .Include(ct => ct.ClassExams)
+            .ThenInclude(dt => dt.Exam)
+            .ThenInclude(ls => ls.ExamHistories)
+            .FirstOrDefaultAsync(l => l.ClassId == classId);
 
-            bool isExamInClass = await _context.ClassExams
-                .AsNoTracking()
-                .AnyAsync(ce => ce.ClassId == classId && ce.ExamId == examId);
+            if (thisClass == null || thisClass.ClassDetails == null || thisClass.ClassExams == null)
+                return NotFound();
+
+            var isExamInClass = thisClass.ClassExams
+                .Any(deThi => deThi.ClassId == classId && deThi.ExamId == examId);
+
             if (!isExamInClass)
+            {
                 return NotFound("Đề thi không tồn tại trong lớp học này.");
+            }
 
-            var studentsInClass = await _context.ClassDetails
-                .AsNoTracking()
-                .Where(cd => cd.ClassId == classId)
-                .Select(cd => new
-                {
-                    cd.User.UserId,
-                    cd.User.Username,
-                    cd.User.FullName
-                })
-                .ToListAsync();
-            if (studentsInClass.Count == 0)
-                return View(new StudentSubmissionList
-                {
-                    ClassInfo = null,
-                    Students = new List<StudentSubmissionInClassVM>()
-                });
+            var danhSachSV = thisClass.ClassDetails
+            .Select(l => l.User)
+            .Where(sv => sv != null)
+            .Select(sv =>
+            {
+                var lichSu = thisClass.ClassExams
+                    .SelectMany(d => d.Exam.ExamHistories)
+                    .FirstOrDefault(ls => ls.UserId == sv.UserId && ls.ExamId == examId && ls.ClassId == classId);
 
-            var examHistories = await _context.ExamHistories
-                .AsNoTracking()
-                .Where(eh => eh.ExamId == examId && eh.ClassId == classId)
-                .Select(eh => new
+                return lichSu != null ? new StudentSubmissionInClassVM
                 {
-                    eh.UserId,
-                    eh.StartTime,
-                    eh.SubmitTime,
-                    eh.Duration,
-                    eh.Score,
-                    eh.ExamHistoryId
-                })
-                .ToListAsync();
-
-            var students = studentsInClass
-                .Join(examHistories,
-                      sv => sv.UserId,
-                      ls => ls.UserId,
-                      (sv, ls) => new StudentSubmissionInClassVM
-                      {
-                          StudentId = sv.Username,
-                          FullName = sv.FullName,
-                          StartTime = ls.StartTime,
-                          SubmitTime = ls.SubmitTime ?? DateTime.MinValue,
-                          Duration = ls.Duration,
-                          Score = ls.Score,
-                          ExamHistoryId = ls.ExamHistoryId
-                      })
-                .ToList();
+                    StudentId = sv.Username,
+                    FullName = sv.FullName,
+                    StartTime = lichSu.StartTime,
+                    SubmitTime = lichSu.SubmitTime ?? DateTime.MinValue,
+                    Duration = lichSu.Duration,
+                    Score = lichSu.Score,
+                    ExamHistoryId = lichSu.ExamHistoryId
+                } : null;
+            })
+            .Where(vm => vm != null)
+            .ToList();
 
             var viewModel = new StudentSubmissionList
             {
-                ClassInfo = new Class
-                {
-                    ClassId = classInfo.ClassId,
-                    ClassName = classInfo.ClassName
-                },
-                Students = students
+                ClassInfo = thisClass,
+                Students = danhSachSV!
             };
+
             return View(viewModel);
         }
 
@@ -657,17 +629,12 @@ namespace ITExam.Controllers
                 EndTime = vm.EndTime,
                 Access = false // mặc định
             };
-
-<<<<<<< Updated upstream
-            if (deThi.ExamType == "Tự luận")
+            if (exam.ExamType == "Tự luận")
             {
-                Them.Access = true;
+                newExam.Access = true;
             }
 
-            _context.ClassExams.Add(Them);
-=======
             _context.ClassExams.Add(newExam);
->>>>>>> Stashed changes
             await _context.SaveChangesAsync();
             TempData["SuccessMessage"] = newExam.IsExam ? "Thêm đề thi vào lớp học thành công!" : "Thêm đề ôn tập vào lớp học thành công!";
 
@@ -899,37 +866,30 @@ namespace ITExam.Controllers
         }
 
 
-        // Đề thi : Xóa lịch sử làm bài của sinh viên - OK
+        // Đề thi : Xóa lịch sử làm bài của sinh viên   
         [HttpPost]
         public async Task<IActionResult> Delete_History_Exam(int id)
         {
-            var history = await _context.ExamHistories
+            var lichSu = await _context.ExamHistories
+                .Include(l => l.StudentAnswers)
                 .FirstOrDefaultAsync(l => l.ExamHistoryId == id);
 
-            if (history == null)
+            if (lichSu == null)
             {
                 return NotFound("Không tìm thấy lịch sử làm bài.");
             }
-
-            int maDe = history.ExamId;
-            int maLopHoc = history.ClassId;
-
-<<<<<<< Updated upstream
-            // ===== BẮT ĐẦU: LOGIC XÓA FILE GOOGLE DRIVE =====
-
-            // Giả sử cột của bạn tên là UploadedFileUrl
+            int maDe = lichSu.ExamId;
+            int maLopHoc = lichSu.ClassId;
             var fileUrlToDelete = lichSu.UploadedFileId;
 
             if (!string.IsNullOrEmpty(fileUrlToDelete))
             {
-                // 1. Trích xuất File ID từ URL
                 var fileIdToDelete = ExtractFileIdFromUrl(fileUrlToDelete);
 
                 if (!string.IsNullOrEmpty(fileIdToDelete))
                 {
                     try
                     {
-                        // 2. Gọi Google Apps Script để xóa
                         var client = _httpClientFactory.CreateClient();
                         var deleteUrl = $"{_appsScriptUrl}?action=delete&fileId={fileIdToDelete}";
 
@@ -937,36 +897,26 @@ namespace ITExam.Controllers
 
                         if (!response.IsSuccessStatusCode)
                         {
-                            // Ghi log lỗi nhưng không dừng việc xóa CSDL
-                            _logger.LogWarning(">>> LỖI (Delete_History_Exam): Google Apps Script (File ID: {FileId}) trả về lỗi. Status: {StatusCode}", fileIdToDelete, response.StatusCode);
+                            _logger.LogWarning("LỖI (Delete_History_Exam): Google Apps Script (File ID: {FileId}) trả về lỗi. Status: {StatusCode}", fileIdToDelete, response.StatusCode);
                         }
                         else
                         {
                             var jsonResponse = await response.Content.ReadAsStringAsync();
-                            _logger.LogInformation(">>> (Delete_History_Exam): Phản hồi Google Apps Script: {Response}", jsonResponse);
+                            _logger.LogInformation("(Delete_History_Exam): Phản hồi Google Apps Script: {Response}", jsonResponse);
                         }
                     }
                     catch (Exception ex)
                     {
-                        // Ghi log nếu không thể kết nối tới Apps Script
-                        _logger.LogError(ex, ">>> LỖI (Delete_History_Exam): Không thể gọi Google Apps Script để xóa File ID: {FileId}", fileIdToDelete);
+                        _logger.LogError(ex, "LỖI (Delete_History_Exam): Không thể gọi Google Apps Script để xóa File ID: {FileId}", fileIdToDelete);
                     }
                 }
                 else
                 {
-                    _logger.LogWarning(">>> (Delete_History_Exam): Không tìm thấy File ID trong URL: {Url}", fileUrlToDelete);
+                    _logger.LogWarning("(Delete_History_Exam): Không tìm thấy File ID trong URL: {Url}", fileUrlToDelete);
                 }
             }
-            // ===== KẾT THÚC: LOGIC XÓA FILE GOOGLE DRIVE =====
-
-
             _context.StudentAnswers.RemoveRange(lichSu.StudentAnswers);
             _context.ExamHistories.Remove(lichSu);
-=======
-            await _context.StudentAnswers.Where(sa => sa.ExamHistoryId == id)
-                .ExecuteDeleteAsync();
-            _context.ExamHistories.Remove(history);
->>>>>>> Stashed changes
             await _context.SaveChangesAsync();
 
             TempData["SuccessMessage"] = "Đã xóa lịch sử làm bài thành công!";
@@ -1079,35 +1029,16 @@ namespace ITExam.Controllers
                 {
                     QuestionId = ct.QuestionId,
                     QuestionContent = ct.QuestionBank.QuestionContent,
-                    StudentAnswer = ct.EssayAnswer,
+                    StudentAnswer = ct.EssayAnswer!,
                     GradedScore = ct.Score
                 }).ToList(),
-
-                // GÁN LUÔN Ở ĐÂY
-                UploadedFileLink = history.UploadedFileId   // URL Google Docs đã lưu
+                UploadedFileLink = history.UploadedFileId
             };
 
             if (!string.IsNullOrEmpty(history.UploadedFileId))
             {
-<<<<<<< Updated upstream
                 _logger.LogInformation("Đã có file đính kèm cho HistoryId {HistoryId}: {FileUrl}",
                     id, history.UploadedFileId);
-=======
-                _logger.LogInformation("Đang lấy link file cho FileId: {FileId}", history.UploadedFileId);
-                try
-                {
-                    string fileLink = await _driveService.GetFileWebViewLinkAsync(history.UploadedFileId);
-
-                    // 3. Gán link vào ViewModel (để View có thể hiển thị)
-                    vm.UploadedFileLink = fileLink;
-                }
-                catch (Exception ex)
-                {
-                    // 4. Xử lý nếu có lỗi (ví dụ: file đã bị xóa hoặc lỗi API)
-                    _logger.LogError(ex, "Lỗi khi lấy link file từ Google Drive. FileId: {FileId}", history.UploadedFileId);
-                    TempData["Error"] = "Không thể lấy link file đính kèm của sinh viên. File có thể đã bị xóa hoặc lỗi API.";
-                }
->>>>>>> Stashed changes
             }
             else
             {
@@ -1116,6 +1047,7 @@ namespace ITExam.Controllers
 
             return View(vm);
         }
+
 
         //Đề thi : Lưu điểm chấm tự luận 
         [HttpPost]
@@ -1154,7 +1086,6 @@ namespace ITExam.Controllers
             TempData["Success"] = "Chấm điểm thành công!";
             return RedirectToAction("Grading_The_Exam", new { maDe = history.ExamId, maLop = history.ClassId });
         }
-
 
 
         #endregion
@@ -1489,12 +1420,12 @@ namespace ITExam.Controllers
 
             var json = await response.Content.ReadAsStringAsync();
             var root = JsonConvert.DeserializeObject<JObject>(json);
-            var subjectList = root["data"].ToObject<List<SubjectDto>>();
-            var subject = subjectList.FirstOrDefault(s => s.Id == subjectId);
+            var subjectList = root!["data"]!.ToObject<List<SubjectDto>>();
+            var subject = subjectList!.FirstOrDefault(s => s.Id == subjectId);
             model.ChapterList = subject?.Chapters ?? new List<ChapterDto>();
 
             var luaChonList = new List<object>();
-            for (int i = 0; i < model.ChoiceContents.Count; i++)
+            for (int i = 0; i < model.ChoiceContents!.Count; i++)
             {
                 bool laDapAn = model.CorrectAnswers != null && model.CorrectAnswers.Count > i && model.CorrectAnswers[i] == "true";
                 luaChonList.Add(new
