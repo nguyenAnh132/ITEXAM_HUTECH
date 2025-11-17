@@ -58,7 +58,6 @@ builder.Services.AddSession(options =>
 });
 
 
-builder.Services.AddScoped<GoogleDriveService>();
 
 var app = builder.Build();
 

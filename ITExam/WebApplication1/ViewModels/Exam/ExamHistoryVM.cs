@@ -11,6 +11,7 @@ namespace ITExam.ViewModels.Exam
         public string ExamType { get; set; }                    // TenDe
         public int ExamId { get; set; }                          // MaDe
         public int ClassId { get; set; }                         // MaLopHoc
+        public string? UploadedFileUrl { get; set; }             // file bai lam
 
         public List<ExamHistoryDetailVM> ExamDetails { get; set; } // ChiTietLichSuLamBai
     }

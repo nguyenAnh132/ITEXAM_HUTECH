@@ -233,6 +233,7 @@
 @section Script
  {
     <script src="~/lib/build/ckeditor.js"></script>
+    <script src="~/js/notification.js"></script>
     <script>
 
          let answerCount = 0;
@@ -373,23 +374,7 @@
 
     <script>
 
-                document.addEventListener("DOMContentLoaded", function () {
-            // Kiểm tra thông điệp thành công
-            const successMessage = @Html.Raw(Json.Serialize(TempData["SuccessMessage"]));
-            if (successMessage) {
-                Toastify({
-                    text: successMessage,
-                    duration: 4000,
-                    close: true,
-                    gravity: "bottom",
-                    position: "right",
-                    stopOnFocus: true,
-                    style: {
-                        background: "#28a745" // Màu xanh cho thông báo thành công
-                    }
-                }).showToast();
-            }
-
+        document.addEventListener("DOMContentLoaded", function () {
             // Kiểm tra thông điệp lỗi
             const errorMessage = @Html.Raw(Json.Serialize(TempData["ErrorMessage"]));
             if (errorMessage) {

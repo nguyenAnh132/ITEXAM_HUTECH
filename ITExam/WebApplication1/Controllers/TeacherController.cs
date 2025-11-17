@@ -30,15 +30,47 @@ namespace ITExam.Controllers
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IClassCodeService _classCodeService;
         private readonly ILogger<TeacherController> _logger;
-        private readonly GoogleDriveService _driveService;
-        public TeacherController(IHttpClientFactory httpClientFactory, ITExamDbContext context, IClassCodeService classCodeService, ILogger<TeacherController> logger, GoogleDriveService driveService)
+        private readonly string _appsScriptUrl = "https://script.google.com/macros/s/AKfycbwhele-5szNZjFcIVUacmpGEXSxKjCznRyTVT5wXZuIvVwW_cxOezWxF5k_zFLsHcZy/exec";
+        public TeacherController(IHttpClientFactory httpClientFactory, ITExamDbContext context, IClassCodeService classCodeService, ILogger<TeacherController> logger )
         {
             _httpClientFactory = httpClientFactory;
             _context = context;
             _classCodeService = classCodeService;
             _logger = logger;
-            _driveService = driveService;
+        }
 
+
+        // Hàm này dùng để trích xuất ID từ các dạng link Google Drive
+        private string? ExtractFileIdFromUrl(string url)
+        {
+            if (string.IsNullOrEmpty(url)) return null;
+
+            try
+            {
+                var match = System.Text.RegularExpressions.Regex.Match(
+                    url,
+                    @"/d/([a-zA-Z0-9_-]+)"
+                );
+                if (match.Success && match.Groups.Count > 1)
+                {
+                    return match.Groups[1].Value;
+                }
+                match = System.Text.RegularExpressions.Regex.Match(
+                    url,
+                    @"[?&]id=([a-zA-Z0-9_-]+)"
+                );
+                if (match.Success && match.Groups.Count > 1)
+                {
+                    return match.Groups[1].Value;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi parse Google Drive File ID từ URL: {Url}", url);
+            }
+
+            _logger.LogWarning("Không thể trích xuất File ID từ URL: {Url}", url);
+            return null;
         }
 
         //================================================================
@@ -580,12 +612,17 @@ namespace ITExam.Controllers
             {
                 ClassId = maLopHoc,
                 ExamId = maDe,
-                IsExam = vm.LaDeThi, //Sua sau
+                IsExam = vm.LaDeThi,
                 AddedDate = DateTime.Now,
                 StartTime = vm.StartTime,
                 EndTime = vm.EndTime,
-                Access = false
+                Access = false // mặc định
             };
+
+            if (deThi.ExamType == "Tự luận")
+            {
+                Them.Access = true;
+            }
 
             _context.ClassExams.Add(Them);
             await _context.SaveChangesAsync();
@@ -810,6 +847,7 @@ namespace ITExam.Controllers
                     ExamName = ls.Exam.ExamName,
                     ExamType = ls.Exam.ExamType,
                     ExamId = ls.ExamId,
+                    UploadedFileUrl = ls.UploadedFileId,
                     ExamDetails = ls.StudentAnswers.Select(ct => new ExamHistoryDetailVM
                     {
                         QuestionContent = ct.QuestionBank.QuestionContent,
@@ -845,6 +883,51 @@ namespace ITExam.Controllers
 
             int maDe = lichSu.ExamId;
             int maLopHoc = lichSu.ClassId;
+
+            // ===== BẮT ĐẦU: LOGIC XÓA FILE GOOGLE DRIVE =====
+
+            // Giả sử cột của bạn tên là UploadedFileUrl
+            var fileUrlToDelete = lichSu.UploadedFileId;
+
+            if (!string.IsNullOrEmpty(fileUrlToDelete))
+            {
+                // 1. Trích xuất File ID từ URL
+                var fileIdToDelete = ExtractFileIdFromUrl(fileUrlToDelete);
+
+                if (!string.IsNullOrEmpty(fileIdToDelete))
+                {
+                    try
+                    {
+                        // 2. Gọi Google Apps Script để xóa
+                        var client = _httpClientFactory.CreateClient();
+                        var deleteUrl = $"{_appsScriptUrl}?action=delete&fileId={fileIdToDelete}";
+
+                        var response = await client.GetAsync(deleteUrl);
+
+                        if (!response.IsSuccessStatusCode)
+                        {
+                            // Ghi log lỗi nhưng không dừng việc xóa CSDL
+                            _logger.LogWarning(">>> LỖI (Delete_History_Exam): Google Apps Script (File ID: {FileId}) trả về lỗi. Status: {StatusCode}", fileIdToDelete, response.StatusCode);
+                        }
+                        else
+                        {
+                            var jsonResponse = await response.Content.ReadAsStringAsync();
+                            _logger.LogInformation(">>> (Delete_History_Exam): Phản hồi Google Apps Script: {Response}", jsonResponse);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // Ghi log nếu không thể kết nối tới Apps Script
+                        _logger.LogError(ex, ">>> LỖI (Delete_History_Exam): Không thể gọi Google Apps Script để xóa File ID: {FileId}", fileIdToDelete);
+                    }
+                }
+                else
+                {
+                    _logger.LogWarning(">>> (Delete_History_Exam): Không tìm thấy File ID trong URL: {Url}", fileUrlToDelete);
+                }
+            }
+            // ===== KẾT THÚC: LOGIC XÓA FILE GOOGLE DRIVE =====
+
 
             _context.StudentAnswers.RemoveRange(lichSu.StudentAnswers);
             _context.ExamHistories.Remove(lichSu);
@@ -975,35 +1058,25 @@ namespace ITExam.Controllers
                     QuestionContent = ct.QuestionBank.QuestionContent,
                     StudentAnswer = ct.EssayAnswer,
                     GradedScore = ct.Score
-                }).ToList()
+                }).ToList(),
+
+                // GÁN LUÔN Ở ĐÂY
+                UploadedFileLink = history.UploadedFileId   // URL Google Docs đã lưu
             };
 
             if (!string.IsNullOrEmpty(history.UploadedFileId))
             {
-                _logger.LogInformation("Đang lấy link file cho FileId: {FileId}", history.UploadedFileId);
-                try
-                {
-                    // 2. Gọi service để lấy link xem file
-                    string fileLink = await _driveService.GetFileWebViewLinkAsync(history.UploadedFileId);
-
-                    // 3. Gán link vào ViewModel (để View có thể hiển thị)
-                    vm.UploadedFileLink = fileLink;
-                }
-                catch (Exception ex)
-                {
-                    // 4. Xử lý nếu có lỗi (ví dụ: file đã bị xóa hoặc lỗi API)
-                    _logger.LogError(ex, "Lỗi khi lấy link file từ Google Drive. FileId: {FileId}", history.UploadedFileId);
-                    TempData["Error"] = "Không thể lấy link file đính kèm của sinh viên. File có thể đã bị xóa hoặc lỗi API.";
-                }
+                _logger.LogInformation("Đã có file đính kèm cho HistoryId {HistoryId}: {FileUrl}",
+                    id, history.UploadedFileId);
             }
             else
             {
-                // (Phần này chỉ để log, không bắt buộc)
                 _logger.LogInformation("Sinh viên không nộp file (UploadedFileId rỗng) cho HistoryId: {HistoryId}", id);
             }
 
             return View(vm);
         }
+
 
 
 
