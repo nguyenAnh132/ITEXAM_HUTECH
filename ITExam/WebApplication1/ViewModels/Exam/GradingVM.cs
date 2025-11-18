@@ -37,5 +37,7 @@
         public DateTime? SubmissionTime { get; set; } // ThoiGianNop
         public List<GradedEssayQuestionVM> ListQuestions { get; set; } // DanhSachCauHoi
         public string? UploadedFileLink { get; set; }
+        public int ExamId { get; set; }
+        public int ClassId { get; set; }
     }
 }
