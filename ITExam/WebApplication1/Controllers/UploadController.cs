@@ -22,7 +22,7 @@ namespace ITExam.Controllers
         /// <summary>
         /// Giới hạn form-body 2MB để chặn từ sớm (khớp với MaxFileBytes).
         /// </summary>
-        [HttpPost("UploadImage")]
+        [HttpPost("UploadImage")] 
         [RequestFormLimits(MultipartBodyLengthLimit = MaxFileBytes)]
         public async Task<IActionResult> UploadImage(IFormFile upload)
         {

@@ -1,4 +1,4 @@
-﻿ @model IEnumerable<ITExam.Models.Exam>      
+﻿ @model IEnumerable<ITExam.ViewModels.Exam.NewVM.ExamListVM>      
  @{ 
      Layout = "_TeacherLayout"; 
      <!-- Nhap title --> 
@@ -68,7 +68,7 @@
                                      </div> 
                                      <div class="col-12 col-md-6 mb-1"> 
                                          <i class="fa-solid fa-circle-question text-white me-1"></i> 
-                                         @dt.ExamMatrices.Sum(item => item.QuestionCount) câu hỏi 
+                                         @dt.TotalQuestions câu hỏi 
                                      </div> 
                                  </div> 
                              </div> 
