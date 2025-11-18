@@ -105,14 +105,15 @@ referrerpolicy="no-referrer" />
                                             }
 
                                              <td> 
-                                                 <a asp-controller="Teacher" asp-action="Exam_History_Detail" asp-route-id="@sv.ExamHistoryId" class="btn btn-outline-primary">Chi tiết làm bài</a> 
-                                                 <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteLichSuModal" 
-                                                         onclick="setExamHistoryIdToDelete(@sv.ExamHistoryId)"> 
-                                                     Xóa lịch sử làm bài 
-                                                 </button> 
-
-
-                                             </td> 
+                                                 <a asp-controller="Teacher" asp-action="Exam_History_Detail" asp-route-id="@sv.ExamHistoryId" class="btn btn-outline-primary">Chi tiết làm bài</a>
+                                                @if (sv.SubmitTime != DateTime.MinValue)
+                                                {
+                                                    <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteLichSuModal"
+                                                            onclick="setExamHistoryIdToDelete(@sv.ExamHistoryId)">
+                                                        Xóa lịch sử làm bài
+                                                    </button>
+                                                }
+                                            </td> 
                                          </tr> 
                                      } 
                                  } 

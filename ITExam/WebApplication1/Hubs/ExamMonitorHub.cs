@@ -408,7 +408,6 @@ namespace ITExam.Hubs
                 }
             }
 
-            // 3) (tùy chọn) phát thêm điểm từ cache memory nếu có
             var memKey = ExamKey(examId, classId);
             if (_cache.TryGetValue(GetScoresCacheKey(memKey), out ConcurrentDictionary<string, double> scoreMap))
             {
