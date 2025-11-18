@@ -1015,7 +1015,8 @@ namespace ITExam.Controllers
             return View(viewModel);
         }
 
-
+        [HttpGet]
+        [HttpPost]
         //Đề thi: Chấm bài một sinh viên
         public async Task<IActionResult> Grading_The_Exam_Of_Student(int id)
         {
@@ -1042,7 +1043,9 @@ namespace ITExam.Controllers
                     StudentAnswer = ct.EssayAnswer!,
                     GradedScore = ct.Score
                 }).ToList(),
-                UploadedFileLink = history.UploadedFileId
+                UploadedFileLink = history.UploadedFileId,
+                ExamId = history.ExamId,
+                ClassId = history.ClassId,
             };
 
             if (!string.IsNullOrEmpty(history.UploadedFileId))
@@ -1063,7 +1066,7 @@ namespace ITExam.Controllers
         [HttpPost]
         public async Task<IActionResult> SaveGradingResult(EssaySubmissionToGradeVM model)
         {
-            var history = await _context.ExamHistories
+            var history = await _context.ExamHistories.Include(ls=>ls.StudentAnswers)
                 .FirstOrDefaultAsync(ls => ls.ExamHistoryId == model.HistoryId);
 
             if (history == null)
