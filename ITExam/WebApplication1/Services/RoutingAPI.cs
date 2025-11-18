@@ -1,4 +1,6 @@
-﻿namespace ITExam.Services
+﻿using System.Reflection.Metadata;
+
+namespace ITExam.Services
 {
     public class RoutingAPI
     {
@@ -7,5 +9,6 @@
         public static string GetSubjectUrl => $"{BaseUrl}education/get-subjects";
         public static string CheckTokenUrl => $"{BaseUrl}auth/check-token";
         public static string LLMApiUrl => "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyD95ee0GTpyCTJTBp_fC_NFusxKk017SF0";
+        public static string AppScriptUrl => "https://script.google.com/macros/s/AKfycbwhele-5szNZjFcIVUacmpGEXSxKjCznRyTVT5wXZuIvVwW_cxOezWxF5k_zFLsHcZy/exec";
     }
 }

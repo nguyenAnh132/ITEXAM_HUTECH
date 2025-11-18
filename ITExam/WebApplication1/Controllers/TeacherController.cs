@@ -29,7 +29,6 @@ namespace ITExam.Controllers
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IClassCodeService _classCodeService;
         private readonly ILogger<TeacherController> _logger;
-        private readonly string _appsScriptUrl = "https://script.google.com/macros/s/AKfycbwhele-5szNZjFcIVUacmpGEXSxKjCznRyTVT5wXZuIvVwW_cxOezWxF5k_zFLsHcZy/exec";
         public TeacherController(IHttpClientFactory httpClientFactory, ITExamDbContext context, IClassCodeService classCodeService, ILogger<TeacherController> logger )
         {
             _httpClientFactory = httpClientFactory;
@@ -891,7 +890,7 @@ namespace ITExam.Controllers
                     try
                     {
                         var client = _httpClientFactory.CreateClient();
-                        var deleteUrl = $"{_appsScriptUrl}?action=delete&fileId={fileIdToDelete}";
+                        var deleteUrl = $"{RoutingAPI.AppScriptUrl}?action=delete&fileId={fileIdToDelete}";
 
                         var response = await client.GetAsync(deleteUrl);
 
@@ -965,17 +964,27 @@ namespace ITExam.Controllers
                 .Where(ct => ct.ClassId == maLop)
                 .Select(ct => ct.User)
                 .ToListAsync();
+
             var examHistories = await _context.ExamHistories
                 .AsNoTracking()
                 .Where(ls => ls.ExamId == maDe && ls.ClassId == maLop)
+                .Select(ls => new {
+                    ls.ExamHistoryId,
+                    ls.UserId,
+                    ls.SubmitTime,
+                    ls.Duration,
+                    ls.Score,
+                    FullName = ls.User.FullName,
+                    Username = ls.User.Username
+                })
                 .ToListAsync();
 
             var submittedStudents = examHistories.Select(sv => new StudentExamVM
             {
                 UserId = sv.UserId,
                 HistoryId = sv.ExamHistoryId,
-                FullName = sv.User.FullName,
-                StudentID = sv.User.Username,
+                FullName = sv.FullName,
+                StudentID = sv.Username,
                 SubmissionTime = sv.SubmitTime,
                 DurationInMinutes = sv.Duration,
                 GradedScore = sv.Score
@@ -993,6 +1002,7 @@ namespace ITExam.Controllers
                     DurationInMinutes = 0,
                     GradedScore = null
                 }).ToList();
+
             var viewModel = new GradingVM
             {
                 ExamId = maDe,
