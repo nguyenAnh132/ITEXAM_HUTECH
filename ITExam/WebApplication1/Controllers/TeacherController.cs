@@ -18,6 +18,8 @@ using System.Text;
 using ChapterCLOVM = ITExam.ViewModels.Exam.ChapterCLOVM;
 using CLOItem = ITExam.ViewModels.Exam.CLOItem;
 using System.Diagnostics;
+using NPOI.XWPF.UserModel;
+using System.Text.RegularExpressions;
 
 namespace ITExam.Controllers
 {
@@ -1537,6 +1539,367 @@ namespace ITExam.Controllers
             return RedirectToAction("Exam_Bank_Add_Question_MultipleChoice", new { id = model.ExamBankId });
         }
 
+        /// <summary>
+        /// Ngân hàng đề : Câu hỏi : Import câu hỏi từ file Word (Đọc định dạng + Tra cứu ID + Xác định QuestionType)
+        /// </summary>
+        [HttpPost]
+        public async Task<IActionResult> Exam_Bank_Import_From_Word_Formatted(IFormFile wordFile, int examBankId)
+        {
+            // 1. KIỂM TRA FILE (Giữ nguyên)
+            if (wordFile == null || wordFile.Length == 0)
+            {
+                TempData["ErrorMessage"] = "Vui lòng chọn một file Word để tải lên.";
+                return RedirectToAction("Exam_Bank_Add_Question_MultipleChoice", new { id = examBankId });
+            }
+            if (!Path.GetExtension(wordFile.FileName).Equals(".docx", StringComparison.OrdinalIgnoreCase))
+            {
+                TempData["ErrorMessage"] = "Chỉ chấp nhận file .docx.";
+                return RedirectToAction("Exam_Bank_Add_Question_MultipleChoice", new { id = examBankId });
+            }
+
+            var questionsToAdd = new List<QuestionBank>();
+            var errors = new List<string>();
+
+            // 2. LẤY DỮ LIỆU ĐỂ TRA CỨU (Giữ nguyên logic đã sửa lỗi .Trim())
+            var examBank = await _context.ExamBanks.FindAsync(examBankId);
+            if (examBank == null) return NotFound("Không tìm thấy ngân hàng đề.");
+
+            List<ChapterDto> chapterList = new List<ChapterDto>();
+            List<CloDto> allClosList = new List<CloDto>();
+
+            try
+            {
+                int subjectId = examBank.SubjectId;
+                var access_token = Request.Cookies["access_token"];
+                var client = _httpClientFactory.CreateClient();
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", access_token);
+                var response = await client.GetAsync(RoutingAPI.GetSubjectUrl);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    TempData["ErrorMessage"] = "Lỗi API: Không thể lấy dữ liệu môn học.";
+                    return RedirectToAction("Exam_Bank_Add_Question_MultipleChoice", new { id = examBankId });
+                }
+
+                var json = await response.Content.ReadAsStringAsync();
+                var root = JsonConvert.DeserializeObject<JObject>(json);
+                var subjectList = root!["data"]!.ToObject<List<SubjectDto>>();
+                var subject = subjectList!.FirstOrDefault(s => s.Id == subjectId);
+
+                if (subject == null)
+                {
+                    TempData["ErrorMessage"] = "Không tìm thấy môn học.";
+                    return RedirectToAction("Exam_Bank_Add_Question_MultipleChoice", new { id = examBankId });
+                }
+
+                chapterList = subject.Chapters ?? new List<ChapterDto>();
+                allClosList = chapterList.SelectMany(c => c.Clos).ToList();
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = "Lỗi lấy dữ liệu: " + ex.Message;
+                return RedirectToAction("Exam_Bank_Add_Question_MultipleChoice", new { id = examBankId });
+            }
+
+            // 3. ĐỌC FILE WORD (LOGIC MỚI Ở ĐÂY)
+            string currentChapterName = null; // Biến này sẽ lưu giá trị suốt vòng lặp
+            string currentCloName = null;     // Biến này cũng vậy
+
+            try
+            {
+                using (var stream = wordFile.OpenReadStream())
+                {
+                    var document = new XWPFDocument(stream);
+                    var paragraphs = document.Paragraphs;
+
+                    QuestionBank currentQuestion = null;
+                    List<dynamic> currentChoices = new List<dynamic>();
+
+                    // Regex
+                    var regexChapter = new Regex(@"^Chương:\s*(.+)", RegexOptions.IgnoreCase);
+                    var regexClo = new Regex(@"^CLO:\s*(.+)", RegexOptions.IgnoreCase);
+                    var regexQuestion = new Regex(@"^Câu\s*\d+[:.]\s*(.*)", RegexOptions.IgnoreCase);
+                    var regexChoice = new Regex(@"^([A-Z])\.\s*(.*)", RegexOptions.IgnoreCase);
+
+                    foreach (var para in paragraphs)
+                    {
+                        string text = para.ParagraphText.Trim();
+
+                        if (string.IsNullOrWhiteSpace(text))
+                        {
+                            if (currentQuestion != null)
+                            {
+                                ProcessAndAddQuestion_Formatted(questionsToAdd, errors, ref currentQuestion, ref currentChoices);
+                            }
+                            continue;
+                        }
+
+                        var matchChapter = regexChapter.Match(text);
+                        var matchClo = regexClo.Match(text);
+                        var matchQuestion = regexQuestion.Match(text);
+                        var matchChoice = regexChoice.Match(text);
+
+                        if (matchChapter.Success)
+                        {
+                            // Gặp Chương mới -> Cập nhật tên Chương -> Reset CLO (vì CLO của chương cũ không áp dụng cho chương mới)
+                            currentChapterName = matchChapter.Groups[1].Value.Trim();
+                            currentCloName = null;
+                        }
+                        else if (matchClo.Success)
+                        {
+                            // Gặp CLO mới -> Cập nhật tên CLO (Chương vẫn giữ nguyên giá trị cũ)
+                            currentCloName = matchClo.Groups[1].Value.Trim();
+                        }
+                        else if (matchQuestion.Success)
+                        {
+                            // Lưu câu hỏi trước đó (nếu có)
+                            if (currentQuestion != null)
+                            {
+                                ProcessAndAddQuestion_Formatted(questionsToAdd, errors, ref currentQuestion, ref currentChoices);
+                            }
+
+                            // --- TRA CỨU ID (Dùng lại currentChapterName và currentCloName đang được lưu giữ) ---
+                            int? foundChapterId = null;
+                            int? foundCloId = null;
+                            var questionContent = matchQuestion.Groups[1].Value.Trim();
+                            var questionIdentifier = $"Câu \"{questionContent.Substring(0, Math.Min(questionContent.Length, 30))}...\"";
+
+                            // Tra cứu Chapter
+                            if (!string.IsNullOrEmpty(currentChapterName))
+                            {
+                                var chapter = chapterList.FirstOrDefault(c => c.Title.Trim().Equals(currentChapterName, StringComparison.OrdinalIgnoreCase));
+                                if (chapter != null) foundChapterId = chapter.Id;
+                                else errors.Add($"{questionIdentifier}: Không tìm thấy Chương '{currentChapterName}' trong hệ thống.");
+                            }
+
+                            // Tra cứu CLO
+                            if (!string.IsNullOrEmpty(currentCloName))
+                            {
+                                var clo = allClosList.FirstOrDefault(c => c.Title.Trim().StartsWith(currentCloName, StringComparison.OrdinalIgnoreCase));
+                                if (clo != null) foundCloId = clo.Id;
+                                else errors.Add($"{questionIdentifier}: Không tìm thấy CLO '{currentCloName}' trong hệ thống.");
+                            }
+
+                            // Tạo câu hỏi mới
+                            currentQuestion = new QuestionBank
+                            {
+                                QuestionContent = questionContent,
+                                ExamBankId = examBankId,
+                                ChapterId = foundChapterId,
+                                CLOId = foundCloId
+                                // QuestionType sẽ tính sau
+                            };
+                            currentChoices = new List<dynamic>();
+
+                            // LOGIC QUAN TRỌNG: KHÔNG RESET currentChapterName VÀ currentCloName Ở ĐÂY
+                            // Để các câu hỏi tiếp theo vẫn dùng chung Chương/CLO này.
+                        }
+                        else if (currentQuestion != null && matchChoice.Success)
+                        {
+                            bool isCorrect = CheckParagraphFormatting(para);
+                            currentChoices.Add(new
+                            {
+                                Id = matchChoice.Groups[1].Value.ToUpper(),
+                                NoiDung = matchChoice.Groups[2].Value.Trim(),
+                                LaDapAn = isCorrect
+                            });
+                        }
+                    }
+
+                    // Lưu câu hỏi cuối cùng
+                    if (currentQuestion != null)
+                    {
+                        ProcessAndAddQuestion_Formatted(questionsToAdd, errors, ref currentQuestion, ref currentChoices);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                errors.Add("Lỗi đọc file: " + ex.Message);
+            }
+
+            // 4. LƯU DATABASE (Giữ nguyên)
+            if (errors.Any())
+            {
+                var errorBuilder = new StringBuilder();
+                errorBuilder.AppendLine($"Có {errors.Count} lỗi. Không dữ liệu nào được lưu:");
+                foreach (var err in errors.Take(10)) errorBuilder.AppendLine($"- {err}");
+                TempData["ErrorMessage"] = errorBuilder.ToString();
+            }
+            else if (questionsToAdd.Any())
+            {
+                _context.QuestionBanks.AddRange(questionsToAdd);
+                await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = $"Đã thêm {questionsToAdd.Count} câu hỏi thành công.";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "File không có dữ liệu câu hỏi hợp lệ.";
+            }
+
+            return RedirectToAction("Exam_Bank_Add_Question_MultipleChoice", new { id = examBankId });
+        }
+
+        /// <summary>
+        /// (Hàm hỗ trợ 1) Kiểm tra định dạng (In đậm, Gạch chân, Màu) của một Paragraph.
+        /// </summary>
+        private bool CheckParagraphFormatting(XWPFParagraph para)
+        {
+            // Duyệt qua tất cả các "Runs" (đoạn text có cùng định dạng) trong Paragraph
+            foreach (var run in para.Runs)
+            {
+                // 1. Kiểm tra In Đậm
+                if (run.IsBold)
+                    return true;
+
+                // 2. Kiểm tra Gạch Chân
+                if (run.Underline != UnderlinePatterns.None)
+                    return true;
+
+                // 3. Kiểm tra Màu (khác Đen "000000" và khác Tự động "auto")
+                string color = run.GetColor();
+                if (!string.IsNullOrEmpty(color) &&
+                    !color.Equals("000000", StringComparison.OrdinalIgnoreCase) &&
+                    !color.Equals("auto", StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// (Hàm hỗ trợ 2) Xử lý, xác thực, gán QuestionType và thêm câu hỏi vào danh sách.
+        /// </summary>
+        private void ProcessAndAddQuestion_Formatted(List<QuestionBank> questionsToAdd, List<string> errors,
+                                             ref QuestionBank currentQuestion, ref List<dynamic> currentChoices)
+        {
+            // Kiểm tra an toàn
+            if (currentQuestion == null)
+            {
+                return;
+            }
+
+            string questionIdentifier = $"Câu \"{currentQuestion.QuestionContent.Substring(0, Math.Min(currentQuestion.QuestionContent.Length, 40))}...\"";
+
+            // 1. Kiểm tra có lựa chọn không
+            if (currentChoices == null || !currentChoices.Any())
+            {
+                errors.Add($"{questionIdentifier}: Không có lựa chọn nào (A, B, C...).");
+                currentQuestion = null; // Hủy câu hỏi này
+                return;
+            }
+
+            int correctAnwerCount = currentChoices.Count(c => c.LaDapAn == true);
+            int totalChoiceCount = currentChoices.Count;
+
+            // 2. Kiểm tra có đáp án đúng không
+            if (correctAnwerCount == 0)
+            {
+                errors.Add($"{questionIdentifier}: Không tìm thấy đáp án đúng nào (thiếu in đậm/gạch chân/màu).");
+                currentQuestion = null; // Hủy câu hỏi này
+                return;
+            }
+
+            // 3. LOGIC MỚI: Xác định QuestionType (1, 2, hoặc 3)
+            if (correctAnwerCount > 1)
+            {
+                currentQuestion.QuestionType = "2"; // 2 = Nhiều đáp án
+            }
+            else if (correctAnwerCount == 1)
+            {
+                // Nếu có 1 đáp án đúng VÀ chỉ có 2 lựa chọn (A, B) -> là câu Đúng/Sai
+                if (totalChoiceCount == 2)
+                {
+                    currentQuestion.QuestionType = "3"; // 3 = Đúng sai
+                }
+                else
+                {
+                    currentQuestion.QuestionType = "1"; // 1 = 1 đáp án
+                }
+            }
+
+            // 4. Chuyển đổi lựa chọn sang JSON và thêm câu hỏi
+            var finalChoices = new List<object>();
+            int choiceIdCounter = 1;
+
+            foreach (var choice in currentChoices)
+            {
+                finalChoices.Add(new
+                {
+                    Id = choiceIdCounter++, // Đổi Id từ A, B, C... thành 1, 2, 3...
+                    NoiDung = choice.NoiDung,
+                    LaDapAn = choice.LaDapAn
+                });
+            }
+
+            currentQuestion.ChoiceContent = JsonConvert.SerializeObject(finalChoices);
+            questionsToAdd.Add(currentQuestion);
+
+            currentQuestion = null;
+            currentChoices = null;
+        }
+
+
+        // Hàm trợ giúp để xử lý và xác thực câu hỏi trước khi thêm vào danh sách
+        private void ProcessAndAddQuestion(List<QuestionBank> questionsToAdd, List<string> errors,
+                                         ref QuestionBank currentQuestion, ref List<dynamic> currentChoices,
+                                         ref string correctAnswerLetter, int examBankId)
+        {
+            string questionIdentifier = $"Câu \"{currentQuestion.QuestionContent.Substring(0, Math.Min(currentQuestion.QuestionContent.Length, 30))}...\"";
+
+            // 1. Kiểm tra có lựa chọn nào không
+            if (currentChoices == null || !currentChoices.Any())
+            {
+                errors.Add($"{questionIdentifier}: Không có lựa chọn nào (A, B, C, D...).");
+                currentQuestion = null; // Hủy câu hỏi này
+                return;
+            }
+
+            // 2. Kiểm tra có đáp án đúng không
+            if (string.IsNullOrWhiteSpace(correctAnswerLetter))
+            {
+                errors.Add($"{questionIdentifier}: Không có dòng 'Đáp án: [chữ cái]'.");
+                currentQuestion = null;
+                return;
+            }
+
+            // 3. Cập nhật đáp án đúng vào danh sách lựa chọn
+            bool foundCorrectAnswer = false;
+            var finalChoices = new List<object>();
+            int choiceIdCounter = 1;
+
+            foreach (var choice in currentChoices)
+            {
+                bool isCorrect = choice.Id == correctAnswerLetter;
+                if (isCorrect)
+                {
+                    foundCorrectAnswer = true;
+                }
+                finalChoices.Add(new
+                {
+                    Id = choiceIdCounter++, // Đổi Id từ A, B, C... thành 1, 2, 3...
+                    NoiDung = choice.NoiDung,
+                    LaDapAn = isCorrect
+                });
+            }
+
+            if (!foundCorrectAnswer)
+            {
+                errors.Add($"{questionIdentifier}: Dòng 'Đáp án: {correctAnswerLetter}' không khớp với bất kỳ lựa chọn nào.");
+                currentQuestion = null;
+                return;
+            }
+
+            // 4. Chuyển đổi lựa chọn sang JSON và thêm câu hỏi
+            currentQuestion.ChoiceContent = JsonConvert.SerializeObject(finalChoices);
+            questionsToAdd.Add(currentQuestion);
+
+            // 5. Reset để chuẩn bị cho câu hỏi tiếp theo
+            currentQuestion = null;
+            currentChoices = null;
+            correctAnswerLetter = null;
+        }
 
         //Ngân hàng đề : Câu hỏi : Thêm câu hỏi tự luận
         public async Task<IActionResult> Exam_Bank_Add_Question_Essay(int id)

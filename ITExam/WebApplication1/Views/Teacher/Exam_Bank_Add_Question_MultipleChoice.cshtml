@@ -81,6 +81,36 @@
                                        asp-route-id="@Model.ExamBankId">Thêm câu hỏi mới</a>
                                 </div>
 
+                                <hr />
+
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="card-title">Import câu hỏi từ file Word (.docx)</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <p>
+                                            Vui lòng upload file theo đúng <a href="/templates/mau-import-dinh-dang.docx" target="_blank">mẫu quy định (mới)</a>.
+                                            <br />
+                                            (Đáp án đúng được xác định bằng **In Đậm**, <u>Gạch Chân</u>, hoặc <font color="red">Màu Khác</font>.)
+                                        </p>
+
+                                        <form asp-action="Exam_Bank_Import_From_Word_Formatted" method="post"
+                                              enctype="multipart/form-data"
+                                              class="form-inline">
+
+                                            <input type="hidden" asp-for="ExamBankId" />
+
+                                            <div class="form-group mr-2">
+                                                <input type="file" name="wordFile" class="form-control-file" accept=".docx" required />
+                                            </div>
+
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="fas fa-upload"></i> Tải lên và Xử lý
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+
                                 @{
                                     bool coChuong = Model.ChapterList != null && Model.ChapterList.Any();
                                     bool coCauHoiTheoChuong = coChuong && Model.QuestionList.Any(ch => ch.ChapterId != null);
