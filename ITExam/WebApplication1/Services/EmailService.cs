@@ -12,7 +12,7 @@ namespace ITExam.Services
         public async Task SendAddExamNotification(string emailTo, string content, bool isBodyHtml)
         {
             var message = new MimeMessage();
-            message.From.Add(new MailboxAddress("ITExam HUTECH", "nguyenanhkg123@gmail.com"));
+            message.From.Add(new MailboxAddress("ITExam HUTECH", "itexamhutech@gmail.com"));
             message.To.Add(new MailboxAddress("Người nhận", emailTo));
             message.Subject = "Thông báo";
             message.Body = new TextPart(isBodyHtml ? "html" : "plain")
@@ -22,7 +22,7 @@ namespace ITExam.Services
             using (var client = new SmtpClient())
             {
                 await client.ConnectAsync("smtp.gmail.com", 587, MailKit.Security.SecureSocketOptions.StartTls);
-                await client.AuthenticateAsync("nguyenanhkg123@gmail.com", "pczk msgq pdnn trey");
+                await client.AuthenticateAsync("itexamhutech@gmail.com", "pyhw xrix aqjs ukxu");
 
                 await client.SendAsync(message); 
 
