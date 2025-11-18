@@ -57,8 +57,6 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true; 
 });
 
-
-
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
@@ -67,15 +65,12 @@ using (var scope = app.Services.CreateScope())
     db.Database.Migrate();
 }
 
-
-
-
 // Configure the HTTP request pipeline.
-if (!app.Environment.IsDevelopment())
-{
-    app.UseExceptionHandler("/Home/Error");
-    app.UseHsts();
-}
+//if (!app.Environment.IsDevelopment())
+//{
+//    app.UseExceptionHandler("/Home/Error");
+//    app.UseHsts();
+//}
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
