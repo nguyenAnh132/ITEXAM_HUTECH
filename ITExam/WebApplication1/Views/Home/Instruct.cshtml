@@ -1,0 +1,542 @@
+﻿@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Hướng dẫn sử dụng ITExam</title>
+
+    <!-- Bootstrap + FontAwesome  -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css" />
+
+    <!-- CSS  -->
+    <link rel="stylesheet" href="~/css/style.css" />
+    <link rel="stylesheet" href="~/css/login-style.css" />
+    <link rel="stylesheet" href="~/css/instruct.css" />
+</head>
+
+<body id="huongdanPage">
+    <!-- HEADER / NAV -->
+    <header class="fixed-top bg-white">
+        <div class="container-fluid p-0">
+            <nav class="navbar navbar-expand-lg bg-white navbar-light py-3 py-lg-0 px-lg-5">
+                <a asp-controller="Home" asp-action="Index" class="navbar-brand ml-lg-3">
+                    <h1 class="m-0 text-uppercase text-primary">ITEXAM</h1>
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse justify-content-between px-lg-3" id="navbarCollapse">
+                    <div class="navbar-nav mx-auto py-0">
+                        <a asp-controller="Home" asp-action="Index" class="nav-item nav-link">Trang chủ</a>
+                        <a asp-controller="Auth" asp-action="Login" class="nav-item nav-link">Lớp học</a>
+                        <a asp-controller="Instruct" asp-action="InstructIndex" class="nav-item nav-link active">Hướng dẫn</a>
+                    </div>
+                    <a asp-controller="Auth" asp-action="Login" class="btn btn-primary py-2 px-4">Đăng nhập</a>
+                </div>
+            </nav>
+        </div>
+    </header>
+    <main>
+        <div class="container mt-4 mb-5">
+            <div class="text-center mb-2">
+                <h2 class="section-title display-6 fw-bold mb-3">
+                    HƯỚNG DẪN SỬ DỤNG ITEXAM
+                </h2>
+                <p class="text-muted">
+                    Tài liệu này hướng dẫn cách sử dụng các chức năng cơ bản trên hệ thống ITExam cho hai nhóm người dùng chính: Giảng viên và Sinh viên.
+                </p>
+            </div>
+
+            <!-- Thanh tìm kiếm  -->
+            <div class="row justify-content-center mb-4">
+                <div class="col-lg-8">
+                    <div class="input-group guide-search">
+                        <input id="hd-search" type="text" class="form-control" placeholder="Tìm theo từ khóa" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion" id="accordionHuongDan">
+                <div class="accordion-item shadow-sm guide-section">
+                    <h2 class="accordion-header" id="hd-student">
+                        <button class="accordion-button collapsed" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#cl-student"
+                                aria-expanded="false" aria-controls="cl-student">
+                            Hướng dẫn dành cho sinh viên
+                        </button>
+                    </h2>
+                    <div id="cl-student" class="accordion-collapse collapse"
+                         aria-labelledby="hd-student" data-bs-parent="#accordionHuongDan">
+                        <div class="accordion-body">
+
+                            <div class="accordion accordion-flush" id="accStudent">
+
+                                <!-- 1. Đăng nhập hệ thống -->
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header" id="st-login-h">
+                                        <button class="accordion-button collapsed" type="button"
+                                                data-bs-toggle="collapse" data-bs-target="#st-login"
+                                                aria-expanded="false" aria-controls="st-login">
+                                            Đăng nhập hệ thống
+                                        </button>
+                                    </h2>
+                                    <div id="st-login" class="accordion-collapse collapse"
+                                         aria-labelledby="st-login-h" data-bs-parent="#accStudent">
+                                        <div class="accordion-body">
+                                            <p>• Sinh viên đăng nhập bằng tài khoản ITCoder do nhà trường cung cấp.</p>
+                                            <p>• Sau khi đăng nhập, sinh viên sẽ thấy trang thông tin danh sách lớp học đã tham gia  và lịch sử làm bài</p>
+
+                                            <img src="~/img/sv_dang_nhap.png" class="guide-img" alt="Đăng nhập sinh viên" asp-append-version="true" />
+                                            <img src="~/img/sv_trang_tai_khoan.png" class="guide-img" alt="Trang thông tin tài khoản sinh viên" asp-append-version="true" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 2. Tham gia lớp học bằng mã lớp -->
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header" id="st-join-h">
+                                        <button class="accordion-button collapsed" type="button"
+                                                data-bs-toggle="collapse" data-bs-target="#st-join"
+                                                aria-expanded="false" aria-controls="st-join">
+                                            Tham gia lớp học bằng mã lớp
+                                        </button>
+                                    </h2>
+                                    <div id="st-join" class="accordion-collapse collapse"
+                                         aria-labelledby="st-join-h" data-bs-parent="#accStudent">
+                                        <div class="accordion-body">
+                                            <p>Nhiệm vụ đầu tiên của sinh viên sau khi đăng nhập là tham gia lớp học:</p>
+                                            <ol>
+                                                <li>Chọn chức năng “Tham gia lớp học” trên menu.</li>
+                                                <li>Nhập mã lớp do giảng viên cung cấp</li>
+                                                <li>Kiểm tra lại thông tin lớp hiển thị, sau đó xác nhận tham gia.</li>
+                                            </ol>
+                                            <p>Sau khi tham gia thành công, lớp học sẽ xuất hiện trong danh sách lớp của sinh viên.</p>
+
+                                            <img src="~/img/sv_tham_gia_lop.png" class="guide-img" alt="Sinh viên tham gia lớp bằng mã lớp" asp-append-version="true" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 3. Làm bài thi -->
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header" id="st-exam-h">
+                                        <button class="accordion-button collapsed" type="button"
+                                                data-bs-toggle="collapse" data-bs-target="#st-exam"
+                                                aria-expanded="false" aria-controls="st-exam">
+                                            Làm bài thi
+                                        </button>
+                                    </h2>
+                                    <div id="st-exam" class="accordion-collapse collapse"
+                                         aria-labelledby="st-exam-h" data-bs-parent="#accStudent">
+                                        <div class="accordion-body">
+                                            <h6 class="fw-bold">3.1 Danh sách đề thi</h6>
+                                            <p>Trong mỗi lớp học, sinh viên sẽ thấy danh sách các đề thi được giảng viên giao. Mỗi đề thi thường hiển thị các thông tin:</p>
+                                            <ul>
+                                                <li>Tên đề thi.</li>
+                                                <li>Thời gian bắt đầu và thời gian kết thúc.</li>
+                                                <li>Thời lượng làm bài.</li>
+                                                <li>Trạng thái đề thi (chưa mở / đang mở / đã kết thúc).</li>
+                                            </ul>
+                                            <img src="~/img/sv_de_thi.png" class="guide-img" alt="Danh sách đề thi" asp-append-version="true" />
+
+                                            <h6 class="fw-bold mt-3">3.2 Vào làm bài thi</h6>
+                                            <ol>
+                                                <li>Chọn đề thi trong danh sách.</li>
+                                                <li>Nhấn nút “Vào thi ngay”</li>
+                                                <li>Hệ thống sẽ chuyển bài thi sang một tab/màn hình khác. Sinh viên tiến hành trả lời từng câu hỏi và theo dõi thời gian làm bài.</li>
+                                            </ol>
+                                            <p class="mb-1">Một số lưu ý trong khi làm bài:</p>
+                                            <ul>
+                                                <li>Không tự ý thoát bài, không F12 hoặc thao tác kỹ thuật làm gián đoạn bài thi.</li>
+                                                <li>Hạn chế chuyển tab, tránh mất kết nối hoặc bị hệ thống cảnh báo.</li>
+                                                <li>Luôn theo dõi đồng hồ đếm ngược để nộp bài đúng giờ.</li>
+                                            </ul>
+
+                                            <img src="~/img/sv_noi_quy_truoc_thi.png" class="guide-img" alt="Nội quy trước khi thi" asp-append-version="true" />
+
+                                            <h6 class="fw-bold mt-3">3.3 Nộp bài và kết thúc bài thi</h6>
+                                            <ul>
+                                                <li>Khi hoàn thành, sinh viên nhấn nút “Nộp bài”.</li>
+                                                <li>Xác nhận lại thao tác nộp bài khi hệ thống yêu cầu.</li>
+                                                <li>Sau khi nộp, hệ thống sẽ lưu lại bài thi. Tùy cài đặt của giảng viên, điểm có thể hiển thị ngay hoặc sau khi giảng viên chấm.</li>
+                                            </ul>
+                                            <img src="~/img/sv_xac_nhan_nop_bai.png" class="guide-img" alt="Xác nhận nộp bài" asp-append-version="true" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 3.x Thông báo sau khi nộp bài -->
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header" id="st-finish-h">
+                                        <button class="accordion-button collapsed" type="button"
+                                                data-bs-toggle="collapse" data-bs-target="#st-finish"
+                                                aria-expanded="false" aria-controls="st-finish">
+                                            Thông báo sau khi nộp bài (hoàn thành bài thi)
+                                        </button>
+                                    </h2>
+                                    <div id="st-finish" class="accordion-collapse collapse"
+                                         aria-labelledby="st-finish-h" data-bs-parent="#accStudent">
+                                        <div class="accordion-body">
+                                            <p>
+                                                Khi nộp bài xong, hệ thống sẽ hiển thị thông báo trạng thái.
+                                                Ví dụ màn hình <em>“Chưa có kết quả thi”</em> (điểm sẽ xuất hiện sau khi chấm/xử lý):
+                                            </p>
+                                            <img src="~/img/sv_thong_bao_hoan_thanh.png"
+                                                 class="guide-img" alt="Thông báo hoàn thành bài thi / Chưa có kết quả thi"
+                                                 asp-append-version="true" />
+                                            <ul class="mt-2">
+                                                <li>Hiển thị ngày làm bài và tổng thời gian làm bài.</li>
+                                                <li>Nút <strong>Quay lại</strong> để trở về trang trước.</li>
+                                                <li>Nếu đề thi chấm tự động & cho phép hiện điểm ngay, kết quả sẽ hiển thị sau khi nộp.</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 4. Lịch sử làm bài và xem điểm -->
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header" id="st-history-h">
+                                        <button class="accordion-button collapsed" type="button"
+                                                data-bs-toggle="collapse" data-bs-target="#st-history"
+                                                aria-expanded="false" aria-controls="st-history">
+                                            Lịch sử làm bài và xem điểm
+                                        </button>
+                                    </h2>
+                                    <div id="st-history" class="accordion-collapse collapse"
+                                         aria-labelledby="st-history-h" data-bs-parent="#accStudent">
+                                        <div class="accordion-body">
+                                            <p>Sinh viên có thể xem lại kết quả của các bài thi đã làm:</p>
+                                            <ol>
+                                                <li>Vào mục “Lịch sử làm bài”</li>
+                                                <li>Chọn bài thi muốn xem.</li>
+                                                <li>Hệ thống hiển thị điểm số và trạng thái bài thi. Nếu giảng viên cho phép, sinh viên có thể xem chi tiết từng câu đúng/sai.</li>
+                                            </ol>
+                                            <p>Lịch sử làm bài giúp sinh viên theo dõi quá trình học tập, nhận ra điểm mạnh/yếu để cải thiện kết quả ở các lần thi sau.</p>
+
+                                            <img src="~/img/sv_lich_su.png" class="guide-img" alt="Lịch sử làm bài của sinh viên" asp-append-version="true" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 5. Lưu ý -->
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header" id="st-note-h">
+                                        <button class="accordion-button collapsed" type="button"
+                                                data-bs-toggle="collapse" data-bs-target="#st-note"
+                                                aria-expanded="false" aria-controls="st-note">
+                                            Một số lưu ý cho sinh viên khi sử dụng hệ thống
+                                        </button>
+                                    </h2>
+                                    <div id="st-note" class="accordion-collapse collapse"
+                                         aria-labelledby="st-note-h" data-bs-parent="#accStudent">
+                                        <div class="accordion-body">
+                                            <ul class="mb-0">
+                                                <li>Đảm bảo đường truyền Internet ổn định khi làm bài thi.</li>
+                                                <li>Đăng nhập đúng tài khoản do nhà trường cung cấp, không chia sẻ tài khoản cho người khác.</li>
+                                                <li>Đọc kỹ hướng dẫn của giảng viên trước mỗi kỳ thi.</li>
+                                                <li>Nếu gặp lỗi trong quá trình làm bài, cần chụp màn hình (nếu có thể) và báo ngay cho giảng viên/phụ trách kỹ thuật.</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div> <!-- /accStudent -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ==================== GIẢNG VIÊN ==================== -->
+                <div class="accordion-item shadow-sm guide-section">
+                    <h2 class="accordion-header" id="hd-teacher">
+                        <button class="accordion-button collapsed" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#cl-teacher"
+                                aria-expanded="false" aria-controls="cl-teacher">
+                            Hướng dẫn dành cho giảng viên
+                        </button>
+                    </h2>
+                    <div id="cl-teacher" class="accordion-collapse collapse"
+                         aria-labelledby="hd-teacher" data-bs-parent="#accordionHuongDan">
+                        <div class="accordion-body">
+                            <div class="accordion accordion-flush" id="accTeacher">
+
+                                <!-- 1. Đăng nhập hệ thống -->
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header" id="tc-login-h">
+                                        <button class="accordion-button collapsed" type="button"
+                                                data-bs-toggle="collapse" data-bs-target="#tc-login"
+                                                aria-expanded="false" aria-controls="tc-login">
+                                            Đăng nhập hệ thống
+                                        </button>
+                                    </h2>
+                                    <div id="tc-login" class="accordion-collapse collapse"
+                                         aria-labelledby="tc-login-h" data-bs-parent="#accTeacher">
+                                        <div class="accordion-body">
+                                            <p>• Tài khoản: Mỗi giảng viên được nhà trường cung cấp một tài khoản ITCoder riêng, các tài khoản có cùng mức quyền quản trị giảng dạy trên hệ thống.</p>
+                                            <p>• Cách đăng nhập:</p>
+                                            <ol>
+                                                <li>Truy cập vào địa chỉ website ITExam do nhà trường cung cấp.</li>
+                                                <li>Nhập tài khoản và mật khẩu ITCoder.</li>
+                                                <li>Nhấn nút “Đăng nhập” để vào hệ thống.</li>
+                                            </ol>
+                                            <p>Sau khi đăng nhập thành công, giảng viên có thể quản lý ngân hàng đề, đề thi, lớp học, giám sát và chấm bài thi của sinh viên.</p>
+
+                                            <img src="~/img/gv_dang_nhap.png" class="guide-img" alt="Đăng nhập giảng viên" asp-append-version="true" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 2. Quản lý Ngân hàng đề -->
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header" id="tc-bank-h">
+                                        <button class="accordion-button collapsed" type="button"
+                                                data-bs-toggle="collapse" data-bs-target="#tc-bank"
+                                                aria-expanded="false" aria-controls="tc-bank">
+                                            Quản lý Ngân hàng đề
+                                        </button>
+                                    </h2>
+                                    <div id="tc-bank" class="accordion-collapse collapse"
+                                         aria-labelledby="tc-bank-h" data-bs-parent="#accTeacher">
+                                        <div class="accordion-body">
+                                            <p>Giảng viên có thể tạo, sửa, xóa các ngân hàng đề phục vụ cho việc ra đề thi.</p>
+
+                                            <h6 class="fw-bold mt-2">2.1 Tạo thông tin ngân hàng đề</h6>
+                                            <p>Khi tạo một ngân hàng đề mới, giảng viên cần điền đầy đủ các thông tin sau:</p>
+                                            <ul>
+                                                <li>Tên ngân hàng đề.</li>
+                                                <li>Loại đề (trắc nghiệm, tự luận, hoặc kết hợp).</li>
+                                                <li>Môn học tương ứng.</li>
+                                            </ul>
+                                            <p>Sau khi nhập xong, nhấn nút “Tạo ngân hàng đề” để tạo ngân hàng đề mới.</p>
+                                            <img src="~/img/gv_tao_thong_tin_nhd.png" class="guide-img" alt="Tạo thông tin ngân hàng đề" asp-append-version="true" />
+
+                                            <h6 class="fw-bold mt-2">2.2 Soạn câu hỏi trong ngân hàng đề</h6>
+                                            <p>Có 2 cách để giảng viên soạn câu hỏi:</p>
+                                            <p><strong>1) Tạo thủ công</strong></p>
+                                            <ul>
+                                                <li>Giảng viên tự nhập từng câu hỏi: nội dung câu hỏi, các phương án trả lời, đáp án đúng, chương, mức độ (dễ / trung bình / khó)</li>
+                                                <li>Phù hợp khi giảng viên muốn kiểm soát chặt chẽ chất lượng và nội dung từng câu hỏi.</li>
+                                            </ul>
+                                            <img src="~/img/gv_soan_thu_cong.png" class="guide-img" alt="Soạn câu hỏi thủ công" asp-append-version="true" />
+                                            <p><strong>2) Tạo câu hỏi với AI</strong></p>
+                                            <ul>
+                                                <li>Giảng viên nhập các thông tin mô tả câu hỏi như: chương, chủ đề, yêu cầu</li>
+                                                <li>Hệ thống AI sẽ tự động gợi ý hoặc tạo ra các câu hỏi dựa trên mô tả đó.</li>
+                                                <li>Giảng viên có thể xem lại, chỉnh sửa hoặc loại bỏ các câu hỏi do AI tạo để phù hợp với nội dung giảng dạy.</li>
+                                            </ul>
+                                            <img src="~/img/gv_soan_ai.png" class="guide-img" alt="Soạn câu hỏi bằng AI" asp-append-version="true" />
+                                            <img src="~/img/gv_chinh_sua_cau_hoi_ai.png" class="guide-img" alt="Chỉnh sửa câu hỏi AI" asp-append-version="true" />
+
+                                            <h6 class="fw-bold mt-2">2.3 Chỉnh sửa / xóa câu hỏi</h6>
+                                            <ul>
+                                                <li>Giảng viên có thể chỉnh sửa nội dung, đáp án, chương, mức độ của từng câu hỏi.</li>
+                                                <li>Có thể xóa các câu hỏi không còn phù hợp để đảm bảo chất lượng ngân hàng đề.</li>
+                                            </ul>
+
+                                            <h6 class="fw-bold mt-2">2.4 Sửa / xóa ngân hàng đề</h6>
+                                            <ul>
+                                                <li>Chọn ngân hàng đề cần chỉnh sửa để cập nhật lại thông tin.</li>
+                                                <li>Có thể xóa ngân hàng đề không còn sử dụng, lưu ý: chỉ nên xóa khi chắc chắn không còn gắn với đề thi đang sử dụng.</li>
+                                            </ul>
+
+                                            <img src="~/img/gv_ngan_hang_de.png" class="guide-img" alt="Danh sách ngân hàng đề" asp-append-version="true" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 3. Quản lý đề thi -->
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header" id="tc-exam-h">
+                                        <button class="accordion-button collapsed" type="button"
+                                                data-bs-toggle="collapse" data-bs-target="#tc-exam"
+                                                aria-expanded="false" aria-controls="tc-exam">
+                                            Quản lý đề thi
+                                        </button>
+                                    </h2>
+                                    <div id="tc-exam" class="accordion-collapse collapse"
+                                         aria-labelledby="tc-exam-h" data-bs-parent="#accTeacher">
+                                        <div class="accordion-body">
+                                            <p>Giảng viên có thể tạo mới, chỉnh sửa, xóa đề thi và thiết lập ma trận đề thi để phù hợp với mục tiêu đánh giá.</p>
+
+                                            <h6 class="fw-bold">3.1 Tạo đề thi mới</h6>
+                                            <p>Khi tạo đề thi, giảng viên thường cần:</p>
+                                            <ul>
+                                                <li>Chọn ngân hàng đề sử dụng.</li>
+                                                <li>Đặt tên đề thi.</li>
+                                                <li>Thiết lập thời gian làm bài, thời gian mở – đóng đề thi.</li>
+                                                <li>Chọn số lượng câu hỏi, tỉ lệ mức độ (dễ / trung bình / khó).</li>
+                                            </ul>
+
+                                            <h6 class="fw-bold mt-2">3.2 Chi tiết ma trận đề thi</h6>
+                                            <p>Tại màn hình ma trận đề thi, giảng viên điều chỉnh số lượng câu hỏi theo từng chương, từng mức độ để tạo một đề thi phù hợp. Hệ thống sẽ hiển thị tổng số câu hỏi và cập nhật lại cấu trúc đề thi.</p>
+                                            <img src="~/img/gv_ma_tran_de.png" class="guide-img" alt="Ma trận đề thi" asp-append-version="true" />
+
+                                            <h6 class="fw-bold mt-2">3.3 Sửa / xóa đề thi</h6>
+                                            <ul class="mb-0">
+                                                <li>Có thể xóa đề thi không còn sử dụng. Nên kiểm tra kỹ trước khi xóa để tránh mất dữ liệu cần thiết.</li>
+                                            </ul>
+
+                                            <img src="~/img/gv_ds_de_thi.png" class="guide-img" alt="Danh sách đề thi" asp-append-version="true" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 4. Quản lý lớp học -->
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header" id="tc-class-h">
+                                        <button class="accordion-button collapsed" type="button"
+                                                data-bs-toggle="collapse" data-bs-target="#tc-class"
+                                                aria-expanded="false" aria-controls="tc-class">
+                                            Quản lý lớp học
+                                        </button>
+                                    </h2>
+                                    <div id="tc-class" class="accordion-collapse collapse"
+                                         aria-labelledby="tc-class-h" data-bs-parent="#accTeacher">
+                                        <div class="accordion-body">
+                                            <p>Lớp học là nơi giảng viên quản lý sinh viên, gán đề thi và theo dõi kết quả làm bài.</p>
+
+                                            <h6 class="fw-bold">4.1 Thêm lớp học</h6>
+                                            <p>Khi tạo lớp học, giảng viên thường thực hiện:</p>
+                                            <ul>
+                                                <li>Nhập tên lớp, môn học/học phần, mô tả lớp học</li>
+                                                <li>Thiết lập mã lớp (hệ thống tự sinh ).</li>
+                                                <li>Lưu lớp học để hệ thống tạo mới.</li>
+                                            </ul>
+                                            <p>Mã lớp này sẽ được gửi cho sinh viên để các em đăng ký tham gia lớp trên hệ thống.</p>
+
+                                            <img src="~/img/gv_ds_lop.png" class="guide-img" alt="Danh sách lớp học" asp-append-version="true" />
+
+                                            <h6 class="fw-bold mt-2">4.2 Chi tiết lớp học</h6>
+                                            <p>Trong chi tiết lớp học thường có các mục:</p>
+                                            <ul>
+                                                <li>Thông tin lớp học.</li>
+                                                <li>Thành viên: danh sách sinh viên, thêm/xóa sinh viên nếu cần.</li>
+                                                <li>Đề thi: thêm đề thi vào lớp và xem danh sách đề thi đã gán.</li>
+                                            </ul>
+                                            <img src="~/img/gv_tt_lop.png" class="guide-img" alt="Thông tin lớp học" asp-append-version="true" />
+                                            <img src="~/img/gv_thanh_vien_lop.png" class="guide-img" alt="Thành viên lớp" asp-append-version="true" />
+
+                                            <h6 class="fw-bold mt-2">4.3 Chi tiết đề thi</h6>
+                                            <p>• Đề thi: thêm đề thi vào lớp và xem danh sách đề thi đã gán.</p>
+                                            <p>Khi thêm 1 đề thi vào lớp :</p>
+                                            <p>“Bấm thêm đề thi” sau đó lựa chọn ma trận đề phù hợp với môn học</p>
+                                            <p>Thêm ma trận đề rồi chỉnh sửa các chi tiết của đề thi (thời gian bắt đầu, thời gian kết thúc….)</p>
+                                            <img src="~/img/gv_them_de_thi.png" class="guide-img" alt="Thêm đề thi vào lớp" asp-append-version="true" />
+
+                                            <h6 class="fw-bold mt-2">4.4 Chấm thi</h6>
+                                            <ul>
+                                                <li>Giảng viên truy cập mục “Chấm thi” để xem kết quả bài làm của sinh viên.</li>
+                                                <li>Có thể xem chi tiết từng bài và xuất kết quả ra file phục vụ lưu trữ.</li>
+                                            </ul>
+                                            <img src="~/img/gv_cham_diem.png" class="guide-img" alt="Chấm điểm" asp-append-version="true" />
+
+                                            <h6 class="fw-bold mt-2">4.5 Nhật ký làm bài</h6>
+                                            <p>Nhật ký làm bài hiển thị toàn bộ lịch sử làm bài của sinh viên trong lớp:</p>
+                                            <ul>
+                                                <li>Thời gian bắt đầu, thời gian nộp bài.</li>
+                                                <li>Trạng thái bài thi (hoàn thành / đang làm / bị gián đoạn).</li>
+                                                <li>Điểm số sau khi chấm.</li>
+                                            </ul>
+                                            <img src="~/img/gv_nhat_ky.png" class="guide-img" alt="Nhật ký làm bài" asp-append-version="true" />
+
+                                            <h6 class="fw-bold mt-2">4.6 Giám sát</h6>
+                                            <p>Giảng viên có thể dùng chức năng này để giám sát việc làm bài, phát hiện các trường hợp bất thường. Trong một số trường hợp đặc biệt, giảng viên có thể xóa lịch sử làm bài của sinh viên để cho phép thi lại theo quy định của nhà trường.</p>
+                                            <p>Khi thực hiện giám sát giảng viên có thể theo dõi trạng thái làm bài của sinh viên và có thể bật anti-cheat để chặn các thao tác F12, copy… của sinh viên.</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div> <!-- /accTeacher -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ==================== ĐÁNG CHÚ Ý ==================== -->
+                <div class="accordion-item shadow-sm">
+                    <h2 class="accordion-header" id="hd-notice">
+                        <button class="accordion-button collapsed" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#cl-notice"
+                                aria-expanded="false" aria-controls="cl-notice">
+                            Đáng chú ý
+                        </button>
+                    </h2>
+                    <div id="cl-notice" class="accordion-collapse collapse"
+                         aria-labelledby="hd-notice" data-bs-parent="#accordionHuongDan">
+                        <div class="accordion-body">
+                            <ul class="mb-0">
+                                <li>Sinh viên đăng nhập bằng tài khoản ITCoder do nhà trường cung cấp.</li>
+                                <li>Khi thi: không F12 / copy–paste / chuyển tab; luôn theo dõi đồng hồ đếm ngược.</li>
+                                <li>Giảng viên nên tạo ma trận đề trước khi gán đề vào lớp và mở lịch thi.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+            </div> <!-- /accordionHuongDan -->
+            <!-- Nút quay lại -->
+            <div class="text-center back-login">
+                <a asp-controller="Auth" asp-action="Login" class="btn btn-outline-primary">
+                    ← Quay lại đăng nhập
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container-fluid position-relative overlay-top bg-dark text-white-50 py-3" style="margin-top: 90px;">
+            <div class="container mt-5 pt-5">
+                <div class="row">
+                    <div class="col-md-6 mb-5">
+                        <a href="index.html" class="navbar-brand">
+                            <h1 class="mt-n2 text-uppercase text-white">ITEXAM</h1>
+                        </a>
+                        <p class="m-0">Website tạo đề thi, bài kiểm tra<br /><br />Trở ngại không thể cản bạn lại được. Nếu bạn va phải tường, đừng quay đi và bỏ cuộc. Hãy tìm cách trèo lên, phá vỡ hay bước vòng qua nó</p>
+                    </div>
+                    <div class="col-md-6 mb-5">
+                        <h3 class="text-white mb-4">Góp ý</h3>
+                        <div class="w-100">
+                            <div class="input-group">
+                                <input type="text" class="form-control border-light" style="padding: 30px;">
+                                <div class="input-group-append">
+                                    <button class="btn btn-primary px-4">Gửi</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-5">
+                        <h3 class="text-white mb-4">Tác giả</h3>
+                        <p><i class="fa fa-angle-right mr-2"></i>Nguyễn Văn Tú Anh - 2280600101 - 22DTHG7</p>
+                        <p><i class="fa fa-angle-right mr-2"></i>Nguyễn Tấn Phát - 2280602306 - 22DTHG7</p>
+                    </div>
+                    <div class="col-md-6">
+                        <br />
+                        <p><i class="fa fa-angle-right mr-2"></i>Trần Hải Đăng - 2280600672 - 22DTHG7</p>
+                        <p><i class="fa fa-angle-right mr-2"></i>Trần Bá Tòng - 2280618811 - 22DTHG7</p>
+                        <p><i class="fa fa-angle-right mr-2"></i>Đỗ Minh Phương - 2280602518 - 22DTHG7</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="container-fluid bg-dark text-white-50 border-top py-4" style="border-color: rgba(256, 256, 256, .1) !important;">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-6 text-center text-md-left mb-3 mb-md-0">
+                        <p class="m-0">
+                            Copyright &copy; <a class="text-white" href="#">Khoa Công nghệ Thông tin</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/instruct.js"></script>
+</body>
+</html>
