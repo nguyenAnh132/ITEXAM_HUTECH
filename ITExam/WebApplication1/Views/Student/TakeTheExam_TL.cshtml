@@ -323,7 +323,7 @@
     <script>
 
         // Dán URL Web App của bạn từ Google Apps Script vào đây
-        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwhele-5szNZjFcIVUacmpGEXSxKjCznRyTVT5wXZuIvVwW_cxOezWxF5k_zFLsHcZy/exec";
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxSlibSTGempy47D9mvSPHLqxyOksCIssK965mSwEVR49EwjZ9M8AUyCtHzGsPDu8FP/exec";
 
         // Hàm helper để đọc file sang Base64
         function readFileAsBase64(file) {
@@ -401,7 +401,9 @@
                         filetype: file.type,
                         filedata: base64File,
                         studentId: "@Model.StudentId", // Gửi thêm thông tin
-                        examId: "@Model.ExamId"       // để Apps Script đặt tên file
+                        examId: "@Model.ExamId",     // để Apps Script đặt tên file
+                        classCode: "@Model.ClassCode",
+                        examName: "@Html.Raw(Model.ExamName)"
                     };
 
                     const driveResp = await fetch(APPS_SCRIPT_URL, {
