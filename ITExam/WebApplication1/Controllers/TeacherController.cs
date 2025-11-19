@@ -405,7 +405,8 @@ namespace ITExam.Controllers
                     ExamName = d.ExamName,
                     ExamType = d.ExamType,
                     Duration = d.Duration,
-                    TotalQuestions = d.ExamMatrices.Sum(m => (int?)m.QuestionCount) ?? 0
+                    TotalQuestions = d.ExamMatrices.Sum(m => (int?)m.QuestionCount) ?? 0,
+                    IsUsedInClass = d.ClassExams.Any()
                 })
                 .ToListAsync();
 

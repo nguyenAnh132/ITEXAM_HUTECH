@@ -7,6 +7,7 @@
         public string ExamType { get; set; }
         public int Duration { get; set; }
         public int TotalQuestions { get; set; }
+        public bool IsUsedInClass { get; set; }
     }
 
 }

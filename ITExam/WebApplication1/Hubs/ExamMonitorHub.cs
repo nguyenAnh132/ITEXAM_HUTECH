@@ -304,8 +304,6 @@ namespace ITExam.Hubs
                 status.LastActivityAt = DateTime.UtcNow;
             }
 
-            _cache.Remove(GetConnectionMapKey(Context.ConnectionId));
-
             await Clients.Group(GroupName(examId, classId)).SendAsync("StudentLeftExam", new
             {
                 ExamId = examId,

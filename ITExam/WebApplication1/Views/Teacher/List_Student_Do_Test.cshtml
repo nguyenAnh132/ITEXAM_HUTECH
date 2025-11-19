@@ -104,14 +104,18 @@ referrerpolicy="no-referrer" />
                                                 <td>Chưa chấm</td>
                                             }
 
-                                             <td> 
-                                                 <a asp-controller="Teacher" asp-action="Exam_History_Detail" asp-route-id="@sv.ExamHistoryId" class="btn btn-outline-primary">Chi tiết làm bài</a>
+                                             <td>
                                                 @if (sv.SubmitTime != DateTime.MinValue)
                                                 {
+                                                    <a asp-controller="Teacher" asp-action="Exam_History_Detail" asp-route-id="@sv.ExamHistoryId" class="btn btn-outline-primary">Chi tiết làm bài</a>
                                                     <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteLichSuModal"
                                                             onclick="setExamHistoryIdToDelete(@sv.ExamHistoryId)">
                                                         Xóa lịch sử làm bài
                                                     </button>
+                                                }
+                                                else
+                                                {
+                                                    <i class="text-primary"><b>Sinh viên đang làm bài thi...</b></i>
                                                 }
                                             </td> 
                                          </tr> 
