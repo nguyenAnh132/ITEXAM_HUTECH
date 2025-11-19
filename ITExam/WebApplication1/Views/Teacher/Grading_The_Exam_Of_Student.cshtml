@@ -52,6 +52,8 @@
 
     <form asp-action="SaveGradingResult" asp-controller="Teacher" method="post">
         <input type="hidden" name="HistoryId" value="@Model.HistoryId" />
+        <input type="hidden" name="ExamId" value="@Model.ExamId" />
+        <input type="hidden" name="ClassId" value="@Model.ClassId" />
 
         <table class="table table-bordered align-middle">
             <thead class="table-secondary">
@@ -87,4 +89,7 @@
             </button>
         </div>
     </form>
+    <a asp-controller="Teacher" asp-action="Grading_The_Exam" asp-route-maDe="@Model.ExamId" asp-route-maLop="@Model.ClassId" class="btn btn-secondary mt-2">
+        <i class="fa-solid fa-arrow-left me-1"></i> Quay về
+    </a>
 </div>

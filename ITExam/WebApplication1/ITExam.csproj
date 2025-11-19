@@ -27,6 +27,7 @@
     <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="8.0.15" />
     <PackageReference Include="NETCore.MailKit" Version="2.1.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageReference Include="NPOI" Version="2.7.5" />
   </ItemGroup>
 
   <ItemGroup>

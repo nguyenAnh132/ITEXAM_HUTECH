@@ -39,7 +39,10 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
 builder.Services.AddScoped<RedisService>();
 builder.Services.AddScoped<IRedisService, RedisService>();
 builder.Services.AddScoped<IClassCodeService, ClassCodeService>();
-builder.Services.AddMemoryCache();
+builder.Services.AddMemoryCache(option =>
+{
+    option.SizeLimit = 1024 * 1024 * 200;
+});
 
 builder.Services.AddScoped<GeminiService>(sp =>
     new GeminiService(sp.GetRequiredService<IHttpClientFactory>(), RoutingAPI.LLMApiUrl));

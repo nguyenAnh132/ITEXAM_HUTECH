@@ -47,7 +47,9 @@
                     {
                         <td class="pt-3">@sv.GradedScore / 10</td>
                         <td>
-                            <input type="submit" class="btn btn-outline-danger" value="Đã chấm" />
+                            <a asp-controller="Teacher" asp-action="Grading_The_Exam_Of_Student" asp-route-id="@sv.HistoryId" class="btn btn-outline-info">
+                                Xem lại
+                            </a>
                         </td>
                     }
                     else
@@ -55,11 +57,9 @@
                         <td class="text-danger pt-3">Chưa chấm</td>
                         <td>
 
-                            <form asp-controller="Teacher" asp-action="Grading_The_Exam_Of_Student" asp-route-id="@sv.HistoryId" method="post">
-                                <input type="hidden" name="maDe" value="" />
-                                <input type="hidden" name="maLop" value="" />
-                                <input type="submit" class="btn btn-primary" value="Chấm bài" />
-                            </form>
+                            <a asp-controller="Teacher" asp-action="Grading_The_Exam_Of_Student" asp-route-id="@sv.HistoryId" class="btn btn-primary">
+                                Chấm bài
+                            </a>
                         </td>
                     }                 
                 </tr>
