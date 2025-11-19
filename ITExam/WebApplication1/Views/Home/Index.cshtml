@@ -126,14 +126,17 @@
                     </div>
                     <div class="col-md-6 mb-5">
                         <h3 class="text-white mb-4">Góp ý</h3>
-                        <div class="w-100">
-                            <div class="input-group">
-                                <input type="text" class="form-control border-light" style="padding: 30px;">
-                                <div class="input-group-append">
-                                    <button class="btn btn-primary px-4">Gửi</button>
-                                </div>
+                        <div class="input-group">
+                            <input id="feedbackInput"
+                                   type="text"
+                                   class="form-control border-light"
+                                   style="padding: 30px;" />
+                            <div class="input-group-append">
+                                <button id="btnSendFeedback" class="btn btn-primary px-4">Gửi</button>
                             </div>
                         </div>
+
+                        <div id="feedbackMessage"></div>
                     </div>
                 </div>
                 <div class="row">
@@ -175,5 +178,6 @@
     <!-- Template Javascript -->
     <script src="js/main.js"></script>
     <script src="~/js/index-script.js"></script>
+    <script src="~/js/sendfeedback.js"></script>
 </body>
 </html>
