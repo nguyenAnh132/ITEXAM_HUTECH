@@ -334,46 +334,68 @@ namespace ITExam.Controllers
         [HttpPost]
         public async Task<IActionResult> DeleteClass(int maLopHoc)
         {
-            var lopHoc = await _context.Classes
+            var lopHoc = await _context.Classes.AsNoTracking()
                 .FirstOrDefaultAsync(l => l.ClassId == maLopHoc);
 
             if (lopHoc == null)
                 return NotFound();
 
+            string classCodeFolder = lopHoc.ClassCode.ToString();
+
             var historyIds = await _context.ExamHistories
+                .AsNoTracking()
                 .Where(ls => ls.ClassId == maLopHoc)
                 .Select(ls => ls.ExamHistoryId)
                 .ToListAsync();
 
-            //delete StudentAnswers nha
-            await _context.StudentAnswers
-                .Where(sa => historyIds.Contains(sa.ExamHistoryId))
-                .ExecuteDeleteAsync();
+            if (historyIds.Count > 0)
+            {
+                await _context.StudentAnswers
+                    .AsNoTracking()
+                    .Where(sa => historyIds.Contains(sa.ExamHistoryId))
+                    .ExecuteDeleteAsync();
 
-            //delete ExamHistories nha
-            await _context.ExamHistories
-                .Where(ls => historyIds.Contains(ls.ExamHistoryId))
-                .ExecuteDeleteAsync();
+                await _context.ExamHistories
+                    .AsNoTracking()
+                    .Where(ls => historyIds.Contains(ls.ExamHistoryId))
+                    .ExecuteDeleteAsync();
+            }
 
-            //delete Log giám sát nè
             await _context.ActivityLogs
+                .AsNoTracking()
                 .Where(l => l.ClassId == maLopHoc)
                 .ExecuteDeleteAsync();
 
-            //delete ClassDetails nữa nè
             await _context.ClassDetails
+                .AsNoTracking()
                 .Where(cd => cd.ClassId == maLopHoc)
                 .ExecuteDeleteAsync();
 
-            //delete ClassExams nè
             await _context.ClassExams
+                .AsNoTracking()
                 .Where(ce => ce.ClassId == maLopHoc)
                 .ExecuteDeleteAsync();
 
             _context.Classes.Remove(lopHoc);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Đã xóa lớp học và dữ liệu lớp học thành công!";
+            try
+            {
+                var encodedClassCode = Uri.EscapeDataString(classCodeFolder);
+
+                var finalUrl = $"{RoutingAPI.AppScriptUrl}?action=deleteClass&classCode={encodedClassCode}";
+
+                using (var client = new HttpClient())
+                {
+                    var response = await client.GetAsync(finalUrl);
+                }
+                TempData["SuccessMessage"] = "Đã xóa lớp học, dữ liệu và toàn bộ thư mục bài làm thành công!";
+            }
+            catch (Exception ex)
+            {
+                TempData["WarningMessage"] = $"Đã xóa lớp học khỏi DB, nhưng gặp lỗi khi gọi Drive API: {ex.Message}";
+            }
+
             return RedirectToAction("Class");
         }
 
@@ -807,15 +829,26 @@ namespace ITExam.Controllers
             if (!ModelState.IsValid)
                 return RedirectToAction("ClassDetail", new { id = maLopHoc });
 
-            var classExam = await _context.ClassExams
-                .FirstOrDefaultAsync(dt => dt.ExamId == maDe && dt.ClassId == maLopHoc);
-            if (classExam == null)
+            var classExamInfo = await _context.ClassExams.AsNoTracking()
+                .Where(dt => dt.ExamId == maDe && dt.ClassId == maLopHoc)
+                .Select(ce => new
+                {
+                    ClassCode = ce.Class.ClassCode.ToString(), 
+                    ExamName = ce.Exam.ExamName.ToString()        
+                })
+                .FirstOrDefaultAsync();
+
+            if (classExamInfo == null)
             {
                 TempData["ErrorMessage"] = "Không tìm thấy đề thi để xóa.";
                 return RedirectToAction("ClassDetail", new { id = maLopHoc });
             }
 
+            string classCodeFolder = classExamInfo.ClassCode;
+            string examNameFolder = classExamInfo.ExamName;
+
             var historyIds = await _context.ExamHistories
+                .AsNoTracking()
                 .Where(ls => ls.ExamId == maDe && ls.ClassId == maLopHoc)
                 .Select(ls => ls.ExamHistoryId)
                 .ToListAsync();
@@ -823,16 +856,40 @@ namespace ITExam.Controllers
             if (historyIds.Count > 0)
             {
                 await _context.StudentAnswers
+                    .AsNoTracking()
                     .Where(sa => historyIds.Contains(sa.ExamHistoryId))
                     .ExecuteDeleteAsync();
+
                 await _context.ExamHistories
+                    .AsNoTracking()
                     .Where(ls => historyIds.Contains(ls.ExamHistoryId))
                     .ExecuteDeleteAsync();
             }
+
             await _context.ClassExams
+                .AsNoTracking()
                 .Where(c => c.ExamId == maDe && c.ClassId == maLopHoc)
                 .ExecuteDeleteAsync();
-            TempData["SuccessMessage"] = "Đã xóa đề thi và toàn bộ lịch sử làm bài khỏi lớp học.";
+
+            try
+            {
+                var encodedClassCode = Uri.EscapeDataString(classCodeFolder);
+                var encodedExamName = Uri.EscapeDataString(examNameFolder);
+
+                var finalUrl = $"{RoutingAPI.AppScriptUrl}?action=deleteExam&classCode={encodedClassCode}&examName={encodedExamName}";
+
+                using (var client = new HttpClient())
+                {
+                    var response = await client.GetAsync(finalUrl);
+
+                }
+                TempData["SuccessMessage"] = "Đã xóa đề thi, lịch sử làm bài khỏi lớp học ";
+
+            }
+            catch (Exception ex)
+            {
+                TempData["WarningMessage"] = $"Đã xóa đề thi khỏi database, nhưng không thể xóa thư mục bài làm trên Drive. Vui lòng xóa thủ công. Lỗi: {ex.Message}";
+            }
             return RedirectToAction("ClassDetail", new { id = maLopHoc });
         }
 
@@ -1540,13 +1597,10 @@ namespace ITExam.Controllers
             return RedirectToAction("Exam_Bank_Add_Question_MultipleChoice", new { id = model.ExamBankId });
         }
 
-        /// <summary>
-        /// Ngân hàng đề : Câu hỏi : Import câu hỏi từ file Word (Đọc định dạng + Tra cứu ID + Xác định QuestionType)
-        /// </summary>
+        // Ngân hàng đề : Câu hỏi : Import câu hỏi từ file Word (Đọc định dạng + Tra cứu ID + Xác định QuestionType)
         [HttpPost]
         public async Task<IActionResult> Exam_Bank_Import_From_Word_Formatted(IFormFile wordFile, int examBankId)
         {
-            // 1. KIỂM TRA FILE (Giữ nguyên)
             if (wordFile == null || wordFile.Length == 0)
             {
                 TempData["ErrorMessage"] = "Vui lòng chọn một file Word để tải lên.";
@@ -1561,7 +1615,6 @@ namespace ITExam.Controllers
             var questionsToAdd = new List<QuestionBank>();
             var errors = new List<string>();
 
-            // 2. LẤY DỮ LIỆU ĐỂ TRA CỨU (Giữ nguyên logic đã sửa lỗi .Trim())
             var examBank = await _context.ExamBanks.FindAsync(examBankId);
             if (examBank == null) return NotFound("Không tìm thấy ngân hàng đề.");
 
@@ -1602,9 +1655,8 @@ namespace ITExam.Controllers
                 return RedirectToAction("Exam_Bank_Add_Question_MultipleChoice", new { id = examBankId });
             }
 
-            // 3. ĐỌC FILE WORD (LOGIC MỚI Ở ĐÂY)
-            string currentChapterName = null; // Biến này sẽ lưu giá trị suốt vòng lặp
-            string currentCloName = null;     // Biến này cũng vậy
+            string currentChapterName = null; 
+            string currentCloName = null;  
 
             try
             {
@@ -1616,7 +1668,6 @@ namespace ITExam.Controllers
                     QuestionBank currentQuestion = null;
                     List<dynamic> currentChoices = new List<dynamic>();
 
-                    // Regex
                     var regexChapter = new Regex(@"^Chương:\s*(.+)", RegexOptions.IgnoreCase);
                     var regexClo = new Regex(@"^CLO:\s*(.+)", RegexOptions.IgnoreCase);
                     var regexQuestion = new Regex(@"^Câu\s*\d+[:.]\s*(.*)", RegexOptions.IgnoreCase);
@@ -1642,30 +1693,25 @@ namespace ITExam.Controllers
 
                         if (matchChapter.Success)
                         {
-                            // Gặp Chương mới -> Cập nhật tên Chương -> Reset CLO (vì CLO của chương cũ không áp dụng cho chương mới)
                             currentChapterName = matchChapter.Groups[1].Value.Trim();
                             currentCloName = null;
                         }
                         else if (matchClo.Success)
                         {
-                            // Gặp CLO mới -> Cập nhật tên CLO (Chương vẫn giữ nguyên giá trị cũ)
                             currentCloName = matchClo.Groups[1].Value.Trim();
                         }
                         else if (matchQuestion.Success)
                         {
-                            // Lưu câu hỏi trước đó (nếu có)
                             if (currentQuestion != null)
                             {
                                 ProcessAndAddQuestion_Formatted(questionsToAdd, errors, ref currentQuestion, ref currentChoices);
                             }
 
-                            // --- TRA CỨU ID (Dùng lại currentChapterName và currentCloName đang được lưu giữ) ---
                             int? foundChapterId = null;
                             int? foundCloId = null;
                             var questionContent = matchQuestion.Groups[1].Value.Trim();
                             var questionIdentifier = $"Câu \"{questionContent.Substring(0, Math.Min(questionContent.Length, 30))}...\"";
 
-                            // Tra cứu Chapter
                             if (!string.IsNullOrEmpty(currentChapterName))
                             {
                                 var chapter = chapterList.FirstOrDefault(c => c.Title.Trim().Equals(currentChapterName, StringComparison.OrdinalIgnoreCase));
@@ -1673,7 +1719,6 @@ namespace ITExam.Controllers
                                 else errors.Add($"{questionIdentifier}: Không tìm thấy Chương '{currentChapterName}' trong hệ thống.");
                             }
 
-                            // Tra cứu CLO
                             if (!string.IsNullOrEmpty(currentCloName))
                             {
                                 var clo = allClosList.FirstOrDefault(c => c.Title.Trim().StartsWith(currentCloName, StringComparison.OrdinalIgnoreCase));
@@ -1681,19 +1726,15 @@ namespace ITExam.Controllers
                                 else errors.Add($"{questionIdentifier}: Không tìm thấy CLO '{currentCloName}' trong hệ thống.");
                             }
 
-                            // Tạo câu hỏi mới
                             currentQuestion = new QuestionBank
                             {
                                 QuestionContent = questionContent,
                                 ExamBankId = examBankId,
                                 ChapterId = foundChapterId,
                                 CLOId = foundCloId
-                                // QuestionType sẽ tính sau
                             };
                             currentChoices = new List<dynamic>();
 
-                            // LOGIC QUAN TRỌNG: KHÔNG RESET currentChapterName VÀ currentCloName Ở ĐÂY
-                            // Để các câu hỏi tiếp theo vẫn dùng chung Chương/CLO này.
                         }
                         else if (currentQuestion != null && matchChoice.Success)
                         {
@@ -1706,8 +1747,6 @@ namespace ITExam.Controllers
                             });
                         }
                     }
-
-                    // Lưu câu hỏi cuối cùng
                     if (currentQuestion != null)
                     {
                         ProcessAndAddQuestion_Formatted(questionsToAdd, errors, ref currentQuestion, ref currentChoices);
@@ -1719,7 +1758,6 @@ namespace ITExam.Controllers
                 errors.Add("Lỗi đọc file: " + ex.Message);
             }
 
-            // 4. LƯU DATABASE (Giữ nguyên)
             if (errors.Any())
             {
                 var errorBuilder = new StringBuilder();
@@ -1741,23 +1779,17 @@ namespace ITExam.Controllers
             return RedirectToAction("Exam_Bank_Add_Question_MultipleChoice", new { id = examBankId });
         }
 
-        /// <summary>
-        /// (Hàm hỗ trợ 1) Kiểm tra định dạng (In đậm, Gạch chân, Màu) của một Paragraph.
-        /// </summary>
+        // (Hàm hỗ trợ 1) Kiểm tra định dạng (In đậm, Gạch chân, Màu) của một Paragraph.
         private bool CheckParagraphFormatting(XWPFParagraph para)
         {
-            // Duyệt qua tất cả các "Runs" (đoạn text có cùng định dạng) trong Paragraph
             foreach (var run in para.Runs)
             {
-                // 1. Kiểm tra In Đậm
                 if (run.IsBold)
                     return true;
 
-                // 2. Kiểm tra Gạch Chân
                 if (run.Underline != UnderlinePatterns.None)
                     return true;
 
-                // 3. Kiểm tra Màu (khác Đen "000000" và khác Tự động "auto")
                 string color = run.GetColor();
                 if (!string.IsNullOrEmpty(color) &&
                     !color.Equals("000000", StringComparison.OrdinalIgnoreCase) &&
@@ -1769,13 +1801,10 @@ namespace ITExam.Controllers
             return false;
         }
 
-        /// <summary>
-        /// (Hàm hỗ trợ 2) Xử lý, xác thực, gán QuestionType và thêm câu hỏi vào danh sách.
-        /// </summary>
+        // (Hàm hỗ trợ 2) Xử lý, xác thực, gán QuestionType và thêm câu hỏi vào danh sách.
         private void ProcessAndAddQuestion_Formatted(List<QuestionBank> questionsToAdd, List<string> errors,
                                              ref QuestionBank currentQuestion, ref List<dynamic> currentChoices)
         {
-            // Kiểm tra an toàn
             if (currentQuestion == null)
             {
                 return;
@@ -1783,44 +1812,39 @@ namespace ITExam.Controllers
 
             string questionIdentifier = $"Câu \"{currentQuestion.QuestionContent.Substring(0, Math.Min(currentQuestion.QuestionContent.Length, 40))}...\"";
 
-            // 1. Kiểm tra có lựa chọn không
             if (currentChoices == null || !currentChoices.Any())
             {
                 errors.Add($"{questionIdentifier}: Không có lựa chọn nào (A, B, C...).");
-                currentQuestion = null; // Hủy câu hỏi này
+                currentQuestion = null; 
                 return;
             }
 
             int correctAnwerCount = currentChoices.Count(c => c.LaDapAn == true);
             int totalChoiceCount = currentChoices.Count;
 
-            // 2. Kiểm tra có đáp án đúng không
             if (correctAnwerCount == 0)
             {
                 errors.Add($"{questionIdentifier}: Không tìm thấy đáp án đúng nào (thiếu in đậm/gạch chân/màu).");
-                currentQuestion = null; // Hủy câu hỏi này
+                currentQuestion = null; 
                 return;
             }
 
-            // 3. LOGIC MỚI: Xác định QuestionType (1, 2, hoặc 3)
             if (correctAnwerCount > 1)
             {
-                currentQuestion.QuestionType = "2"; // 2 = Nhiều đáp án
+                currentQuestion.QuestionType = "2"; 
             }
             else if (correctAnwerCount == 1)
             {
-                // Nếu có 1 đáp án đúng VÀ chỉ có 2 lựa chọn (A, B) -> là câu Đúng/Sai
                 if (totalChoiceCount == 2)
                 {
-                    currentQuestion.QuestionType = "3"; // 3 = Đúng sai
+                    currentQuestion.QuestionType = "3"; 
                 }
                 else
                 {
-                    currentQuestion.QuestionType = "1"; // 1 = 1 đáp án
+                    currentQuestion.QuestionType = "1"; 
                 }
             }
 
-            // 4. Chuyển đổi lựa chọn sang JSON và thêm câu hỏi
             var finalChoices = new List<object>();
             int choiceIdCounter = 1;
 
@@ -1828,7 +1852,7 @@ namespace ITExam.Controllers
             {
                 finalChoices.Add(new
                 {
-                    Id = choiceIdCounter++, // Đổi Id từ A, B, C... thành 1, 2, 3...
+                    Id = choiceIdCounter++, 
                     NoiDung = choice.NoiDung,
                     LaDapAn = choice.LaDapAn
                 });
@@ -1849,15 +1873,13 @@ namespace ITExam.Controllers
         {
             string questionIdentifier = $"Câu \"{currentQuestion.QuestionContent.Substring(0, Math.Min(currentQuestion.QuestionContent.Length, 30))}...\"";
 
-            // 1. Kiểm tra có lựa chọn nào không
             if (currentChoices == null || !currentChoices.Any())
             {
                 errors.Add($"{questionIdentifier}: Không có lựa chọn nào (A, B, C, D...).");
-                currentQuestion = null; // Hủy câu hỏi này
+                currentQuestion = null; 
                 return;
             }
 
-            // 2. Kiểm tra có đáp án đúng không
             if (string.IsNullOrWhiteSpace(correctAnswerLetter))
             {
                 errors.Add($"{questionIdentifier}: Không có dòng 'Đáp án: [chữ cái]'.");
@@ -1865,7 +1887,6 @@ namespace ITExam.Controllers
                 return;
             }
 
-            // 3. Cập nhật đáp án đúng vào danh sách lựa chọn
             bool foundCorrectAnswer = false;
             var finalChoices = new List<object>();
             int choiceIdCounter = 1;
@@ -1879,7 +1900,7 @@ namespace ITExam.Controllers
                 }
                 finalChoices.Add(new
                 {
-                    Id = choiceIdCounter++, // Đổi Id từ A, B, C... thành 1, 2, 3...
+                    Id = choiceIdCounter++, 
                     NoiDung = choice.NoiDung,
                     LaDapAn = isCorrect
                 });
@@ -1892,11 +1913,9 @@ namespace ITExam.Controllers
                 return;
             }
 
-            // 4. Chuyển đổi lựa chọn sang JSON và thêm câu hỏi
             currentQuestion.ChoiceContent = JsonConvert.SerializeObject(finalChoices);
             questionsToAdd.Add(currentQuestion);
 
-            // 5. Reset để chuẩn bị cho câu hỏi tiếp theo
             currentQuestion = null;
             currentChoices = null;
             correctAnswerLetter = null;

@@ -621,6 +621,7 @@ namespace ITExam.Controllers
                 UserId = user.UserId,
                 StudentId = user.Username,
                 FullName = user.FullName,
+                ClassCode = lopHoc.ClassCode ?? lopHoc.ClassName,
                 Questions = danhSachCauHoi.Select(ch =>
                 {
                     // SỬA LỖI: PHẢI DÙNG .ToString()
