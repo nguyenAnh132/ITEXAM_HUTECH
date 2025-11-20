@@ -6,12 +6,8 @@
 ==================================================================================
 
 ConnectionStrings:
-<<<<<<< HEAD
-	"SQL": "Server=LAPTOP-9F6179FL;Database=ITExamHUTECHDB;Trusted_Connection=True;TrustServerCertificate=True;",  (phat)
-	"SQL": "Server=LAPTOP-KS8584NG;Database=ITExamHUTECHDB;Trusted_Connection=True;TrustServerCertificate=True;", (phuong)
-=======
 	"SQL": "Server=DESKTOP-V590II5\SQLEXPRESS;Database=ITExamHUTECHDB;Trusted_Connection=True;TrustServerCertificate=True;",  (phat)
->>>>>>> main
+	"SQL": "Server=LAPTOP-KS8584NG;Database=ITExamHUTECHDB;Trusted_Connection=True;TrustServerCertificate=True;", (phuong)
 
 ==================================================================================
 
@@ -54,3 +50,19 @@ var accessToken = Request.Cookies["access_token"];
 		TeacherController - cập nhật xóa lịch sử, xóa đề thi trong lớp học, xóa lớp học thì xóa luôn file trên drive
 
 ==================================================================================
+20/11/2025:
+	-Phuong:
+		TeacherController:
+			List_Student_Do_Test: Tối ưu truy vấn lấy dữ liệu
+			Exam: Thêm cờ IsUsedInClass để đánh dấu đề thi trong lớp học
+			ClassExam: Thêm cờ IsDoingExam để đánh dấu có tồn tại ít nhất một lịch sử có submitTime = null (chưa nộp bài)
+			Edit_Exam_Date và Delete_Exam: thêm double check nếu UI chưa kịp cập nhật.
+			Thay đổi: XoaDeThi -> DeleteExamOg (Xóa đề thi gốc, thêm doublecheck nếu UI chưa kịp cập nhật)
+		StudentController:
+			Thêm ConcurrentDictionary vào bộ nhớ code dùng chung để lấy dữ liệu điểm thi nhanh chóng.
+		ExamMonitorHub: 
+			Thay Dictionary thành Cache memory (Thêm thời gian trượt để xóa bộ nhớ chống memory leak)
+		View:
+			List_Student_Do_Test: kiểm tra is submit có bằng datetime.minvalue không (nếu có nghĩa là thí sinh đang thi => disable các nút) 
+			Exam: Kiểm tra cò IsUsedInClass (true = > thông báo, false thì gọi modal xóa)
+			ClassDetail: Kiểm tra cờ IsDoingExam (nếu là true thì gọi modal thông báo, không cho xóa sửa) nếu false thì cho phép xóa sửa, thêm modal xác nhận xóa bằng nhập tên.

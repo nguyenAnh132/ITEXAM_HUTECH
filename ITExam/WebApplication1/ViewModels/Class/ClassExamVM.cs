@@ -17,6 +17,7 @@ namespace ITExam.ViewModels.Class
         public string? ClassName { get; set; }
         public int? UngradedStudentCount { get; set; }
         public bool IsDone { get; set; }
+        public bool IsDoingExam { get; set; }
 
     }
 }

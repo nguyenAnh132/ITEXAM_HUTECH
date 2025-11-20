@@ -215,28 +215,40 @@
                                             @if (DateTime.Now > dt.StartTime && DateTime.Now < dt.EndTime)
                                             {
                                                 <a asp-controller="Teacher" asp-action="Monitoring"
-                                                    asp-route-examId="@dt.ExamId"
-                                                    asp-route-classId="@Model.ClassInfo.ClassId"
-                                                    class="btn btn-sm btn-primary" title="Giám sát" target="_blank">
+                                                   asp-route-examId="@dt.ExamId"
+                                                   asp-route-classId="@Model.ClassInfo.ClassId"
+                                                   class="btn btn-sm btn-primary" title="Giám sát" target="_blank">
                                                     <i class="fa-duotone fa-regular fa-eye"></i>
                                                 </a>
                                             }
 
                                             <button class="border-0 bg-transparent" title="Chỉnh sửa"
-                                                    onclick="openEditModal(@dt.ExamId, '@dt.StartTime.ToString("yyyy-MM-ddTHH:mm")', '@dt.EndTime.ToString("yyyy-MM-ddTHH:mm")')">
+                                                    onclick="handleEditExam(
+                                                        @dt.ExamId,
+                                                        '@dt.ExamName',
+                                                        '@dt.StartTime.ToString("yyyy-MM-ddTHH:mm:ss")',
+                                                        '@dt.EndTime.ToString("yyyy-MM-ddTHH:mm:ss")',
+                                                        @((dt.IsDoingExam).ToString().ToLower())
+                                                    )">
                                                 <i class="fa-regular fa-pen-to-square text-warning fs-5"></i>
                                             </button>
 
                                             <button class="border-0 bg-transparent" title="Xóa"
-                                                    onclick="openDeleteModal(@dt.ExamId)">
+                                                    onclick="handleDeleteExam(
+                                                        @dt.ExamId,
+                                                        '@Html.Raw(dt.ExamName.Replace("'", "\\'"))',
+                                                        '@dt.StartTime.ToString("yyyy-MM-ddTHH:mm:ss")',
+                                                        '@dt.EndTime.ToString("yyyy-MM-ddTHH:mm:ss")',
+                                                            @((dt.IsDoingExam).ToString().ToLower())
+                                                    )">
                                                 <i class="fa-solid fa-trash-can text-danger fs-5"></i>
                                             </button>
 
                                             <div class="form-check form-switch">
                                                 <input class="form-check-input" type="checkbox"
-                                                        id="switch-access-@dt.ExamId"
-                                                        onchange="capNhatAccess(@Model.ClassInfo.ClassId, @dt.ExamId, this.checked)"
-                                                        @(dt.Access ? "checked" : null) />
+                                                       id="switch-access-@dt.ExamId"
+                                                       onchange="capNhatAccess(@Model.ClassInfo.ClassId, @dt.ExamId, this.checked)"
+                                                       @(dt.Access ? "checked" : null) />
                                             </div>
                                         </div>
 
@@ -516,6 +528,55 @@
     </div>
 </div>
 @section Modal {
+    <!--Modal thông báo đang có thí sinh làm bài, không thể xóa hay sửa-->
+    <div class="modal fade" id="warningBusyModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title"><i class="fa-solid fa-triangle-exclamation me-2"></i>Không thể thực hiện</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Đề thi đang trong thời gian mở và <strong>đang có thí sinh làm bài</strong>.</p>
+                    <p class="mb-0">Bạn không thể Chỉnh sửa hoặc Xóa vào lúc này.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đã hiểu</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--Modal xác nhận xóa (nhập tên đề thi để xác nhận xóa)-->
+    <div class="modal fade" id="deleteExamConfirmModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form method="post" asp-action="Delete_Exam" asp-controller="Teacher">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title text-white">Xác nhận xóa đề thi</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="MaDe" id="deleteConfirmMaDe" />
+                        <input type="hidden" name="MaLopHoc" value="@Model.ClassInfo.ClassId" />
+
+                        <p class="text-danger fw-bold">Hành động này không thể hoàn tác! Mọi dữ liệu liên quan tới đề thi này sẽ bị xóa khỏi lớp học!</p>
+                        <p>
+                            Để xóa đề thi <strong><span id="deleteTargetName" class="text-primary"></span></strong>,
+                            vui lòng nhập chính xác tên đề thi vào ô bên dưới:
+                        </p>
+                        <input type="text" class="form-control" id="inputConfirmName" placeholder="Nhập tên đề thi tại đây..." autocomplete="off">
+                        <div id="deleteErrorMsg" class="text-danger small mt-1" style="display:none;">Tên đề thi chưa khớp.</div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-danger" id="btnConfirmDeleteReal" disabled>
+                            <i class="fa-solid fa-trash-can me-1"></i> Xác nhận Xóa
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
     <!-- Modal chỉnh sửa đề thi -->
     <div class="modal fade" id="editExamModal" tabindex="-1" aria-labelledby="editExamModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -530,7 +591,7 @@
                         <input type="hidden" name="MaLopHoc" value="@Model.ClassInfo.ClassId" />
                         <div class="mb-3">
                             <label class="form-label">Thời gian bắt đầu</label>
-                            <input name="StartTime" type="datetime-local" class="form-control" id="editThoiGianBatDau" required readonly />
+                            <input name="StartTime" type="datetime-local" class="form-control" id="editThoiGianBatDau" required />
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Thời gian kết thúc</label>
@@ -958,6 +1019,86 @@
               console.error("Lỗi:", error);
               alert("🚫 Không thể cập nhật: " + error.message);
             });
+        }
+    </script>
+    <script>
+        // Khởi tạo các Modal
+        const warningModal = new bootstrap.Modal(document.getElementById('warningBusyModal'));
+        const deleteConfirmModal = new bootstrap.Modal(document.getElementById('deleteExamConfirmModal'));
+        const editExamModal = new bootstrap.Modal(document.getElementById('editExamModal'));
+
+        // --- Logic Xử lý Xóa ---
+        function handleDeleteExam(examId, examName, startStr, endStr, isBusy) {
+            // Nếu đang có người làm bài (isBusy = true) thì chặn
+            if (isBusy) {
+                warningModal.show();
+                return;
+            }
+
+            openConfirmDeleteModal(examId, examName);
+        }
+
+        // --- Logic Xử lý Sửa ---
+        function handleEditExam(examId, examName, startStr, endStr, isBusy) {
+            if (isBusy) {
+                warningModal.show();
+                return;
+            }
+
+            const start = new Date(startStr);
+            const end = new Date(endStr);
+
+            const fmtDate = (d) => {
+                return formatLocalDateTime(d);
+            };
+
+            document.getElementById('editMaDeInput').value = examId;
+            document.getElementById('editThoiGianBatDau').value = fmtDate(start);
+            document.getElementById('editThoiGianKetThuc').value = fmtDate(end);
+
+            const localNow = fmtDate(new Date());
+
+
+            const inputStart = document.getElementById('editThoiGianBatDau');
+            const inputEnd = document.getElementById('editThoiGianKetThuc');
+
+            const newStart = inputStart.cloneNode(true);
+            inputStart.parentNode.replaceChild(newStart, inputStart);
+
+            newStart.addEventListener('change', function() {
+                 inputEnd.min = this.value;
+                 if(inputEnd.value && inputEnd.value < this.value) {
+                     inputEnd.value = this.value;
+                 }
+            });
+
+            editExamModal.show();
+        }
+
+        function openConfirmDeleteModal(examId, examName) {
+            document.getElementById('deleteConfirmMaDe').value = examId;
+            document.getElementById('deleteTargetName').innerText = examName;
+
+            const inputName = document.getElementById('inputConfirmName');
+            const btnConfirm = document.getElementById('btnConfirmDeleteReal');
+
+            inputName.value = '';
+            inputName.classList.remove('is-invalid', 'is-valid');
+            btnConfirm.disabled = true;
+
+            inputName.oninput = function() {
+                if (this.value.trim() === examName.trim()) {
+                    this.classList.add('is-valid');
+                    this.classList.remove('is-invalid');
+                    btnConfirm.disabled = false;
+                } else {
+                    if (this.value.length > 0) this.classList.add('is-invalid');
+                    this.classList.remove('is-valid');
+                    btnConfirm.disabled = true;
+                }
+            };
+
+            deleteConfirmModal.show();
         }
     </script>
     <script>

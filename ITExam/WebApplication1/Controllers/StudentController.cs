@@ -754,7 +754,6 @@ namespace ITExam.Controllers
         private static string GetScoresKey(string examKey) => $"scores:{examKey}";
         private static readonly TimeSpan CacheSlidingExpiration = TimeSpan.FromHours(3);
 
-        // Helper để lấy/tạo Dictionary điểm (copy từ Hub)
         private ConcurrentDictionary<string, double> GetScores(string examKey)
         {
             return _cache.GetOrCreate(GetScoresKey(examKey), entry =>

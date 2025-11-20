@@ -209,6 +209,7 @@ namespace ITExam.Controllers
                     QuestionCount = ce.Exam.ExamMatrices.Sum(m => m.QuestionCount),
                     Access = ce.Access ?? false,
                     ExamType = ce.Exam.ExamType,
+                    IsDoingExam = ce.Exam.ExamHistories.Any(h => h.ClassId == id && h.SubmitTime == null),
                     UngradedStudentCount =
                         ce.Exam.ExamType == "Tự luận" && ce.Exam.ExamHistories != null
                         ? ce.Exam.ExamHistories
@@ -270,60 +271,60 @@ namespace ITExam.Controllers
         //Lớp học : Danh sách sinh viên đã làm bài
         public async Task<IActionResult> List_Student_Do_Test(int examId, int classId)
         {
-            // Kiểm tra tài khoản giảng viên
             var access_token = Request.Cookies["access_token"];
-            var user = _context.Users.SingleOrDefault(us => us.AccessToken == access_token);
-            if (user == null)
+            if (string.IsNullOrEmpty(access_token)) 
+                return RedirectToAction("Logout", "Auth");
+
+            var user = await _context.Users
+                .AsNoTracking()
+                .AnyAsync(us => us.AccessToken == access_token);
+
+            if (!user)
             {
                 return RedirectToAction("Logout", "Auth");
             }
 
-            var thisClass = await _context.Classes
-            .Include(l => l.ClassDetails)
-            .ThenInclude(st => st.User)
-            .Include(ct => ct.ClassExams)
-            .ThenInclude(dt => dt.Exam)
-            .ThenInclude(ls => ls.ExamHistories)
-            .FirstOrDefaultAsync(l => l.ClassId == classId);
-
-            if (thisClass == null || thisClass.ClassDetails == null || thisClass.ClassExams == null)
-                return NotFound();
-
-            var isExamInClass = thisClass.ClassExams
-                .Any(deThi => deThi.ClassId == classId && deThi.ExamId == examId);
+            var isExamInClass = await _context.ClassExams
+                .AsNoTracking()
+                .AnyAsync(ce => ce.ClassId == classId && ce.ExamId == examId);
 
             if (!isExamInClass)
             {
                 return NotFound("Đề thi không tồn tại trong lớp học này.");
             }
 
-            var danhSachSV = thisClass.ClassDetails
-            .Select(l => l.User)
-            .Where(sv => sv != null)
-            .Select(sv =>
-            {
-                var lichSu = thisClass.ClassExams
-                    .SelectMany(d => d.Exam.ExamHistories)
-                    .FirstOrDefault(ls => ls.UserId == sv.UserId && ls.ExamId == examId && ls.ClassId == classId);
-
-                return lichSu != null ? new StudentSubmissionInClassVM
+            var classInfo = await _context.Classes
+                .AsNoTracking()
+                .Select(c => new Class
                 {
-                    StudentId = sv.Username,
-                    FullName = sv.FullName,
-                    StartTime = lichSu.StartTime,
-                    SubmitTime = lichSu.SubmitTime ?? DateTime.MinValue,
-                    Duration = lichSu.Duration,
-                    Score = lichSu.Score,
-                    ExamHistoryId = lichSu.ExamHistoryId
-                } : null;
-            })
-            .Where(vm => vm != null)
-            .ToList();
+                    ClassId = c.ClassId,
+                    ClassName = c.ClassName,
+                    ClassCode = c.ClassCode
+                })
+                .FirstOrDefaultAsync(c => c.ClassId == classId);
+
+            if (classInfo == null) return NotFound();
+
+            var danhSachSV = await _context.ExamHistories
+                .AsNoTracking()
+                .Where(h => h.ClassId == classId && h.ExamId == examId)
+                .Select(h => new StudentSubmissionInClassVM
+                {
+                    StudentId = h.User.Username, 
+                    FullName = h.User.FullName,
+                    StartTime = h.StartTime,
+                    SubmitTime = h.SubmitTime ?? DateTime.MinValue,
+                    Duration = h.Duration,
+                    Score = h.Score,
+                    ExamHistoryId = h.ExamHistoryId
+                })
+                .OrderByDescending(s => s.Score)
+                .ToListAsync();
 
             var viewModel = new StudentSubmissionList
             {
-                ClassInfo = thisClass,
-                Students = danhSachSV!
+                ClassInfo = classInfo, 
+                Students = danhSachSV
             };
 
             return View(viewModel);
@@ -803,6 +804,15 @@ namespace ITExam.Controllers
         {
             if (ModelState.IsValid)
             {
+                var isBusy = await _context.ExamHistories
+                        .AnyAsync(h => h.ExamId == maDe && h.ClassId == maLopHoc && h.SubmitTime == null);
+
+                if (isBusy)
+                {
+                    TempData["ErrorMessage"] = "CẢNH BÁO: Có thí sinh đang làm bài! Không thể thay đổi thời gian lúc này.";
+                    return RedirectToAction("ClassDetail", new { id = maLopHoc });
+                }
+
                 var classExam = await _context.ClassExams
                     .FirstOrDefaultAsync(x => x.ExamId == maDe);
                 if (classExam != null)
@@ -828,6 +838,16 @@ namespace ITExam.Controllers
         {
             if (!ModelState.IsValid)
                 return RedirectToAction("ClassDetail", new { id = maLopHoc });
+
+            bool isDoingExam = await _context.ExamHistories
+                    .AsNoTracking()
+                    .AnyAsync(h => h.ExamId == maDe && h.ClassId == maLopHoc && h.SubmitTime == null); 
+
+            if (isDoingExam)
+            {
+                TempData["ErrorMessage"] = "CẢNH BÁO: Đang có thí sinh làm bài! Không thể xóa lúc này.";
+                return RedirectToAction("ClassDetail", new { id = maLopHoc });
+            }
 
             var classExamInfo = await _context.ClassExams.AsNoTracking()
                 .Where(dt => dt.ExamId == maDe && dt.ClassId == maLopHoc)
@@ -896,46 +916,58 @@ namespace ITExam.Controllers
 
         //Đề thi : Xóa đề thi khỏi database
         [HttpPost]
-        public async Task<IActionResult> XoaDeThi(int examId) //Sua sau
+        public async Task<IActionResult> DeleteExamOg(int examId)
         {
-            var exam = await _context.Exams
-                .Include(e => e.ExamHistories)
-                .ThenInclude(h => h.StudentAnswers)
-                .Include(e => e.ExamMatrices)
-                .Include(e => e.ClassExams)
-                .FirstOrDefaultAsync(e => e.ExamId == examId);
+            //Check đề thi đã có trong lớp nào chưa
+            bool isUsedInClass = await _context.ClassExams
+                .AnyAsync(ce => ce.ExamId == examId);
 
-            if (exam == null)
+            if (isUsedInClass)
+            {
+                TempData["ErrorMessage"] = "Đề thi đang được sử dụng trong lớp học. Không thể xóa!";
+                return RedirectToAction("Exam");
+            }
+
+            bool examExists = await _context.Exams.AnyAsync(e => e.ExamId == examId);
+            if (!examExists)
             {
                 return NotFound("Không tìm thấy đề thi.");
             }
 
-            if (exam.ExamHistories != null)
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
             {
-                foreach (var history in exam.ExamHistories)
-                {
-                    if (history.StudentAnswers != null)
-                    {
-                        _context.StudentAnswers.RemoveRange(history.StudentAnswers);
-                    }
-                }
+                await _context.StudentAnswers
+                    .Where(sa => _context.ExamHistories
+                        .Where(eh => eh.ExamId == examId)
+                        .Select(eh => eh.ExamHistoryId)
+                        .Contains(sa.ExamHistoryId))
+                    .ExecuteDeleteAsync();
 
-                _context.ExamHistories.RemoveRange(exam.ExamHistories);
+                await _context.ExamHistories
+                    .Where(eh => eh.ExamId == examId)
+                    .ExecuteDeleteAsync();
+
+                await _context.ExamMatrices
+                    .Where(em => em.ExamId == examId)
+                    .ExecuteDeleteAsync();
+
+                await _context.Exams
+                    .Where(e => e.ExamId == examId)
+                    .ExecuteDeleteAsync();
+
+                await transaction.CommitAsync();
+
+                TempData["SuccessMessage"] = "Đã xóa đề thi và toàn bộ dữ liệu liên quan thành công!";
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                TempData["ErrorMessage"] = "Lỗi hệ thống: " + ex.Message;
             }
 
-            if (exam.ExamMatrices != null)
-                _context.ExamMatrices.RemoveRange(exam.ExamMatrices);
-
-            if (exam.ClassExams != null)
-                _context.ClassExams.RemoveRange(exam.ClassExams);
-
-            _context.Exams.Remove(exam);
-            await _context.SaveChangesAsync();
-
-            TempData["SuccessMessage"] = "Đã xóa đề thi thành công!";
             return RedirectToAction("Exam");
         }
-
 
         //Đề thi : Chi tiết lịch sử làm bài của sinh viên - OK
         public async Task<IActionResult> Exam_History_Detail(int id)
