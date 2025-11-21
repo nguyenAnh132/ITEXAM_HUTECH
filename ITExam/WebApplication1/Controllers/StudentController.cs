@@ -406,11 +406,54 @@ namespace ITExam.Controllers
                     .ToListAsync();
             }
 
-            var danhSachCauHoi = _context.QuestionBanks.AsNoTracking()
-                .Where(ch => chiTietBaiLamList.Select(c => c.QuestionId).Contains(ch.QuestionId))
-                .ToList();
+            var danhSachCauHoi = (from ct in chiTietBaiLamList
+                      join ch in _context.QuestionBanks.AsNoTracking()
+                      on ct.QuestionId equals ch.QuestionId
+                      select ch)
+                      .ToList();
 
             var lopHoc = await _context.Classes.FindAsync(maLop);
+
+            // --- START: LOGIC ĐẢO THỨ TỰ ĐÁP ÁN ---
+
+            // 1. Định nghĩa Key lưu thứ tự đáp án
+            string orderKey = $"examOptionOrder:{maDe}:{user.UserId}";
+            var orderCacheData = await _redis.GetStringAsync(orderKey);
+
+            Dictionary<int, List<int>> shuffleMap; // Key: QuestionId, Value: List<ChoiceId> đã đảo
+
+            if (string.IsNullOrEmpty(orderCacheData))
+            {
+                // Nếu chưa có (lần đầu vào thi): Tạo mới và Random
+                shuffleMap = new Dictionary<int, List<int>>();
+                var random = new Random();
+
+                foreach (var ch in danhSachCauHoi)
+                {
+                    // Lấy list ChoiceId gốc
+                    var choices = Newtonsoft.Json.JsonConvert.DeserializeObject<List<QuestionOptionVM>>(ch.ChoiceContent);
+                    if (choices != null && choices.Any())
+                    {
+                        // Random thứ tự ID và lưu vào map
+                        var shuffledIds = choices.Select(c => c.ChoiceId)
+                                                 .OrderBy(x => random.Next())
+                                                 .ToList();
+                        shuffleMap[ch.QuestionId] = shuffledIds;
+                    }
+                }
+
+                // Lưu vào Redis (Thời gian hết hạn = thời gian làm bài + buffer 30p)
+                await _redis.SetStringAsync(orderKey, JsonSerializer.Serialize(shuffleMap), new DistributedCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(deThi.Duration + 30)
+                });
+            }
+            else
+            {
+                // Nếu đã có (F5 hoặc vào lại): Lấy ra dùng
+                shuffleMap = JsonSerializer.Deserialize<Dictionary<int, List<int>>>(orderCacheData);
+            }
+            // --- END: LOGIC ĐẢO THỨ TỰ ĐÁP ÁN ---
 
             // Load câu trả lời trắc nghiệm từ Redis
             var key = $"multiChoiceAns:{maDe}:{user.UserId}";
@@ -440,22 +483,49 @@ namespace ITExam.Controllers
                 UserId = user.UserId,
                 StudentId = user.Username,
                 FullName = user.FullName,
-                Questions = danhSachCauHoi.Select(ch => new MultipleChoiceQuestionVM
+                Questions = danhSachCauHoi.Select(ch =>
                 {
-                    QuestionId = ch.QuestionId,
-                    QuestionContent = ch.QuestionContent,
-                    QuestionType = ch.QuestionType,
-                    // Load lại giá trị cho textarea nếu là câu hỏi loại 4 (điền từ)
-                    FillInAns = ch.QuestionType == "4" && luuCauTraLoiTuLuan.ContainsKey(ch.QuestionId)
-                        ? luuCauTraLoiTuLuan[ch.QuestionId]
-                        : string.Empty,
-                    Choices = Newtonsoft.Json.JsonConvert.DeserializeObject<List<QuestionOptionVM>>(ch.ChoiceContent)
-                        .Select(lc => new ChoiceVM
+                    // Deserialize các lựa chọn gốc
+                    var originalChoices = Newtonsoft.Json.JsonConvert.DeserializeObject<List<QuestionOptionVM>>(ch.ChoiceContent);
+
+                    // Logic sắp xếp lại dựa trên shuffleMap
+                    List<ChoiceVM> finalChoices;
+
+                    if (shuffleMap.ContainsKey(ch.QuestionId))
+                    {
+                        var orderList = shuffleMap[ch.QuestionId]; // List ID đã random: [3, 1, 2]
+
+                        // Join hoặc OrderBy để sắp xếp originalChoices theo thứ tự của orderList
+                        finalChoices = originalChoices
+                            .OrderBy(c => orderList.IndexOf(c.ChoiceId))
+                            .Select(lc => new ChoiceVM
+                            {
+                                ChoiceId = lc.ChoiceId,
+                                ChoiceContent = lc.ChoiceContent,
+                                IsSelected = luuLuaChon.ContainsKey(ch.QuestionId) && luuLuaChon[ch.QuestionId].Contains(lc.ChoiceId)
+                            }).ToList();
+                    }
+                    else
+                    {
+                        // Fallback nếu không tìm thấy trong map (trường hợp hiếm)
+                        finalChoices = originalChoices.Select(lc => new ChoiceVM
                         {
                             ChoiceId = lc.ChoiceId,
                             ChoiceContent = lc.ChoiceContent,
                             IsSelected = luuLuaChon.ContainsKey(ch.QuestionId) && luuLuaChon[ch.QuestionId].Contains(lc.ChoiceId)
-                        }).ToList()
+                        }).ToList();
+                    }
+
+                    return new MultipleChoiceQuestionVM
+                    {
+                        QuestionId = ch.QuestionId,
+                        QuestionContent = ch.QuestionContent,
+                        QuestionType = ch.QuestionType,
+                        FillInAns = ch.QuestionType == "4" && luuCauTraLoiTuLuan.ContainsKey(ch.QuestionId)
+                            ? luuCauTraLoiTuLuan[ch.QuestionId]
+                            : string.Empty,
+                        Choices = finalChoices
+                    };
                 }).ToList(),
                 ClassId = maLop,
                 ClassName = lopHoc.ClassName
@@ -960,6 +1030,8 @@ namespace ITExam.Controllers
             // Xóa Redis
             await _redis.RemoveAsync(multiChoiceKey);
             await _redis.RemoveAsync(essayKey);
+            string orderKey = $"examOptionOrder:{maDe}:{user.UserId}";
+            await _redis.RemoveAsync(orderKey);
 
             try
             {
