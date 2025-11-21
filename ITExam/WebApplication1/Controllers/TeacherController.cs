@@ -492,6 +492,13 @@ namespace ITExam.Controllers
                 .FirstOrDefaultAsync();
             if (userId == 0)
                 return RedirectToAction("Logout", "Auth");
+            //Kiểm tra thời gian làm bài >0 và < 300 phút
+            if (deThiMoi.Duration < 1 || deThiMoi.Duration > 299)
+            {
+                TempData["ErrorMessage"] = "Thời gian làm bài phải từ 1 đến 299 phút.";
+                // Quay lại trang tạo đề (hoặc view hiện tại của bạn)
+                return RedirectToAction("Exam_Create");
+            }
 
             var nganHangDe = await _context.ExamBanks.AsNoTracking().FirstOrDefaultAsync(n => n.ExamBankId == deThiMoi.ExamBankId);
             if (nganHangDe == null)
@@ -609,6 +616,13 @@ namespace ITExam.Controllers
             {
                 return NotFound("Không tìm thấy đề thi.");
             }
+
+            //Kiểm tra thời gian làm bài >0 và < 300 phút
+            if (ThoiGianLamBai < 1 || ThoiGianLamBai > 299)
+            {
+                TempData["ErrorMessage"] = "Thời gian làm bài phải từ 1 đến 299 phút.";
+                return RedirectToAction("Exam_Create_Matrix", new { id = MaDe });
+            }
             deThi.ExamName = TenDeThi;
             deThi.Duration = ThoiGianLamBai;
 
@@ -663,6 +677,11 @@ namespace ITExam.Controllers
         [HttpPost]
         public async Task<IActionResult> Update_Exam([FromBody] ExamMatrixVM model)
         {
+            //Kiểm tra thời gian làm bài >0 và < 300 phút
+            if (model.Duration < 1 || model.Duration > 299)
+            {
+                return Json(new { success = false, message = "Thời gian làm bài phải từ 1 đến 299 phút." });
+            }
             //Truy vấn đề thi theo ID
             var exam = await _context.Exams.FirstOrDefaultAsync(d => d.ExamId == model.ExamId);
             if (exam == null)
