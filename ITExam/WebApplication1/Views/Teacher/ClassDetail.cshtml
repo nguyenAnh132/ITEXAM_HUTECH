@@ -610,7 +610,7 @@
                     </div>
                     <ul>
                         <strong class="text-danger">Lưu ý:</strong>
-                        <li>Thời gian mở đề phải <strong>lớn hơn thời gian làm bài + 5 phút</strong>.</li>
+                        <li>Thời gian mở đề phải <strong>lớn hơn thời gian làm bài + 1 phút</strong>.</li>
                         <li>Không thể xóa hoặc chỉnh sửa nếu có thí sinh đang làm bài thi.</li>
                         <li>Thí sinh không thể làm bài thi ngoài thời gian mở đề.</li>
                     </ul>
@@ -674,7 +674,7 @@
                     </div>
                     <ul>
                         <strong class="text-danger">Lưu ý:</strong>
-                        <li>Thời gian mở đề phải <strong>lớn hơn thời gian làm bài + 5 phút</strong>.</li>
+                        <li>Thời gian mở đề phải <strong>lớn hơn thời gian làm bài + 1 phút</strong>.</li>
                         <li>Không thể xóa hoặc chỉnh sửa nếu có thí sinh đang làm bài thi.</li>
                         <li>Thí sinh không thể làm bài thi ngoài thời gian mở đề.</li>
                     </ul>
@@ -856,7 +856,7 @@
 
                 document.getElementById("formAddExamToClass").reset();
                 document.getElementById("addPlaceholderDuration").innerText =
-                    `Gợi ý: Tối thiểu ${thoiGianLamBai + 5} phút`;
+                    `Gợi ý: Tối thiểu ${thoiGianLamBai + 1} phút`;
 
                 new bootstrap.Modal(document.getElementById('modalGanDeThi')).show();
             }
@@ -883,7 +883,7 @@
                 const diffMinutes = Math.round((end - start) / 60000);
                 document.getElementById('editThoiGianMoDe').value = diffMinutes > 0 ? diffMinutes : "";
                 document.getElementById("editPlaceholderDuration").innerText =
-                    `Gợi ý: Tối thiểu ${duration + 5} phút`;
+                    `Gợi ý: Tối thiểu ${duration + 1} phút`;
 
                 new bootstrap.Modal(document.getElementById('editExamModal')).show();
             }
@@ -976,7 +976,7 @@
                     }
 
                     if (!isNaN(examDuration) && examDuration > 0) {
-                        const minRequired = examDuration + 5;
+                        const minRequired = examDuration + 1;
                         if (duration < minRequired) {
                             e.preventDefault();
                             alert(`Khoảng thời gian mở đề quá ngắn!\nVui lòng nhập tối thiểu ${minRequired}`);

@@ -17,15 +17,6 @@ ConnectionStrings:
 		ViewModels - Thêm EditClassVM
         TeacherController - OK- Xem lại
 
-
-==================================================================================
-
-Đăng: Làm page hướng dẫn, tối ngày mai
-Tú Anh: Teacher tối ưu
-Phát: Student tối ưu
-Phương: Cải tiến giám sát
-Tòng: Thiết kế luồng cho nghiệp vụ xóa ngân hàng đề, lớp học, đề thi, lịch sử làm bài,... (Mô tả file word)
-
 ==================================================================================
 
 var accessToken = Request.Cookies["access_token"];
@@ -70,3 +61,20 @@ var accessToken = Request.Cookies["access_token"];
 	- Phuong:
 		View:
 			Teacher/ClassDetail: Thêm ràng buộc, tính thời gian, hiển thị khoảng thời gian mở đề trong modal chỉnh sửa đề thi trong lớp học và modal thêm đề thi vào lớp học
+
+
+			===========================================
+
+1. Các Modal chưa thống nhất màu chữ, màu nền. (Màu xóa , màu thông báo, màu thông tin, màu chữ)
+
+2. Sửa lại upload ảnh, kiểm tra hiển thị trong ngân hàng đề, chi tiết ngân hàng đề, hiển thị khi vào thi, trong giám sát, lịch sử thi,
+
+3. Giám sát sửa đồng bộ với upload ảnh
+
+4. Tối ưu
+
+5. Đóng gói
+
+6. Nút tạo ngân hàng đề mới, Upload file chưa link
+
+7. Nửa ngày test
