@@ -4,6 +4,31 @@
     Layout = "_TeacherLayout";
     ViewData["Title"] = "Chấm bài tự luận";
 }
+
+@section Style {
+    <style>
+        table td img,
+        table td figure.image img {
+            max-width: 300px !important;
+            height: auto !important; 
+            display: block;
+            margin: 5px 0;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            cursor: pointer; 
+        }
+
+        table td figure.image {
+            max-width: 100%;
+            margin: 0;
+        }
+
+        table td {
+            vertical-align: top;
+        }
+    </style>
+}
+
 <div class="px-xl-5 px-md-4 px-2">
     <div class="row mx-0 justify-content-center pt-2">
         <div class="col-lg-6">

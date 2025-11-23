@@ -32,6 +32,7 @@
 
   <ItemGroup>
     <Folder Include="ViewModels\ExamBank\NewVM\" />
+    <Folder Include="wwwroot\uploads\" />
   </ItemGroup>
 
 </Project>

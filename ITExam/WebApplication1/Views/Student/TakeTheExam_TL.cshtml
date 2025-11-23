@@ -54,15 +54,16 @@
                             @foreach (var cauHoi in Model.Questions)
                             {
                                 <div class="mb-4">
-                                    @{
-                                        cauHoi.QuestionContent = @cauHoi.QuestionContent.Replace("<p>", "").Replace("</p>", "");
-                                    }
-                                    <label for="tuLuan_@cauHoi.QuestionId" class="form-label">
-                                        <strong>Câu @stt:</strong> @cauHoi.QuestionContent
+                                    <label for="tuLuan_@cauHoi.QuestionId" class="form-label w-100">
+                                        <strong>Câu @stt:</strong>
+                                        <div class="question-content mt-2">
+                                            @Html.Raw(cauHoi.QuestionContent)
+                                        </div>
                                     </label>
+
                                     <textarea class="form-control" id="tuLuan_@cauHoi.QuestionId"
-                                              name="tuLuan_@cauHoi.QuestionId"
-                                              rows="5"></textarea>
+                                          name="tuLuan_@cauHoi.QuestionId"
+                                          rows="5"></textarea>
                                 </div>
                                 stt++;
                             }
@@ -322,10 +323,8 @@
       <!-- Upload file tự luận-->
     <script>
 
-        // Dán URL Web App của bạn từ Google Apps Script vào đây
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxSlibSTGempy47D9mvSPHLqxyOksCIssK965mSwEVR49EwjZ9M8AUyCtHzGsPDu8FP/exec";
 
-        // Hàm helper để đọc file sang Base64
         function readFileAsBase64(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -335,10 +334,8 @@
             });
         }
 
-        // 1. Lắng nghe sự kiện click trên nút "Nộp bài ngay" (nút đỏ TRONG MODAL)
         document.querySelector(".modal-footer .btn-danger[type='submit']").addEventListener("click", async function (e) {
 
-            // 2. NGĂN CHẶN form submit ngay lập tức
             e.preventDefault();
 
             if (!isEditorReady) {
@@ -346,12 +343,10 @@
                 return;
             }
 
-            // Vô hiệu hóa nút để tránh click nhiều lần
             const submitButton = e.target;
             submitButton.disabled = true;
             submitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Đang nộp...';
 
-            // 3. Thu thập lại dữ liệu hiện tại từ tất cả CKEditor
             const answers = {};
             document.querySelectorAll("textarea[id^='tuLuan_']").forEach(textarea => {
                 const editorInstance = textarea.ckeditorInstance;
@@ -361,7 +356,6 @@
                 }
             });
 
-            // 4. Gửi về Redis lần cuối cùng (ĐẢM BẢO LƯU BÀI)
             try {
                 submitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Đang lưu bài viết...';
                 const resp = await fetch('/Student/SaveEssayAnswer', {
@@ -376,7 +370,7 @@
 
                 if (!data?.success) {
                     alert("Có lỗi khi lưu bài làm. Vui lòng thử lại.");
-                    throw new Error("Lỗi lưu Redis"); // Dừng thực thi
+                    throw new Error("Lỗi lưu Redis"); 
                 }
             } catch (error) {
                 alert("Không thể kết nối đến máy chủ để lưu bài. Vui lòng kiểm tra mạng và thử lại.");
@@ -386,7 +380,6 @@
                 return;
             }
 
-            // 5. Xử lý Upload file lên Google Drive (NẾU CÓ)
             let UploadedFileId = null;
             const fileInput = document.getElementById('formFileModal');
 
@@ -400,8 +393,8 @@
                         filename: file.name,
                         filetype: file.type,
                         filedata: base64File,
-                        studentId: "@Model.StudentId", // Gửi thêm thông tin
-                        examId: "@Model.ExamId",     // để Apps Script đặt tên file
+                        studentId: "@Model.StudentId", 
+                        examId: "@Model.ExamId",    
                         classCode: "@Model.ClassCode",
                         examName: "@Html.Raw(Model.ExamName)"
                     };
@@ -430,7 +423,6 @@
                 }
             }
 
-            // 6. Gửi tín hiệu (SignalR) lên Hub giám sát
             try {
                 if (window.ITExamEssay?.pushEssayDelta) {
                      try { await window.ITExamEssay.pushEssayDelta(); } catch {}
@@ -440,24 +432,22 @@
                     try {
                         await connection.invoke(
                             "SubmitExam",
-                            examId, // Biến 'examId' đã định nghĩa ở script SignalR
+                            examId, 
                             classId,
                             studentId,
                             studentName
                         );
                     } catch (err) {
-                        console.warn("SubmitExam hub error:", err); // Lỗi Hub không chặn nộp bài
+                        console.warn("SubmitExam hub error:", err);
                     }
                 }
             } catch(hubError) {
                  console.warn("Lỗi khi gửi SignalR:", hubError);
             }
 
-            // 7. SAU KHI MỌI THỨ HOÀN TẤT -> Gửi URL về Backend để hoàn tất nộp bài
             try {
                 submitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Hoàn tất...';
 
-                // Thay vì form.submit(), chúng ta dùng fetch
                 const finalSubmitResp = await fetch('@Url.Action("ExamResult_TL", "Student")', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -544,11 +534,28 @@
             document.querySelectorAll("textarea[id^='tuLuan_']").forEach(textarea => {
               const ed = textarea.ckeditorInstance;
               const qid = textarea.id.split("_")[1];
-              const label = document.querySelector(`label[for='${textarea.id}']`);
-              let qContent = (label?.innerText || "").trim().replace(/^Câu\s+\d+\s*:\s*/i, "");
-              const answerHtml = ed ? ed.getData() : (textarea.value || "");
-              const answerId = `essay:${qid}`;
-              items.push({ questionId: qid, questionContent: qContent, answerId, answerContent: answerHtml });
+                const label = document.querySelector(`label[for='${textarea.id}']`);
+
+                const contentDiv = label ? label.querySelector('.question-content') : null;
+
+                let qContent = "";
+                if (contentDiv) {
+                    qContent = contentDiv.innerHTML;
+                } else {
+                    let tempHtml = label ? label.innerHTML : "";
+                    qContent = tempHtml.replace(/<strong>\s*Câu\s+\d+\s*:\s*<\/strong>/i, "").trim();
+                }
+                // --------------------
+
+                const answerHtml = ed ? ed.getData() : (textarea.value || "");
+                const answerId = `essay:${qid}`;
+
+                items.push({
+                    questionId: qid,
+                    questionContent: qContent, // Giờ đây biến này đã chứa thẻ <img src="...">
+                    answerId,
+                    answerContent: answerHtml
+                });
             });
             return items;
           }

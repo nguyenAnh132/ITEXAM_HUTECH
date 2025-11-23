@@ -50,13 +50,25 @@ var accessToken = Request.Cookies["access_token"];
 			List_Student_Do_Test: kiểm tra is submit có bằng datetime.minvalue không (nếu có nghĩa là thí sinh đang thi => disable các nút) 
 			Exam: Kiểm tra cò IsUsedInClass (true = > thông báo, false thì gọi modal xóa)
 			ClassDetail: Kiểm tra cờ IsDoingExam (nếu là true thì gọi modal thông báo, không cho xóa sửa) nếu false thì cho phép xóa sửa, thêm modal xác nhận xóa bằng nhập tên.
+
+==================================================================================
+
 21/11/2025:
 	- Phuong:
 		View:
 			Teacher/ClassDetail: Thêm ràng buộc, tính thời gian, hiển thị khoảng thời gian mở đề trong modal chỉnh sửa đề thi trong lớp học và modal thêm đề thi vào lớp học
 
-
-			===========================================
+===========================================
+23/11/2025:
+	- Phuong:
+		+Controller:
+			UploadController:
+				Sửa upload ảnh vào web server.
+		+View:
+			Student/TakeTheExam_TL: Sửa hiển thị html raw
+			Teacher/Grading_The_Exam_Of_Student: Thêm đoạn css xử lý nếu câu hỏi tự luận chứa ảnh.
+		+Service:
+			Thêm FileCleanUpService để dọn dẹp ảnh dư thừa trên web server.
 
 1. Các Modal chưa thống nhất màu chữ, màu nền. (Màu xóa , màu thông báo, màu thông tin, màu chữ)
 

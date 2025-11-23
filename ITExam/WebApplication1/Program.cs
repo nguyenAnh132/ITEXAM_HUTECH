@@ -21,11 +21,11 @@ builder.Services.AddStackExchangeRedisCache(options =>
 builder.Services.AddHttpClient();
 builder.Services.AddSignalR(options =>
 {
-    options.MaximumReceiveMessageSize = 10 * 1024 * 1024;
-    options.KeepAliveInterval = TimeSpan.FromSeconds(15);
-    options.ClientTimeoutInterval = TimeSpan.FromSeconds(60);
-});
+    options.MaximumReceiveMessageSize = 512 * 1024;
+    options.EnableDetailedErrors = true;
+}); 
 
+builder.Services.AddHostedService<ITExam.Services.FileCleanupService>();
 builder.Services.AddTransient<EmailService>();
 
 builder.Services.AddHangfire(x =>

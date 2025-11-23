@@ -317,15 +317,6 @@
                  editors[editorId] = editor;
              }).catch(error => console.error(error));
          }
-         //document.addEventListener("DOMContentLoaded", () => {
-         //     ClassicEditor.create(document.querySelector('#QuestionContent'), {
-         //         simpleUpload: {
-         //             uploadUrl: '/Upload/UploadImage',
-         //         }
-         //     }).then(editor => {
-         //             editors['QuestionContent'] = editor;
-         //         }).catch(console.error);
-         // });
 
          function removeAnswer(index) {
              const div = document.getElementById(`answer_${index}`);
@@ -531,20 +522,27 @@
 
         // Cập nhật sự kiện submit form để bao gồm validation
         document.addEventListener("DOMContentLoaded", function() {
-            const form = document.querySelector("form[asp-action='Exam_Bank_Add_Question_MultipleChoice']");
+            const form = document.querySelector("form[asp-action='Exam_Bank_Add_Question_MultipleChoice']") || document.querySelector("#editExamForm"); 
+
             if (form) {
                 form.addEventListener("submit", function(e) {
-                    // Đảm bảo tất cả nội dung CKEditor được cập nhật trước khi gửi
+
+                    const btnSubmit = form.querySelector('button[type="submit"]');
+
                     for (let editorId in editors) {
                         if (editors[editorId]) {
                             editors[editorId].updateSourceElement();
                         }
                     }
 
-                    // Kiểm tra validation cho câu hỏi điền từ
-                    if (!validateFillInBlankQuestion()) {
-                        e.preventDefault();
+                    if (typeof validateFillInBlankQuestion === "function" && !validateFillInBlankQuestion()) {
+                        e.preventDefault(); 
                         return false;
+                    }
+                    if(btnSubmit) {
+
+                         btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang lưu...';
+                         btnSubmit.style.pointerEvents = 'none';
                     }
                 });
             }
@@ -557,7 +555,8 @@
 
             // Gán giá trị cho các input
             if (editors['QuestionContent']) {
-                editors['QuestionContent'].setData(question.questionContent || "");
+                const contentData = question.questionContent || "";
+                editors['QuestionContent'].setData(contentData);
             }
 
             document.getElementById("QuestionType").value = question.questionType || "";
