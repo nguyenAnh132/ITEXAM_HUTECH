@@ -533,9 +533,9 @@
     <div class="modal fade" id="warningBusyModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header bg-warning text-dark">
-                    <h5 class="modal-title"><i class="fa-solid fa-triangle-exclamation me-2"></i>Không thể thực hiện</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title text-white"><i class="fa-solid fa-triangle-exclamation me-2"></i>Không thể thực hiện</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <p>Đề thi đang trong thời gian mở và <strong>đang có thí sinh làm bài</strong>.</p>
@@ -552,9 +552,9 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <form method="post" asp-action="Delete_Exam" asp-controller="Teacher">
-                    <div class="modal-header bg-danger text-white">
+                    <div class="modal-header bg-danger">
                         <h5 class="modal-title text-white">Xác nhận xóa đề thi</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         <input type="hidden" name="MaDe" id="deleteConfirmMaDe" />
@@ -578,14 +578,14 @@
             </div>
         </div>
     </div>
-    <!-- Modal chỉnh sửa đề thi -->
+    <!-- Modal chỉnh sửa ngày của đề thi -->
     <div class="modal fade" id="editExamModal" tabindex="-1" aria-labelledby="editExamModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <form method="post" asp-action="Edit_Exam_Date" asp-controller="Teacher" id="formEditExam">
-                    <div class="modal-header bg-primary text-white">
+                    <div class="modal-header bg-primary">
                         <h5 class="modal-title text-white" id="editExamModalLabel">Chỉnh sửa ngày thi</h5>
-                        <button type="button" class="btn-close bg-white" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Đóng"></button>
                     </div>
                     <div class="modal-body">
                         <input type="hidden" name="MaDe" id="editMaDeInput" />
@@ -638,7 +638,7 @@
                         <p>Bạn có chắc chắn muốn xóa đề thi này không?</p>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                        <button type="button" class="btn" style="background-color: #6c757d !important; border-color: #6c757d !important; color: white !important;" data-bs-dismiss="modal">Hủy</button>
                         <button type="submit" class="btn btn-danger">Xóa</button>
                     </div>
                 </form>
@@ -650,9 +650,9 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <form asp-action="Add_Exam_To_Class" asp-controller="Teacher" method="post" id="formAddExamToClass">
-                    <div class="modal-header bg-primary text-white">
-                        <h5 class="modal-title" id="modalGanDeThiLabel">Thêm đề thi vào lớp học</h5>
-                        <button type="button" class="btn-close bg-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <div class="modal-header bg-primary">
+                        <h5 class="modal-title text-white" id="modalGanDeThiLabel">Thêm đề thi vào lớp học</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         <input type="hidden" name="maLopHoc" value="@Model.ClassInfo.ClassId" />
@@ -679,7 +679,7 @@
                         <li>Thí sinh không thể làm bài thi ngoài thời gian mở đề.</li>
                     </ul>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                        <button type="button" class="btn" style="background-color: #6c757d !important; border-color: #6c757d !important; color: white !important;" data-bs-dismiss="modal">Hủy</button>
                         <button type="submit" class="btn btn-primary">Xác nhận</button>
                     </div>
                 </form>
@@ -696,12 +696,12 @@
          aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
+                <div class="modal-header bg-primary">
                     <h1 class="modal-title fs-5 text-white" id="staticBackdropLabel">
                         THÊM ĐỀ THI
                     </h1>
                     <button type="button"
-                            class="btn-close bg-white"
+                            class="btn-close btn-close-white"
                             data-bs-dismiss="modal"
                             aria-label="Close"></button>
                 </div>
@@ -781,7 +781,7 @@
                             </div>
 
                             <div class="test_item_action ms-3">
-                                <button class="btn btn-info">
+                                <button class="btn btn-success">
                                     Đã thêm
                                 </button>
                             </div>
@@ -796,9 +796,9 @@
     <div class="modal fade" id="logStatsModal" tabindex="-1" aria-labelledby="logStatsModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title" id="logStatsModalLabel">Thống kê hoạt động</h5>
-                    <button type="button" class="btn-close bg-white" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                <div class="modal-header bg-primary">
+                    <h5 class="modal-title text-white" id="logStatsModalLabel">Thống kê hoạt động</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Đóng"></button>
                 </div>
                 <div class="modal-body modal-body-scrollable">
                     <canvas id="logStatsChart" height="300"></canvas>
@@ -810,9 +810,9 @@
     <div class="modal fade" id="deleteLogsModal" tabindex="-1" aria-labelledby="deleteLogsModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title" id="deleteLogsModalLabel">Xóa nhật ký bài làm</h5>
-                    <button type="button" class="btn-close bg-white" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                <div class="modal-header bg-danger">
+                    <h5 class="modal-title text-white" id="deleteLogsModalLabel">Xóa nhật ký bài làm</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Đóng"></button>
                 </div>
                 <div class="modal-body">
                     <div class="d-flex justify-content-between align-items-center mb-2">
@@ -835,7 +835,7 @@
                 <div class="modal-footer">
                     <input type="hidden" id="deleteLogsCurrentStuId" />
                     <input type="hidden" id="deleteLogsClassId" value="@Model.ClassInfo.ClassId" />
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn" style="background-color: #6c757d !important; border-color: #6c757d !important; color: white !important;" data-bs-dismiss="modal">Hủy</button>
                     <button type="button" id="btnConfirmDeleteLogs" class="btn btn-danger" disabled>
                         <i class="fa-solid fa-trash-can me-1"></i> Xác nhận xóa
                     </button>

@@ -120,9 +120,9 @@
     <div class="modal fade" id="deleteClassModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-danger">
-                <div class="modal-header bg-danger text-white">
+                <div class="modal-header bg-danger">
                     <h5 class="modal-title text-white">Xác nhận xóa lớp học</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Đóng"></button>
                 </div>
                 <div class="modal-body">
                     <p>Bạn có chắc chắn muốn xóa lớp học <strong id="tenLopXoa" class="text-danger"></strong> không?</p>
@@ -142,7 +142,7 @@
                 <div class="modal-footer">
                     <form method="post" id="formXoaLop" asp-controller="Teacher" asp-action="DeleteClass">
                         <input type="hidden" name="maLopHoc" id="maLopHocXoa" />
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                        <button type="button" class="btn btn-secondary" style="background-color: #6c757d !important; border-color: #6c757d !important; color: white !important;" data-bs-dismiss="modal">Hủy</button>
                         <button type="submit" class="btn btn-danger" id="btnConfirmDelete" disabled>
                             Xác nhận xóa
                         </button>
@@ -166,7 +166,7 @@
                         THÊM LỚP HỌC
                     </h1>
                     <button type="button"
-                            class="btn-close bg-white"
+                            class="btn-close btn-close-white"
                             data-bs-dismiss="modal"
                             aria-label="Close"></button>
                 </div>
@@ -205,12 +205,12 @@
          aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
+                <div class="modal-header bg-primary">
                     <h1 class="modal-title fs-5 text-white" id="staticBackdropLabel">
                         SỬA THÔNG TIN LỚP HỌC
                     </h1>
                     <button type="button"
-                            class="btn-close bg-white"
+                            class="btn-close btn-close-white"
                             data-bs-dismiss="modal"
                             aria-label="Close"></button>
                 </div>

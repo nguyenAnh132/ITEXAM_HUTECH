@@ -140,17 +140,17 @@ referrerpolicy="no-referrer" />
      <div class="modal-dialog modal-dialog-centered"> 
          <div class="modal-content"> 
              <form method="post" asp-action="Delete_History_Exam" asp-controller="Teacher"> 
-                 <div class="modal-header bg-danger text-white"> 
-                     <h5 class="modal-title" id="deleteLichSuModalLabel">Xác nhận xóa lịch sử làm bài</h5> 
-                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button> 
+                 <div class="modal-header bg-danger"> 
+                     <h5 class="modal-title text-white" id="deleteLichSuModalLabel">Xác nhận xóa lịch sử làm bài</h5> 
+                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Đóng"></button> 
                  </div> 
                  <div class="modal-body"> 
                      <input type="hidden" name="id" id="ExamHistoryIdToDelete" /> 
                      <p>Bạn có chắc chắn muốn xóa lịch sử làm bài này? Mọi dữ liệu liên quan sẽ bị mất.</p> 
                  </div> 
-                 <div class="modal-footer"> 
-                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button> 
-                     <button type="submit" class="btn btn-danger">Xóa</button> 
+                 <div class="modal-footer">
+                    <button type="button" class="btn" style="background-color: #6c757d !important; border-color: #6c757d !important; color: white !important;" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-danger">Xóa</button> 
                  </div> 
              </form> 
          </div> 
