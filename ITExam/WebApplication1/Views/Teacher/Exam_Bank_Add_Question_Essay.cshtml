@@ -238,7 +238,6 @@
 
          let answerCount = 0;
          let editors = {}; // Biến đếm số lượng đáp án
-
         document.addEventListener("DOMContentLoaded", () => {
             ClassicEditor.create(document.querySelector('#QuestionContent'), {
                 simpleUpload: {
@@ -248,8 +247,6 @@
                     editors['QuestionContent'] = editor;
                 }).catch(console.error);
         });
-
-
 
     </script>
 
@@ -265,8 +262,9 @@
              let question = questions[index];
 
              // Gán giá trị cho các input
-             if (editors['QuestionContent']) {
-                editors['QuestionContent'].setData(question.questionContent || "");
+            if (editors['QuestionContent']) {
+                const contentData = question.questionContent || "";
+                editors['QuestionContent'].setData(contentData);
             }
 
              document.getElementById("QuestionId").value = question.questionId || "";
@@ -325,7 +323,7 @@
     </script>
     <script>
 
-                document.addEventListener("DOMContentLoaded", function () {
+        document.addEventListener("DOMContentLoaded", function () {
             const chuongGroup = document.getElementById("ChapterGroup");
             const cloGroup = document.getElementById("CLOGroup");
 
