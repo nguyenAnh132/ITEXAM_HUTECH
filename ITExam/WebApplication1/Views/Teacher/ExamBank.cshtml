@@ -179,18 +179,18 @@
                         Vui lòng chọn cách tạo ngân hàng đề
                     </h5>
                     <button type="button"
-                            class="btn-close bg-white"
+                            class="btn-close btn-close-white"
                             data-bs-dismiss="modal"
                             aria-label="Close"></button>
                 </div>
                 <div class="modal-body d-flex justify-content-center gap-3">
                     <a asp-controller="Teacher" asp-action="Exam_Bank_Create">
-                        <button type="button" class="btn btn-primary">
+                        <button type="button" class="btn btn-outline-primary">
                             Soạn thủ công
                         </button>
                     </a>
                     <a href="./teacher-upload-file-exam.html">
-                        <button type="button" class="btn btn-secondary">
+                        <button type="button" class="btn btn-outline-secondary">
                             Upload File
                         </button>
                     </a>
@@ -203,9 +203,9 @@
     <div class="modal fade" id="deleteNHDModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
-                <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title">Xác nhận xóa ngân hàng đề</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <div class="modal-header bg-danger">
+                    <h5 class="modal-title text-white">Xác nhận xóa ngân hàng đề</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body" id="deleteNHDModalBody">
                     <!-- Nội dung động sẽ được JS đổ vào -->

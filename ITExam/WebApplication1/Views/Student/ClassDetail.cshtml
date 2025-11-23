@@ -224,24 +224,25 @@
       aria-hidden="true"> 
      <div class="modal-dialog modal-dialog modal-dialog-centered"> 
          <div class="modal-content"> 
-             <div class="modal-header"> 
-                 <h1 class="modal-title fs-5" id="staticBackdropLabel"> 
+             <div class="modal-header bg-danger"> 
+                 <h1 class="modal-title fs-5 text-white" id="staticBackdropLabel"> 
                      Bạn chắc chắn muốn thoát lớp học? 
                  </h1> 
                  <button type="button" 
-                         class="btn-close" 
+                         class="btn-close btn-close-white" 
                          data-bs-dismiss="modal" 
                          aria-label="Close"></button> 
              </div> 
              <div class="modal-footer d-flex justify-content-center"> 
-                 <button type="button" 
-                         class="btn btn-secondary" 
-                         data-bs-dismiss="modal"> 
-                     Đóng 
+                 <button type="button"
+                            class="btn btn-secondary"
+                            style="background-color: #6c757d !important; border-color: #6c757d !important; color: white !important;"
+                            data-bs-dismiss="modal"> 
+                     Huỷ 
                  </button> 
                  <form asp-controller="Student" asp-action="ExitClass" method="post" class="d-inline"> 
                      <input type="hidden" name="malophoc" value="@Model.ClassInfo.ClassId" /> 
-                     <button type="submit" class="btn btn-primary">Xác nhận</button> 
+                     <button type="submit" class="btn btn-danger"> Thoát</button> 
                  </form> 
              </div> 
          </div> 

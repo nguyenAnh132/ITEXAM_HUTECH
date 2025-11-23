@@ -263,9 +263,9 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <form method="post" asp-action="DeleteQuestion" asp-controller="Teacher">
-                <div class="modal-header bg-danger text-white">
+                <div class="modal-header bg-danger">
                     <h5 class="modal-title text-white">Xác nhận xóa câu hỏi</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Đóng"></button>
                 </div>
                 <div class="modal-body">
                     <input type="hidden" id="macauhoiToDelete" name="maCauHoi" />
@@ -274,7 +274,7 @@
                     <p id="relatedInfo"></p> <!-- Hiển thị thông tin liên quan -->
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn" style="background-color: #6c757d !important; border-color: #6c757d !important; color: white !important;" data-bs-dismiss="modal">Hủy</button>
                     <button type="submit" class="btn btn-danger">Xác nhận xóa</button>
                 </div>
             </form>

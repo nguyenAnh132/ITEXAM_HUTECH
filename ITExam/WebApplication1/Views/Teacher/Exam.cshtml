@@ -102,15 +102,15 @@
 <div class="modal fade" id="cannotDeleteModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-warning text-dark">
-                <h5 class="modal-title">Thông báo</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            <div class="modal-header bg-danger ">
+                <h5 class="modal-title text-white">Thông báo</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Đóng"></button>
             </div>
             <div class="modal-body">
                 <p class="mb-0">Đề thi này đang được sử dụng trong lớp học. Bạn <strong>không thể xóa</strong>!</p>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đã hiểu</button>
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Đã hiểu</button>
             </div>
         </div>
     </div>
@@ -128,14 +128,14 @@
                      Vui lòng chọn phương thức 
                  </h5> 
                  <button type="button" 
-                         class="btn-close bg-white" 
+                         class="btn-close btn-close-white" 
                          data-bs-dismiss="modal" 
                          aria-label="Close"></button> 
              </div> 
              <div class="modal-body d-flex justify-content-center gap-3"> 
-                 <a asp-controller="Teacher" asp-action="Exam_Create"> 
-                     <button type="button" class="btn btn-primary"> 
-                         Từ ngân hàng đề 
+                 <a asp-controller="Teacher" asp-action="Exam_Create">
+                    <button type="button" class="btn btn-outline-primary">
+                        Từ ngân hàng đề 
                      </button> 
                  </a> 
              </div> 
@@ -148,17 +148,17 @@
      <div class="modal-dialog modal-dialog-centered"> 
          <div class="modal-content">
             <form method="post" asp-action="DeleteExamOg" asp-controller="Teacher">
-                <div class="modal-header bg-danger text-white"> 
+                <div class="modal-header bg-danger"> 
                      <h5 class="modal-title text-white">Xác nhận xóa đề thi</h5> 
-                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button> 
+                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Đóng"></button> 
                  </div> 
                  <div class="modal-body">
                     <input type="hidden" name="examId" id="maDeToDelete" />
                     <p>Bạn có chắc chắn muốn xóa đề thi này? Mọi dữ liệu liên quan sẽ bị mất.</p> 
                  </div> 
-                 <div class="modal-footer"> 
-                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button> 
-                     <button type="submit" class="btn btn-danger">Xóa</button> 
+                 <div class="modal-footer">
+                    <button type="button" class="btn" style="background-color: #6c757d !important; border-color: #6c757d !important; color: white !important;" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-danger">Xóa</button> 
                  </div> 
              </form> 
          </div> 
