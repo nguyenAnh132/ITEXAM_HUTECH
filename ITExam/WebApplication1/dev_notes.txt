@@ -9,13 +9,6 @@ ConnectionStrings:
 	"SQL": "Server=DESKTOP-V590II5\SQLEXPRESS;Database=ITExamHUTECHDB;Trusted_Connection=True;TrustServerCertificate=True;",  (phat)
 	"SQL": "Server=LAPTOP-KS8584NG;Database=ITExamHUTECHDB;Trusted_Connection=True;TrustServerCertificate=True;", (phuong)
 	"SQL": "Server=LAPTOP-IK5KGOHA\\SQLEXPRESS01;Database=ITExamHUTECHDB;Trusted_Connection=True;TrustServerCertificate=True;", (A pho)
-==================================================================================
-
-10/11/2025:
-	- TuAnh:
-		ApiQuestionController - Sửa prompt để thêm hướng dẫn rõ ràng hơn cho Gemini tạo câu hỏi.
-		ViewModels - Thêm EditClassVM
-        TeacherController - OK- Xem lại
 
 ==================================================================================
 

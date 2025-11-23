@@ -4,6 +4,7 @@
     {
         public int ExamId { get; set; } 
         public string ExamName { get; set; }
+        public string ExamBankName { get; set; }
         public List<ChapterCLOVM> Chapters { get; set; }
         public int Duration { get; set; }
 

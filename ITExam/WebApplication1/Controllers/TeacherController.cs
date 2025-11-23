@@ -268,22 +268,9 @@ namespace ITExam.Controllers
         }
 
 
-        //Lớp học : Danh sách sinh viên đã làm bài
+        //Lớp học : Danh sách sinh viên đã làm bài - OK
         public async Task<IActionResult> List_Student_Do_Test(int examId, int classId)
         {
-            var access_token = Request.Cookies["access_token"];
-            if (string.IsNullOrEmpty(access_token)) 
-                return RedirectToAction("Logout", "Auth");
-
-            var user = await _context.Users
-                .AsNoTracking()
-                .AnyAsync(us => us.AccessToken == access_token);
-
-            if (!user)
-            {
-                return RedirectToAction("Logout", "Auth");
-            }
-
             var isExamInClass = await _context.ClassExams
                 .AsNoTracking()
                 .AnyAsync(ce => ce.ClassId == classId && ce.ExamId == examId);
@@ -305,7 +292,7 @@ namespace ITExam.Controllers
 
             if (classInfo == null) return NotFound();
 
-            var danhSachSV = await _context.ExamHistories
+            var students = await _context.ExamHistories
                 .AsNoTracking()
                 .Where(h => h.ClassId == classId && h.ExamId == examId)
                 .Select(h => new StudentSubmissionInClassVM
@@ -324,24 +311,24 @@ namespace ITExam.Controllers
             var viewModel = new StudentSubmissionList
             {
                 ClassInfo = classInfo, 
-                Students = danhSachSV
+                Students = students
             };
 
             return View(viewModel);
         }
 
 
-        //Lớp học: Xóa lớp học
+        //Lớp học: Xóa lớp học - OK
         [HttpPost]
         public async Task<IActionResult> DeleteClass(int maLopHoc)
         {
-            var lopHoc = await _context.Classes.AsNoTracking()
+            var @class = await _context.Classes.AsNoTracking()
                 .FirstOrDefaultAsync(l => l.ClassId == maLopHoc);
 
-            if (lopHoc == null)
+            if (@class == null)
                 return NotFound();
 
-            string classCodeFolder = lopHoc.ClassCode.ToString();
+            string classCodeFolder = @class.ClassCode.ToString();
 
             var historyIds = await _context.ExamHistories
                 .AsNoTracking()
@@ -377,7 +364,7 @@ namespace ITExam.Controllers
                 .Where(ce => ce.ClassId == maLopHoc)
                 .ExecuteDeleteAsync();
 
-            _context.Classes.Remove(lopHoc);
+            _context.Classes.Remove(@class);
             await _context.SaveChangesAsync();
 
             try
@@ -394,7 +381,7 @@ namespace ITExam.Controllers
             }
             catch (Exception ex)
             {
-                TempData["WarningMessage"] = $"Đã xóa lớp học khỏi DB, nhưng gặp lỗi khi gọi Drive API: {ex.Message}";
+                TempData["WarningMessage"] = $"Đã xóa lớp học, nhưng gặp lỗi khi gọi Drive API: {ex.Message}";
             }
 
             return RedirectToAction("Class");
@@ -517,7 +504,7 @@ namespace ITExam.Controllers
         }
 
 
-        //Đề thi : Tạo ma trận đề thi, lấy câu hỏi từ ngân hàng đề - OK-
+        //Đề thi : Tạo ma trận đề thi, lấy câu hỏi từ ngân hàng đề - OK
         public async Task<IActionResult> Exam_Create_Matrix(int id)
         {
             // Lấy đề thi & ngân hàng đề
@@ -529,6 +516,7 @@ namespace ITExam.Controllers
                     e.ExamId,
                     e.ExamName,
                     e.Duration,
+                    ExamBankName = e.ExamBank.ExamBankName,
                     ExamBankId = e.ExamBank.ExamBankId,
                     SubjectId = e.ExamBank.SubjectId
                 })
@@ -597,6 +585,7 @@ namespace ITExam.Controllers
             {
                 ExamId = id,
                 ExamName = exam.ExamName,
+                ExamBankName = exam.ExamBankName,
                 Duration = exam.Duration,
                 Chapters = chapters!
             };
@@ -634,11 +623,10 @@ namespace ITExam.Controllers
         }
 
 
-        //Đề thi : Lưu ma trận đề thi - OK-
+        //Đề thi : Lưu ma trận đề thi - OK
         [HttpPost]
         public async Task<IActionResult> Save_Exam_Matrix([FromBody] ExamMatrixVM model)
         {
-            // Kiểm tra xem model có hợp lệ không
             if (model == null || model.Chapters == null)
                 return BadRequest(new { success = false, message = "Dữ liệu không hợp lệ." });
 
@@ -649,7 +637,6 @@ namespace ITExam.Controllers
             _context.ExamMatrices.RemoveRange(oldMatrix);
             await _context.SaveChangesAsync();
 
-            // Lưu ma trận đề thi mới
             foreach (var chuong in model.Chapters)
             {
                 foreach (var clo in chuong.CLOs)
@@ -673,22 +660,19 @@ namespace ITExam.Controllers
         }
 
 
-        //Đề thi : Cập nhật đề thi - OK-
+        //Đề thi : Cập nhật đề thi - OK
         [HttpPost]
         public async Task<IActionResult> Update_Exam([FromBody] ExamMatrixVM model)
         {
-            //Kiểm tra thời gian làm bài >0 và < 300 phút
-            if (model.Duration < 1 || model.Duration > 299)
+            if (model.Duration < 1 || model.Duration > 300)
             {
-                return Json(new { success = false, message = "Thời gian làm bài phải từ 1 đến 299 phút." });
+                return Json(new { success = false, message = "Thời gian làm bài phải từ 1 đến 300 phút." });
             }
-            //Truy vấn đề thi theo ID
             var exam = await _context.Exams.FirstOrDefaultAsync(d => d.ExamId == model.ExamId);
             if (exam == null)
             {
                 return Json(new { success = false, message = "Không tìm thấy đề thi." });
             }
-            //Cập nhật thời gian làm bài
             exam.Duration = model.Duration;
             await _context.SaveChangesAsync();
 
@@ -696,7 +680,7 @@ namespace ITExam.Controllers
         }
 
 
-        //Đề thi : Thêm đề thi vào lớp học - OK-
+        //Đề thi : Thêm đề thi vào lớp học - OK
         [HttpPost]
         public async Task<IActionResult> Add_Exam_To_Class(ExamUnlockTimeVM vm, int maDe, int maLopHoc)
         {
@@ -817,7 +801,7 @@ namespace ITExam.Controllers
         }
 
 
-        //Đề thi : Lưu dữ liệu thêm đề thi - OK-
+        //Đề thi : Lưu dữ liệu thêm đề thi - OK
         [HttpPost]
         public async Task<IActionResult> Edit_Exam_Date(ExamUnlockTimeVM vm, int maDe, int maLopHoc)
         {
@@ -933,7 +917,7 @@ namespace ITExam.Controllers
         }
 
 
-        //Đề thi : Xóa đề thi khỏi database
+        //Đề thi : Xóa đề thi khỏi database - OK
         [HttpPost]
         public async Task<IActionResult> DeleteExamOg(int examId)
         {
@@ -1028,17 +1012,17 @@ namespace ITExam.Controllers
         [HttpPost]
         public async Task<IActionResult> Delete_History_Exam(int id)
         {
-            var lichSu = await _context.ExamHistories
+            var history = await _context.ExamHistories
                 .Include(l => l.StudentAnswers)
                 .FirstOrDefaultAsync(l => l.ExamHistoryId == id);
 
-            if (lichSu == null)
+            if (history == null)
             {
                 return NotFound("Không tìm thấy lịch sử làm bài.");
             }
-            int maDe = lichSu.ExamId;
-            int maLopHoc = lichSu.ClassId;
-            var fileUrlToDelete = lichSu.UploadedFileId;
+            int examId = history.ExamId;
+            int classId = history.ClassId;
+            var fileUrlToDelete = history.UploadedFileId;
 
             if (!string.IsNullOrEmpty(fileUrlToDelete))
             {
@@ -1073,12 +1057,12 @@ namespace ITExam.Controllers
                     _logger.LogWarning("(Delete_History_Exam): Không tìm thấy File ID trong URL: {Url}", fileUrlToDelete);
                 }
             }
-            _context.StudentAnswers.RemoveRange(lichSu.StudentAnswers);
-            _context.ExamHistories.Remove(lichSu);
+            _context.StudentAnswers.RemoveRange(history.StudentAnswers);
+            _context.ExamHistories.Remove(history);
             await _context.SaveChangesAsync();
 
             TempData["SuccessMessage"] = "Đã xóa lịch sử làm bài thành công!";
-            return RedirectToAction("List_Student_Do_Test", new { examId = maDe, classId = maLopHoc });
+            return RedirectToAction("List_Student_Do_Test", new { examId = examId, classId = classId });
         }
 
 
@@ -1174,51 +1158,47 @@ namespace ITExam.Controllers
             return View(viewModel);
         }
 
+
+        //Đề thi: Chấm bài một sinh viên - OK
         [HttpGet]
         [HttpPost]
-        //Đề thi: Chấm bài một sinh viên
         public async Task<IActionResult> Grading_The_Exam_Of_Student(int id)
         {
-            var history = await _context.ExamHistories
-                .Include(ls => ls.User)
-                .Include(ls => ls.Exam)
-                .Include(ls => ls.StudentAnswers)
-                    .ThenInclude(ct => ct.QuestionBank)
-                .FirstOrDefaultAsync(ls => ls.ExamHistoryId == id);
-
-            if (history == null) return NotFound();
-
-            var vm = new EssaySubmissionToGradeVM
-            {
-                HistoryId = history.ExamHistoryId,
-                FullName = history.User.FullName,
-                StudentID = history.User.Username,
-                ExamTitle = history.Exam.ExamName,
-                SubmissionTime = history.SubmitTime,
-                ListQuestions = history.StudentAnswers.Select(ct => new GradedEssayQuestionVM
+            var vm = await _context.ExamHistories
+                .AsNoTracking()
+                .Where(x => x.ExamHistoryId == id)
+                .Select(x => new EssaySubmissionToGradeVM
                 {
-                    QuestionId = ct.QuestionId,
-                    QuestionContent = ct.QuestionBank.QuestionContent,
-                    StudentAnswer = ct.EssayAnswer!,
-                    GradedScore = ct.Score
-                }).ToList(),
-                UploadedFileLink = history.UploadedFileId,
-                ExamId = history.ExamId,
-                ClassId = history.ClassId,
-            };
+                    HistoryId = x.ExamHistoryId,
+                    FullName = x.User.FullName,
+                    StudentID = x.User.Username,
+                    ExamTitle = x.Exam.ExamName,
+                    SubmissionTime = x.SubmitTime,
+                    ExamId = x.ExamId,
+                    ClassId = x.ClassId,
+                    UploadedFileLink = x.UploadedFileId,
 
-            if (!string.IsNullOrEmpty(history.UploadedFileId))
-            {
+                    ListQuestions = x.StudentAnswers.Select(ct => new GradedEssayQuestionVM
+                    {
+                        QuestionId = ct.QuestionId,
+                        QuestionContent = ct.QuestionBank.QuestionContent,
+                        StudentAnswer = ct.EssayAnswer!,
+                        GradedScore = ct.Score
+                    }).ToList()
+                })
+                .FirstOrDefaultAsync();
+
+            if (vm == null) return NotFound();
+
+            if (!string.IsNullOrEmpty(vm.UploadedFileLink))
                 _logger.LogInformation("Đã có file đính kèm cho HistoryId {HistoryId}: {FileUrl}",
-                    id, history.UploadedFileId);
-            }
+                    id, vm.UploadedFileLink);
             else
-            {
-                _logger.LogInformation("Sinh viên không nộp file (UploadedFileId rỗng) cho HistoryId: {HistoryId}", id);
-            }
+                _logger.LogInformation("Sinh viên không nộp file cho HistoryId: {HistoryId}", id);
 
             return View(vm);
         }
+
 
 
         //Đề thi : Lưu điểm chấm tự luận 
@@ -1468,7 +1448,7 @@ namespace ITExam.Controllers
         }
 
 
-        //Ngân hàng đề : Câu hỏi : Thêm câu hỏi trắc nghiệm - OK-
+        //Ngân hàng đề : Câu hỏi : Thêm câu hỏi trắc nghiệm - OK
         public async Task<IActionResult> Exam_Bank_Add_Question_MultipleChoice(int id)
         {
             var examBank = await _context.ExamBanks
@@ -2170,51 +2150,38 @@ namespace ITExam.Controllers
         }
 
 
-        //Ngân hàng đề : Xóa ngân hàng đề 
+        //Ngân hàng đề : Xóa ngân hàng đề - OK
         [HttpPost]
         public async Task<IActionResult> XoaNganHangDe(int maNHD)
         {
-            var nganHangDe = await _context.ExamBanks
-                .Include(nhd => nhd.Exams)
-                .Include(nhd => nhd.QuestionBanks)
-                .FirstOrDefaultAsync(nhd => nhd.ExamBankId == maNHD);
-            if (nganHangDe == null)
-            {
+            var bank = await _context.ExamBanks
+                .Where(x => x.ExamBankId == maNHD)
+                .Select(x => new
+                {
+                    x.ExamBankId,
+                    ExamIds = x.Exams.Select(e => e.ExamId).ToList(),
+                    QuestionIds = x.QuestionBanks.Select(q => q.QuestionId).ToList()
+                })
+                .FirstOrDefaultAsync();
+
+            if (bank == null)
                 return NotFound("Không tìm thấy ngân hàng đề.");
-            }
 
-            if (nganHangDe.Exams != null)
+            if (bank.QuestionIds.Any())
             {
-                foreach (var deThi in nganHangDe.Exams)
-                {
-                    if (deThi.ExamHistories != null)
-                        _context.ExamHistories.RemoveRange(deThi.ExamHistories);
-
-                    if (deThi.ExamMatrices != null)
-                        _context.ExamMatrices.RemoveRange(deThi.ExamMatrices);
-
-                    if (deThi.ClassExams != null)
-                        _context.ClassExams.RemoveRange(deThi.ClassExams);
-
-                    _context.Exams.Remove(deThi);
-                }
+                await _context.QuestionBanks
+                    .Where(q => bank.QuestionIds.Contains(q.QuestionId))
+                    .ExecuteDeleteAsync();
             }
 
-            if (nganHangDe.QuestionBanks != null)
-            {
-                foreach (var cauHoi in nganHangDe.QuestionBanks)
-                {
-                    if (cauHoi.StudentAnswers != null)
-                        _context.StudentAnswers.RemoveRange(cauHoi.StudentAnswers);
-                    _context.QuestionBanks.Remove(cauHoi);
-                }
-            }
+            await _context.ExamBanks
+                .Where(x => x.ExamBankId == maNHD)
+                .ExecuteDeleteAsync();
 
-            _context.ExamBanks.Remove(nganHangDe);
-            await _context.SaveChangesAsync();
-            TempData["SuccessMessage"] = "Đã xóa ngân hàng đề thành công!";
+            TempData["SuccessMessage"] = "Đã xóa ngân hàng đề thành công";
             return RedirectToAction("ExamBank");
         }
+
 
 
         //Ngân hàng đề : Lấy đề thi theo ngân hàng đề - OK
