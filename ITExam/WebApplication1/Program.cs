@@ -23,7 +23,9 @@ builder.Services.AddSignalR(options =>
 {
     options.MaximumReceiveMessageSize = 512 * 1024;
     options.EnableDetailedErrors = true;
-}); builder.Services.AddHostedService<ITExam.Services.FileCleanupService>();
+}); 
+
+builder.Services.AddHostedService<ITExam.Services.FileCleanupService>();
 builder.Services.AddTransient<EmailService>();
 
 builder.Services.AddHangfire(x =>

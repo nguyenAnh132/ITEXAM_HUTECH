@@ -20,11 +20,11 @@ namespace ITExam.Services
         private readonly IWebHostEnvironment _env;
         private readonly ILogger<FileCleanupService> _logger;
 
-        //private readonly TimeSpan _checkPeriod = TimeSpan.FromHours(24);
-        private readonly TimeSpan _checkPeriod = TimeSpan.FromMinutes(2); //Phiên bản debug
+        private readonly TimeSpan _checkPeriod = TimeSpan.FromHours(12);
+        //private readonly TimeSpan _checkPeriod = TimeSpan.FromMinutes(2); //Phiên bản debug
 
-        //private readonly TimeSpan _fileAgeThreshold = TimeSpan.FromHours(24);
-        private readonly TimeSpan _fileAgeThreshold = TimeSpan.FromMinutes(1); //Phiên bản debug
+        private readonly TimeSpan _fileAgeThreshold = TimeSpan.FromHours(12);
+        //private readonly TimeSpan _fileAgeThreshold = TimeSpan.FromMinutes(1); //Phiên bản debug
 
         public FileCleanupService(IServiceProvider serviceProvider, IWebHostEnvironment env, ILogger<FileCleanupService> logger)
         {
