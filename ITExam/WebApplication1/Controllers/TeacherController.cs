@@ -23,7 +23,7 @@ using System.Text.RegularExpressions;
 
 namespace ITExam.Controllers
 {
-    //[CheckToken]
+    [CheckToken]
     [AuthorizeRole("teacher")]
     public class TeacherController : Controller
     {

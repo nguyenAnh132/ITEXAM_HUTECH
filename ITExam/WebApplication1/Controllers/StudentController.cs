@@ -18,7 +18,7 @@ using System.Collections.Concurrent;
 
 namespace ITExam.Controllers
 {
-    //[CheckToken]
+    [CheckToken]
     [AuthorizeRole("user")]
     public class StudentController : Controller
     {
