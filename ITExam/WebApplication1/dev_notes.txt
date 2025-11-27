@@ -70,16 +70,15 @@ var accessToken = Request.Cookies["access_token"];
 		+Service:
 			Thêm FileCleanUpService để dọn dẹp ảnh dư thừa trên web server.
 
-1. Các Modal chưa thống nhất màu chữ, màu nền. (Màu xóa , màu thông báo, màu thông tin, màu chữ)
-
-2. Sửa lại upload ảnh, kiểm tra hiển thị trong ngân hàng đề, chi tiết ngân hàng đề, hiển thị khi vào thi, trong giám sát, lịch sử thi,
-
-3. Giám sát sửa đồng bộ với upload ảnh
-
-4. Tối ưu
-
-5. Đóng gói
-
-6. Nút tạo ngân hàng đề mới, Upload file chưa link
-
 7. Nửa ngày test
+
+
+
+//===================================================
+Đăng: Ngày giờ, Góp ý, Test Responsive (test kỹ) - File mô tả 
+
+Phát, Phương: Sửa lỗi responsive, tối ưu giao diện
+
+Tòng: Test toanf bộ hệ thống + Viết modal hướng dẫn ở trong ma trận đề thi, Sửa ma trận đề khi xóa câu hỏi ngân hàng đề,lỗi xóa lớp học.
+
+Tú Anh: Chấm thi tự luận bằng AI, tạo mô tả chấm bằng AI, viết lại nộp bài thi tự động khi sinh viên out bài thi trắc nghiệm, tự luận, Caching
