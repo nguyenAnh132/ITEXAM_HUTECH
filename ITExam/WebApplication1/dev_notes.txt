@@ -81,6 +81,10 @@ var accessToken = Request.Cookies["access_token"];
 			GeminiService, RoutingAPI => thay các url quan trọng, lấy dữ liệu trong secrets.json.
 		+Program.cs:
 			Đăng ký RoutingAPI.
+		+View:
+			Teacher: Chỉnh sửa css, class bootstrap cho responsive.
+
+
 7. Nửa ngày test
 
 
