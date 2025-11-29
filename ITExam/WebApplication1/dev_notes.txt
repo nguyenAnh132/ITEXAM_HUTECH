@@ -58,7 +58,8 @@ var accessToken = Request.Cookies["access_token"];
 		View:
 			Teacher/ClassDetail: Thêm ràng buộc, tính thời gian, hiển thị khoảng thời gian mở đề trong modal chỉnh sửa đề thi trong lớp học và modal thêm đề thi vào lớp học
 
-===========================================
+==================================================================================
+
 23/11/2025:
 	- Phuong:
 		+Controller:
@@ -70,6 +71,16 @@ var accessToken = Request.Cookies["access_token"];
 		+Service:
 			Thêm FileCleanUpService để dọn dẹp ảnh dư thừa trên web server.
 
+==================================================================================
+
+29/11/2025:
+	- Phuong:
+		+Controller:
+			ApiQuestion, Auth, Teacher => khai báo và sử dụng _routingApi.
+		+Services:
+			GeminiService, RoutingAPI => thay các url quan trọng, lấy dữ liệu trong secrets.json.
+		+Program.cs:
+			Đăng ký RoutingAPI.
 7. Nửa ngày test
 
 
