@@ -65,7 +65,10 @@
                                                 style="width: 50px; height: 50px">
                                             <i class="fa-solid fa-plus"></i>
                                         </button>
-                                        <button class="btn btn-primary" style="width: 50px; height: 50px">
+                                        <button class="btn btn-primary" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#modalInstruct"
+                                                style="width: 50px; height: 50px">
                                             <i class="fa-solid fa-info"></i>
                                         </button>
                                     </div>
@@ -96,6 +99,53 @@
     </div>
 </div>
 
+@section Modal {
+    <div class="modal fade" id="modalInstruct" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header bg-primary">
+                    <h1 class="modal-title fs-5 text-white" id="exampleModalLabel">Thao tác tạo ma trận đề thi</h1>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+
+                    <div class="mb-3">
+                        <span class="badge bg-primary me-2">1</span>
+                        Nhấn nút <strong>+</strong> để thêm chương vào ma trận.
+                    </div>
+
+                    <div class="mb-3">
+                        <span class="badge bg-primary me-2">2</span>
+                        Chọn <strong>chương</strong> cần tạo câu hỏi.
+                    </div>
+
+                    <div class="mb-3">
+                        <span class="badge bg-primary me-2">3</span>
+                        Nhập số lượng câu hỏi cho từng <strong>CLO</strong>.
+                    </div>
+
+                    <div class="mb-3">
+                        <span class="badge bg-primary me-2">4</span>
+                        Có thể thêm nhiều chương tùy ý.
+                    </div>
+
+                    <div class="mb-3">
+                        <span class="badge bg-primary me-2">5</span>
+                        Kiểm tra tổng số câu hỏi ở bảng bên phải.
+                    </div>
+
+                    <div class="mb-3">
+                        <span class="badge bg-success me-2">✔</span>
+                        Nhấn <strong>Lưu ma trận đề thi</strong> để hoàn tất.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal" >Đã hiểu</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
 @section Script {
     <script src="~/js/notification.js"></script>
     <script>
@@ -334,51 +384,77 @@
 
 
 
-            window.addEventListener('DOMContentLoaded', () => {
-                const danhSachChuong = @Html.Raw(JsonConvert.SerializeObject(Model.Chapters));
-                const container = document.getElementById('chuong-container');
+        window.addEventListener('DOMContentLoaded', () => {
+            const danhSachDaLuu = @Html.Raw(JsonConvert.SerializeObject(Model.Chapters));
+            const container = document.getElementById('chuong-container');
 
-                danhSachChuong.forEach(chuong => {
-                    if (!chuong) return;
-                    const cloCoSoLuong = chuong.CLOs.filter(c => c.QuestionCount > 0);
-                    if (cloCoSoLuong.length === 0) return; 
-                    const rowId = `row-${index++}`;
-                    let html = `
-                        <div class="border p-3 rounded mb-3" id="${rowId}">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <select class="form-select chuong-select" style="width: 70%">
-                                    <option value="" disabled hidden>-- Chọn chương --</option>
-                                </select>
-                                <button class="btn btn-danger" onclick="xoaDongChuong('${rowId}')">
-                                    <i class="fa fa-trash"></i>
-                                </button>
-                            </div>
-                            <div class="clo-list">`;
-                    chuong.CLOs.forEach(clo => {
+            danhSachDaLuu.forEach(savedChuong => {
+                if (!savedChuong) return;
+
+                const realChapter = chuongData.find(c => c.ChuongId == savedChuong.ChapterId);
+
+                if (!realChapter) return;
+
+                const cloCoSoLuong = savedChuong.CLOs.filter(c => c.QuestionCount > 0);
+                if (cloCoSoLuong.length === 0) return;
+
+                const rowId = `row-${index++}`;
+
+                let html = `
+                    <div class="border p-3 rounded mb-3" id="${rowId}">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <select class="form-select chuong-select" style="width: 70%">
+                                <option value="" disabled hidden>-- Chọn chương --</option>
+                            </select>
+                            <button class="btn btn-danger" onclick="xoaDongChuong('${rowId}')">
+                                <i class="fa fa-trash"></i>
+                            </button>
+                        </div>
+                        <div class="clo-list">`;
+
+                savedChuong.CLOs.forEach(savedClo => {
+                    const realClo = realChapter.Clos.find(c => c.CLOId == savedClo.CLOId);
+
+                    if (realClo) {
+                        const currentMax = realClo.MaxQuestionCount;
+                        let currentCount = savedClo.QuestionCount;
+
+                        if (currentCount > currentMax) {
+                            currentCount = currentMax;
+                        }
+
                         html += `
-                            <div class="my-2 d-flex  gap-3">
-                                <input style="width:70%" value="${clo.CLO}" disabled type="text" class="form-control" />
+                        <div class="my-2 d-flex gap-3">
+                            <input style="width:70%" value="${realClo.CLOTitle}" disabled type="text" class="form-control" />
 
-                                <input style="width:10%" type="number" value="${clo.QuestionCount}" class="form-control" placeholder="Số lượng" min="0" max="${clo.MaxQuestionCount}" />
-                                <span class="align-self-center text-muted">(Tối đa ${clo.MaxQuestionCount} câu hỏi)</span>
+                            <input style="width:10%"
+                                   type="number"
+                                   value="${currentCount}"
+                                   class="form-control"
+                                   placeholder="Số lượng"
+                                   min="0"
+                                   max="${currentMax}"
+                                   title="Tối đa ${currentMax} câu hỏi"/>
 
+                            <span class="align-self-center text-muted">(Tối đa ${currentMax} câu hỏi)</span>
 
-                                <input type="hidden" value="${clo.CLOId}" class="clo-id" />
-                            </div>`;
-                    });
-
-                    html += `</div></div>`;
-
-                    container.insertAdjacentHTML('beforeend', html);
-
-                    capNhatDanhSachChuongComboBox();
-
-                    const select = document.getElementById(rowId).querySelector('.chuong-select');
-                    select.value = chuong.ChapterId;
+                            <input type="hidden" value="${savedClo.CLOId}" class="clo-id" />
+                        </div>`;
+                    }
                 });
 
-                capNhatThongTinCauHoi();
+                html += `</div></div>`;
+
+                container.insertAdjacentHTML('beforeend', html);
+
+                capNhatDanhSachChuongComboBox();
+
+                const select = document.getElementById(rowId).querySelector('.chuong-select');
+                select.value = savedChuong.ChapterId;
             });
+
+            capNhatThongTinCauHoi();
+        });
 
 
             function luuThongTinDeThi() {
