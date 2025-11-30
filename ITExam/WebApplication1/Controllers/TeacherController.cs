@@ -325,7 +325,8 @@ namespace ITExam.Controllers
         [HttpPost]
         public async Task<IActionResult> DeleteClass(int maLopHoc)
         {
-            var @class = await _context.Classes.AsNoTracking()
+            //Remove
+            var @class = await _context.Classes
                 .FirstOrDefaultAsync(l => l.ClassId == maLopHoc);
 
             if (@class == null)
@@ -341,6 +342,7 @@ namespace ITExam.Controllers
 
             if (historyIds.Count > 0)
             {
+                //RemoveRange
                 await _context.StudentAnswers
                     .AsNoTracking()
                     .Where(sa => historyIds.Contains(sa.ExamHistoryId))
@@ -483,9 +485,9 @@ namespace ITExam.Controllers
             if (userId == 0)
                 return RedirectToAction("Logout", "Auth");
             //Kiểm tra thời gian làm bài >0 và < 300 phút
-            if (deThiMoi.Duration < 1 || deThiMoi.Duration > 299)
+            if (deThiMoi.Duration < 1 || deThiMoi.Duration > 300)
             {
-                TempData["ErrorMessage"] = "Thời gian làm bài phải từ 1 đến 299 phút.";
+                TempData["ErrorMessage"] = "Thời gian làm bài phải từ 1 đến 300 phút.";
                 // Quay lại trang tạo đề (hoặc view hiện tại của bạn)
                 return RedirectToAction("Exam_Create");
             }
@@ -702,7 +704,7 @@ namespace ITExam.Controllers
             {
                 ClassId = maLopHoc,
                 ExamId = maDe,
-                IsExam = vm.LaDeThi,
+                IsExam = true,
                 AddedDate = DateTime.Now,
                 StartTime = vm.StartTime,
                 EndTime = vm.EndTime,

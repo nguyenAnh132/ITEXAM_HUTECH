@@ -57,7 +57,7 @@ namespace ITExam.Controllers
             if (userId == 0)
                 return RedirectToAction("Logout", "Auth");
 
-            var lopHoc = await _context.ClassDetails
+            var @class = await _context.ClassDetails
                 .AsNoTracking() 
                 .Where(cd => cd.UserId == userId)
                 .Select(cd => new ClassVM 
@@ -70,7 +70,7 @@ namespace ITExam.Controllers
                 })
                 .ToListAsync();
 
-            return View(lopHoc);
+            return View(@class);
         }
 
 
@@ -130,6 +130,7 @@ namespace ITExam.Controllers
                 return StatusCode(500, new { message = "Lỗi hệ thống khi tham gia lớp học!", error = ex.Message });
             }
         }
+
 
         // Lớp học: Thoát lớp học đã tham gia.
         [HttpPost]
@@ -274,24 +275,24 @@ namespace ITExam.Controllers
         // Đề thi: Thông tin đề thi của sinh viên.
         public async Task<IActionResult> ExamInfo(int maDe, int maLop)
         {
-            var deThi = await _context.Exams
+            var exam = await _context.Exams
                 .AsNoTracking()
                 .Include(mt => mt.ExamMatrices)
                 .Include(us => us.User)
                 .FirstOrDefaultAsync(dt => dt.ExamId == maDe);
 
-            if (deThi == null)
+            if (exam == null)
                 return NotFound();
 
             var viewModel = new ExamVM
             {
-                ExamId = deThi.ExamId,
-                ExamName = deThi.ExamName,
-                FullName = deThi.User.FullName,
-                CreatedDate = deThi.CreatedDate,
-                ExamType = deThi.ExamType,
-                QuestionCount = deThi.ExamMatrices.Sum(sl => sl.QuestionCount),
-                Duration = deThi.Duration,
+                ExamId = exam.ExamId,
+                ExamName = exam.ExamName,
+                FullName = exam.User.FullName,
+                CreatedDate = exam.CreatedDate,
+                ExamType = exam.ExamType,
+                QuestionCount = exam.ExamMatrices.Sum(sl => sl.QuestionCount),
+                Duration = exam.Duration,
                 ClassId = maLop
             };
             return View(viewModel);
@@ -657,23 +658,25 @@ namespace ITExam.Controllers
             var lopHoc = await _context.Classes.FindAsync(maLop);
 
             var key = $"essayAns:{maDe}:{user.UserId}";
-            Dictionary<string, string> luuCauTraLoi = null;
+
+            Dictionary<string, string> luuCauTraLoi = null!;
+
             try
             {
                 var cacheData = await _redis.GetStringAsync(key);
 
                 luuCauTraLoi = string.IsNullOrEmpty(cacheData)
                     ? new Dictionary<string, string>()
-                    : JsonSerializer.Deserialize<Dictionary<string, string>>(cacheData);
+                    : JsonSerializer.Deserialize<Dictionary<string, string>>(cacheData)!;
 
-                if (luuCauTraLoi.Any())
-                    _logger.LogInformation(">>> REDIS (TakeTheExam_TL): Đọc thành công {Count} câu trả lời từ key {Key}", luuCauTraLoi.Count, key);
+                if (luuCauTraLoi!.Any())
+                    _logger.LogInformation("REDIS (TakeTheExam_TL): Đọc thành công {Count} câu trả lời từ key {Key}", luuCauTraLoi.Count, key);
                 else
-                    _logger.LogWarning(">>> REDIS (TakeTheExam_TL): Key {Key} rỗng hoặc không tồn tại.", key);
+                    _logger.LogWarning("REDIS (TakeTheExam_TL): Key {Key} rỗng hoặc không tồn tại.", key);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, ">>> LỖI (TakeTheExam_TL): Deserialize Redis key <string, string> THẤT BẠI. Key {Key}", key);
+                _logger.LogError(ex, "LỖI (TakeTheExam_TL): Deserialize Redis key <string, string> THẤT BẠI. Key {Key}", key);
                 luuCauTraLoi = new Dictionary<string, string>(); 
             }
 
@@ -859,7 +862,6 @@ namespace ITExam.Controllers
             if (deThi == null) return NotFound();
 
             var examHistory = await _context.ExamHistories
-                .AsNoTracking()
                 .FirstOrDefaultAsync(ls => ls.UserId == user.UserId && ls.ExamId == maDe);
             if (examHistory == null) return NotFound();
 
@@ -961,7 +963,6 @@ namespace ITExam.Controllers
                 }
             }
 
-
             var viewModel = new MultipleChoiceExamResultVM
             {
                 Score = Math.Round(tongDiem, 2),
@@ -991,7 +992,6 @@ namespace ITExam.Controllers
                         var luaChon = ch.Value;
 
                         var chiTietBaiLam = await _context.StudentAnswers
-                            .AsNoTracking()
                             .FirstOrDefaultAsync(ct => ct.ExamHistoryId == examHistory.ExamHistoryId && ct.QuestionId == cauHoi);
                         if (chiTietBaiLam != null)
                         {

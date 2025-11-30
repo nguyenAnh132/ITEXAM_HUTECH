@@ -6,333 +6,422 @@
 }
 
 @section Style {
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css" />
-    <link rel="stylesheet" href="~/css/history-detail-exam.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+        /* CSS Tùy chỉnh cho giao diện đẹp hơn */
+        body {
+            background-color: #f8f9fa;
+        }
+
+        /* Card chung */
+        .custom-card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            background: #fff;
+            transition: transform 0.2s;
+            overflow: hidden;
+        }
+
+        /* Phần Header của câu hỏi */
+        .question-header {
+            background-color: #f1f5f9;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 15px 20px;
+            font-weight: 600;
+            color: #334155;
+        }
+
+        /* Nội dung câu hỏi và hình ảnh responsive */
+        .question-content img, .noiDungLuaChon img {
+            max-width: 100% !important;
+            height: auto !important;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        /* Các lựa chọn đáp án */
+        .answer-option-single,
+        .answer-option-multi,
+        .answer-option-truefalse,
+        .essay-answer-box {
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            background-color: #fff;
+            transition: all 0.2s;
+        }
+
+            .answer-option-single:hover,
+            .answer-option-multi:hover,
+            .answer-option-truefalse:hover {
+                background-color: #f8f9fa;
+            }
+
+        /* Phần trả lời của sinh viên */
+        .student-answer-section {
+            background-color: #f8faff;
+            border-top: 1px dashed #cbd5e1;
+            padding: 15px 20px;
+        }
+
+        /* Badge trạng thái */
+        .badge-result {
+            font-size: 0.85rem;
+            padding: 5px 10px;
+            border-radius: 20px;
+        }
+
+        /* Bảng điểm bên phải */
+        .score-card .list-group-item {
+            border: none;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+            .score-card .list-group-item:last-child {
+                border-bottom: none;
+            }
+
+        .score-display {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #435ebe;
+            text-align: center;
+            margin: 10px 0;
+        }
+    </style>
 }
-<div class="container-fluid p-0">
-    <div class="pt-3 py-lg-0 px-lg-5 px-3">
-        <div class="">
-            <div class="d-flex justify-content-between pt-3 my-2 ">
-            <!-- Nav tabs -->
-                <ul class="nav nav-tabs border-0" id="myTab" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active border rounded fw-bold" 
-                                style="color:#646cff ;box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;"
-                                id="create-tab" data-bs-toggle="tab" data-bs-target="#create" type="button"
-                                role="tab" aria-controls="create" aria-selected="false">
-                            Chi tiết lịch sử làm bài
-                        </button>
-                    </li>
-                </ul>
-                <div class="">
-                    <a asp-controller="Teacher" asp-action="List_Student_Do_Test"
-                       asp-route-examId="@Model.ExamId"
-                       asp-route-classId="@(Model.ClassId)">
-                        <button class="btn btn-danger">Trở về</button>
-                    </a>
-                </div>
-            </div>
+
+<div class="container-fluid py-4">
+    <div class="d-sm-flex justify-content-between align-items-center mb-4 px-2">
+        <div>
+            <h3 class="fw-bold mb-1 text-dark">Chi tiết lịch sử làm bài</h3>
+            <p class="text-muted mb-0">Xem lại bài làm và kết quả chi tiết của sinh viên</p>
         </div>
+        <a asp-controller="Teacher" asp-action="List_Student_Do_Test"
+           asp-route-examId="@Model.ExamId"
+           asp-route-classId="@(Model.ClassId)"
+           class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Trở về
+        </a>
+    </div>
 
-        <div class="mt-3">
-            <div class="tab-content">
-                <div class="tab-pane active" id="create" role="tabpanel" aria-labelledby="create-tab">
-                    <div class="row">
-                        <!-- Kết quả làm bài (right side) -->
-                        <div class="col-12 col-md-4">
-                            <div class="card shadow">
-                                <div class="card-header bg-primary ">
-                                    <h5 class="mx-2 mb-0 text-white">Kết quả làm bài</h5>
+    <div class="row g-4">
+
+        <div class="col-lg-4 order-lg-2 order-1">
+            <div class="custom-card score-card sticky-top" style="top: 20px; z-index: 1;">
+                <div class="card-header bg-primary text-white p-3">
+                    <h5 class="mb-0 text-white"><i class="fas fa-chart-pie me-2"></i>Kết quả chung</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="text-center mb-3">
+                        <span class="text-muted text-uppercase small fw-bold">Tổng điểm</span>
+                        <div class="score-display">@Model.Score</div>
+                    </div>
+
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span class="text-muted"><i class="fas fa-file-alt me-2"></i>Tên đề</span>
+                            <span class="fw-bold text-end">@Model.ExamName</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span class="text-muted"><i class="fas fa-clock me-2"></i>Bắt đầu</span>
+                            <span class="fw-bold">@Model.StartTime</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span class="text-muted"><i class="fas fa-check-circle me-2"></i>Nộp bài</span>
+                            <span class="fw-bold">@Model.SubmitTime</span>
+                        </li>
+
+                        @if (!string.IsNullOrEmpty(Model.UploadedFileUrl))
+                        {
+                            <li class="list-group-item">
+                                <div class="d-grid mt-2">
+                                    <a href="@Model.UploadedFileUrl" target="_blank" class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-download me-2"></i>Tải bài làm (File)
+                                    </a>
                                 </div>
-                                <div class="card-body">
-                                    <p><strong class="mx-2">Tên đề:</strong> @Model.ExamName</p>
-                                    <p><strong class="mx-2">Thời gian bắt đầu:</strong> @Model.StartTime</p>
-                                    <p><strong class="mx-2">Thời gian nộp:</strong> @Model.SubmitTime</p>
-                                    <p><strong class="mx-2">Điểm:</strong> @Model.Score</p>
-                                    @if (!string.IsNullOrEmpty(Model.UploadedFileUrl))
-                                    {
-                                        <hr />
-                                        <p>
-                                            <strong class="mx-2">Bài làm dạng file:</strong>
-                                            <a href="@Model.UploadedFileUrl"
-                                               target="_blank"
-                                               rel="noopener noreferrer">
-                                                Mở file
-                                            </a>
-                                        </p>
-                                    }
-                                <hr/>
-                                    <p class="fw-bold text-warning mx-2">Lưu ý:</p>
-                                    <p class="fw-bold mx-2">Bên trên câu trả lời của sinh viên là đáp án đúng</p>
-                                    <p class="fw-bold">
-                                        <span class="text-success mx-2 fw-bold">[Đúng]</span>
-                                        <span class="text-danger mx-2 fw-bold">[Sai]</span>
-                                        : Kết quả sinh viên chọn 
-                                    </p>
+                            </li>
+                        }
+                    </ul>
 
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Chi tiết làm bài của sinh viên (left side) -->
-                        <div class="col-12 col-md-8">
-                            <div class="bg-white p-3 rounded" style="box-shadow: rgba(50, 50, 93, 0.25) 0px 6px 12px -2px, rgba(0, 0, 0, 0.3) 0px 3px 7px -3px;">
-                                @foreach (var item in Model.ExamDetails)
-                                {
-                                    <div class="border rounded p-2 question">
-                                        <div class="d-flex">
-                                            <p class="fw-bold mx-2">Câu hỏi:</p>
-                                            @Html.Raw(item.QuestionContent)
-                                        </div>
-
-                                        <div>
-                                            @if (Model.ExamType == "Trắc nghiệm")  
-                                            {
-                                                @foreach (var option in JsonConvert.DeserializeObject<List<dynamic>>(item.ChoiceContent))
-                                                {
-                                                    var isCorrect = option.LaDapAn != null && option.LaDapAn.ToObject<bool>();
-                                                    if (item.QuestionType == "2")
-                                                    {
-                                                        <div class="border rounded p-2 d-flex mb-2 answer-option-multi">
-                                                            <input class="mx-2" disabled type="checkbox"
-                                                                   name="answer_multi_@item.QuestionContent"
-                                                                   value="@option.Id" data-correct="@(isCorrect ? "true" : "false")"
-                                                            @(isCorrect ? "checked" : "") />
-                                                            <div class="noiDungLuaChon">@Html.Raw(option.NoiDung.ToString())</div>
-                                                        </div>
-                                                    }
-                                                    else if (item.QuestionType == "1")
-                                                    {
-                                                        <div class="border rounded p-2 d-flex mb-2 answer-option-single">
-                                                            <input class="mx-2" disabled type="radio"
-                                                                   name="answer_single_@item.QuestionContent"
-                                                                   value="@option.Id" data-correct="@(isCorrect ? "true" : "false")"
-                                                            @(isCorrect ? "checked" : "") />
-                                                            <div class="noiDungLuaChon">@Html.Raw(option.NoiDung.ToString())</div>
-                                                        </div>
-                                                    }
-                                                    else if (item.QuestionType == "3")
-                                                    {
-                                                        <div class="border rounded p-2 d-flex mb-2 answer-option-truefalse">
-                                                            <input class="mx-2" disabled type="radio"
-                                                                   name="answer_truefalse_@item.QuestionContent"
-                                                                   value="@option.Id" data-correct="@(isCorrect ? "true" : "false")"
-                                                            @(isCorrect ? "checked" : "") />
-                                                            <div class="noiDungLuaChon">@Html.Raw(option.NoiDung.ToString())</div>
-                                                        </div>
-                                                    }
-                                                    else if (item.QuestionType == "4")
-                                                    {
-                                                        <div class="border rounded p-2 d-flex mb-2">
-                                                            <div class="noiDungLuaChon"><b>Đáp án chính xác: @Html.Raw(option.NoiDung.ToString())</b></div>
-                                                        </div>
-                                                    }
-                                                }
-                                            }
-
-                                        </div>
-
-                                        <!-- Phần câu trả lời của sinh viên -->
-                                        <div class="border rounded p-2">
-                                            <p class="mb-0 fw-bold">Câu trả lời của sinh viên:</p>
-
-                                            <div class="p-2">
-                                                @if (!string.IsNullOrEmpty(item.MultipleChoiceAnswer) && item.QuestionType == "1")
-                                                {
-                                                    var answers = item.MultipleChoiceAnswer.Split(',');
-                                                    foreach (var answer in answers)
-                                                    {
-                                                        var option = JsonConvert.DeserializeObject<List<dynamic>>(item.ChoiceContent)
-                                                        .FirstOrDefault(o => o.Id.ToString() == answer);
-
-                                                        if (option != null)
-                                                        {
-                                                            <div class="d-flex fw-bold">
-                                                                @Html.Raw(option.NoiDung.ToString())
-                                                                @if (option.LaDapAn.ToObject<bool>())
-                                                                {
-                                                                    <span class="text-success mx-2">[Đúng]</span>
-                                                                }
-                                                                else
-                                                                {
-                                                                    <span class="text-danger mx-2">[Sai]</span>
-                                                                }
-                                                            </div>
-                                                        }
-                                                    }
-                                                }
-                                                else if (!string.IsNullOrEmpty(item.MultipleChoiceAnswer) && item.QuestionType == "3")
-                                                {
-                                                    var answers = item.MultipleChoiceAnswer.Split(',');
-                                                    foreach (var answer in answers)
-                                                    {
-                                                        var option = JsonConvert.DeserializeObject<List<dynamic>>(item.ChoiceContent)
-                                                        .FirstOrDefault(o => o.Id.ToString() == answer);
-
-                                                        if (option != null)
-                                                        {
-                                                            <div class="d-flex fw-bold">
-                                                                @Html.Raw(option.NoiDung.ToString())
-                                                                @if (option.LaDapAn.ToObject<bool>())
-                                                                {
-                                                                    <span class="text-success mx-2">[Đúng]</span>
-                                                                }
-                                                                else
-                                                                {
-                                                                    <span class="text-danger mx-2">[Sai]</span>
-                                                                }
-                                                            </div>
-                                                        }
-                                                    }
-                                                }
-                                                else if (!string.IsNullOrEmpty(item.EssayAnswer) && item.QuestionType == "4")
-                                                {
-                                                    var studentAnswer = item.EssayAnswer.Trim();
-                                                    var options = JsonConvert.DeserializeObject<List<dynamic>>(item.ChoiceContent);
-
-                                                    foreach (var option in options)
-                                                    {
-                                                        var correctAnswer = option.NoiDung.ToString().Trim();
-
-                                                        <div class="d-flex fw-bold">
-                                                            <span class="me-2">@studentAnswer</span>
-
-                                                            @if (("<p>"+studentAnswer+"</p>").Equals(correctAnswer, StringComparison.OrdinalIgnoreCase))
-                                                            {
-                                                                <span class="text-success">[Đúng]</span>
-                                                            }
-                                                            else
-                                                            {
-                                                                <span class="text-danger">[Sai]</span>
-                                                            }
-                                                        </div>
-                                                    }
-                                                }
-
-                                                else if (!string.IsNullOrEmpty(item.EssayAnswer) && item.QuestionType == null)
-                                                {
-                                                    @Html.Raw(item.EssayAnswer)
-                                                }
-
-                                                else if (item.QuestionType == "2")
-                                                {
-                                                    var luaChonList = JsonConvert.DeserializeObject<List<dynamic>>(item.ChoiceContent);
-                                                    var selectedAnswers = item.MultipleChoiceAnswer.Split(',');
-
-                                                    var selectedAnswersList = selectedAnswers.ToList();
-
-                                                    foreach (var option in luaChonList)
-                                                    {
-                                                        bool isChecked = selectedAnswersList.Contains(option.Id.ToString());
-
-                                                        <div class="p-2 d-flex">
-                                                            <div class="noiDungLuaChon">@Html.Raw(option.NoiDung.ToString())</div>
-
-                                                            @if (isChecked)
-                                                            {
-                                                                @if (option.LaDapAn.ToObject<bool>())
-                                                                {
-                                                                    <span class="text-success fw-bold mx-2">[Đúng]</span>
-                                                                }
-                                                                else
-                                                                {
-                                                                    <span class="text-danger fw-bold mx-2">[Sai]</span>
-                                                                }
-                                                            }
-                                                            else
-                                                            {
-                                                                <span class="text-muted fw-bold mx-2">Chưa chọn</span>
-                                                            }
-                                                        </div>
-                                                    }
-                                                }
-                                                else
-                                                {
-                                                    <p class="text-muted">Sinh viên chưa trả lời câu hỏi này.</p>
-                                                }
-                                            </div>
-                                        </div>
-                                    </div>
-                                }
-
-                            </div>
+                    <div class="alert alert-light border mt-3 mb-0" role="alert">
+                        <h6 class="alert-heading fw-bold text-primary"><i class="fas fa-info-circle me-1"></i> Chú thích:</h6>
+                        <hr class="my-2">
+                        <div class="small">
+                            <div class="mb-1"><span class="badge bg-success me-2">Màu xanh</span> Đáp án đúng (Hệ thống)</div>
+                            <div class="mb-1"><span class="text-success fw-bold me-2">[Đúng]</span> Sinh viên chọn đúng</div>
+                            <div><span class="text-danger fw-bold me-2">[Sai]</span> Sinh viên chọn sai</div>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
+
+        <div class="col-lg-8 order-lg-1 order-2">
+            @foreach (var item in Model.ExamDetails)
+            {
+                <div class="custom-card mb-4 question">
+                    <div class="question-header d-flex align-items-start">
+                        <span class="badge bg-primary me-2 mt-1">Hỏi</span>
+                        <div class="flex-grow-1 question-content">
+                            @Html.Raw(item.QuestionContent)
+                        </div>
+                    </div>
+
+                    <div class="card-body">
+                        <h6 class="text-muted small fw-bold text-uppercase mb-3">Các lựa chọn:</h6>
+
+                        @if (Model.ExamType == "Trắc nghiệm")
+                        {
+                            @foreach (var option in JsonConvert.DeserializeObject<List<dynamic>>(item.ChoiceContent))
+                            {
+                                var isCorrect = option.LaDapAn != null && option.LaDapAn.ToObject<bool>();
+
+                                // Logic hiển thị từng loại câu hỏi (giữ nguyên logic gốc)
+                                if (item.QuestionType == "2") // Checkbox
+                                {
+                                    <div class="d-flex align-items-center answer-option-multi">
+                                        <div class="form-check">
+                                            <input class="form-check-input" disabled type="checkbox"
+                                                   name="answer_multi_@item.QuestionContent"
+                                                   value="@option.Id" data-correct="@(isCorrect ? "true" : "false")"
+                                                   @(isCorrect ? "checked" : "") />
+                                        </div>
+                                        <div class="noiDungLuaChon ms-2">@Html.Raw(option.NoiDung.ToString())</div>
+                                    </div>
+                                }
+                                else if (item.QuestionType == "1") // Radio
+                                {
+                                    <div class="d-flex align-items-center answer-option-single">
+                                        <div class="form-check">
+                                            <input class="form-check-input" disabled type="radio"
+                                                   name="answer_single_@item.QuestionContent"
+                                                   value="@option.Id" data-correct="@(isCorrect ? "true" : "false")"
+                                                   @(isCorrect ? "checked" : "") />
+                                        </div>
+                                        <div class="noiDungLuaChon ms-2">@Html.Raw(option.NoiDung.ToString())</div>
+                                    </div>
+                                }
+                                else if (item.QuestionType == "3") // True/False
+                                {
+                                    <div class="d-flex align-items-center answer-option-truefalse">
+                                        <div class="form-check">
+                                            <input class="form-check-input" disabled type="radio"
+                                                   name="answer_truefalse_@item.QuestionContent"
+                                                   value="@option.Id" data-correct="@(isCorrect ? "true" : "false")"
+                                                   @(isCorrect ? "checked" : "") />
+                                        </div>
+                                        <div class="noiDungLuaChon ms-2">@Html.Raw(option.NoiDung.ToString())</div>
+                                    </div>
+                                }
+                                else if (item.QuestionType == "4") // Essay (Hiển thị đáp án đúng)
+                                {
+                                    <div class="essay-answer-box bg-light border-success">
+                                        <i class="fas fa-check-circle text-success me-2"></i>
+                                        <strong>Đáp án mẫu:</strong> @Html.Raw(option.NoiDung.ToString())
+                                    </div>
+                                }
+                            }
+                        }
+                    </div>
+
+                    <div class="student-answer-section">
+                        <h6 class="text-primary small fw-bold text-uppercase mb-2">
+                            <i class="fas fa-user-edit me-1"></i> Câu trả lời của sinh viên:
+                        </h6>
+
+                        <div class="ps-3 border-start border-3 border-primary">
+                            @if (!string.IsNullOrEmpty(item.MultipleChoiceAnswer) && item.QuestionType == "1")
+                            {
+                                var answers = item.MultipleChoiceAnswer.Split(',');
+                                foreach (var answer in answers)
+                                {
+                                    var option = JsonConvert.DeserializeObject<List<dynamic>>(item.ChoiceContent)
+                                    .FirstOrDefault(o => o.Id.ToString() == answer);
+
+                                    if (option != null)
+                                    {
+                                        <div class="d-flex align-items-center mb-1">
+                                            <div class="me-2">@Html.Raw(option.NoiDung.ToString())</div>
+                                            @if (option.LaDapAn.ToObject<bool>())
+                                            {
+                                                <span class="badge bg-success"><i class="fas fa-check me-1"></i>Đúng</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-danger"><i class="fas fa-times me-1"></i>Sai</span>
+                                            }
+                                        </div>
+                                    }
+                                }
+                            }
+                            // Logic True/False (Type 3)
+                            else if (!string.IsNullOrEmpty(item.MultipleChoiceAnswer) && item.QuestionType == "3")
+                            {
+                                var answers = item.MultipleChoiceAnswer.Split(',');
+                                foreach (var answer in answers)
+                                {
+                                    var option = JsonConvert.DeserializeObject<List<dynamic>>(item.ChoiceContent)
+                                    .FirstOrDefault(o => o.Id.ToString() == answer);
+
+                                    if (option != null)
+                                    {
+                                        <div class="d-flex align-items-center mb-1">
+                                            <div class="me-2">@Html.Raw(option.NoiDung.ToString())</div>
+                                            @if (option.LaDapAn.ToObject<bool>())
+                                            {
+                                                <span class="badge bg-success"><i class="fas fa-check me-1"></i>Đúng</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-danger"><i class="fas fa-times me-1"></i>Sai</span>
+                                            }
+                                        </div>
+                                    }
+                                }
+                            }
+                            // Logic Essay (Type 4)
+                            else if (!string.IsNullOrEmpty(item.EssayAnswer) && item.QuestionType == "4")
+                            {
+                                var studentAnswer = item.EssayAnswer.Trim();
+                                var options = JsonConvert.DeserializeObject<List<dynamic>>(item.ChoiceContent);
+
+                                foreach (var option in options)
+                                {
+                                    var correctAnswer = option.NoiDung.ToString().Trim();
+                                    <div class="d-flex flex-wrap align-items-center">
+                                        <div class="fst-italic me-3">"@studentAnswer"</div>
+                                        @if (("<p>" + studentAnswer + "</p>").Equals(correctAnswer, StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            <span class="badge bg-success">Chính xác</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger">Không chính xác</span>
+                                        }
+                                    </div>
+                                }
+                            }
+                            // Logic Essay (No Type)
+                            else if (!string.IsNullOrEmpty(item.EssayAnswer) && item.QuestionType == null)
+                            {
+                                <div class="fst-italic">@Html.Raw(item.EssayAnswer)</div>
+                            }
+                            // Logic Checkbox Multiple (Type 2)
+                            else if (item.QuestionType == "2")
+                            {
+                                var luaChonList = JsonConvert.DeserializeObject<List<dynamic>>(item.ChoiceContent);
+                                var selectedAnswers = item.MultipleChoiceAnswer.Split(',').ToList();
+
+                                foreach (var option in luaChonList)
+                                {
+                                    bool isChecked = selectedAnswers.Contains(option.Id.ToString());
+                                    <div class="d-flex align-items-center mb-2 p-2 border rounded bg-white">
+                                        <div class="flex-grow-1">@Html.Raw(option.NoiDung.ToString())</div>
+
+                                        @if (isChecked)
+                                        {
+                                            if (option.LaDapAn.ToObject<bool>())
+                                            {
+                                                <span class="badge bg-success ms-2">Đã chọn (Đúng)</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-danger ms-2">Đã chọn (Sai)</span>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-light text-secondary border ms-2">Không chọn</span>
+                                        }
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <span class="text-muted fst-italic">Sinh viên chưa trả lời câu hỏi này.</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
         </div>
     </div>
 </div>
 
 @section Script {
     <script>
-        var ChiTietList = @Html.Raw(JsonConvert.SerializeObject(Model));
-        console.log("Danh sách chi tiết lịch sử làm bài:", ChiTietList);
+                var ChiTietList = @Html.Raw(JsonConvert.SerializeObject(Model));
+                console.log("Danh sách chi tiết lịch sử làm bài:", ChiTietList);
 
-        document.addEventListener("DOMContentLoaded", function () {
-            const message = @Html.Raw(Json.Serialize(TempData["SuccessMessage"]));
-            if (message) {
-                Toastify({
-                    text: message,
-                    duration: 4000,
-                    close: true,
-                    gravity: "bottom",
-                    position: "right",
-                    stopOnFocus: true,
-                    style: {
-                        background: "#28a745"
-                    }
-                }).showToast();
-            }
-        });
-        document.addEventListener("DOMContentLoaded", function () {
-            const chiTietCauHoi = document.querySelectorAll('.question');
-
-            chiTietCauHoi.forEach(function (question) {
-                // Xử lý riêng phần loại 1
-                const singleOptions = question.querySelectorAll('.answer-option-single');
-                singleOptions.forEach(function (optionDiv) {
-                    const input = optionDiv.querySelector('input');
-                    if (input) {
-                        const isChecked = input.checked;
-                        const isCorrect = input.getAttribute("data-correct")?.toLowerCase() === "true";
-
-                        if (isChecked && isCorrect) {
-                            optionDiv.style.backgroundColor = "#8BE78B"; // Xanh lá
-                        }
+                document.addEventListener("DOMContentLoaded", function () {
+                    const message = @Html.Raw(Json.Serialize(TempData["SuccessMessage"]));
+                    if (message) {
+                        Toastify({
+                            text: message,
+                            duration: 4000,
+                            close: true,
+                            gravity: "bottom",
+                            position: "right",
+                            stopOnFocus: true,
+                            style: {
+                                background: "#28a745"
+                            }
+                        }).showToast();
                     }
                 });
+                document.addEventListener("DOMContentLoaded", function () {
+                    const chiTietCauHoi = document.querySelectorAll('.question');
 
-                // Xử lý riêng phần loại 3
-                const trueFalseOptions = question.querySelectorAll('.answer-option-truefalse');
-                trueFalseOptions.forEach(function (optionDiv) {
-                    const input = optionDiv.querySelector('input');
-                    if (input) {
-                        const isChecked = input.checked;
-                        const isCorrect = input.getAttribute("data-correct")?.toLowerCase() === "true";
+                    chiTietCauHoi.forEach(function (question) {
+                        // Xử lý riêng phần loại 1
+                        const singleOptions = question.querySelectorAll('.answer-option-single');
+                        singleOptions.forEach(function (optionDiv) {
+                            const input = optionDiv.querySelector('input');
+                            if (input) {
+                                const isChecked = input.checked;
+                                const isCorrect = input.getAttribute("data-correct")?.toLowerCase() === "true";
 
-                        if (isChecked && isCorrect) {
-                            optionDiv.style.backgroundColor = "#8BE78B"; // Xanh lá
-                        }
-                    }
+                                if (isChecked && isCorrect) {
+                                    optionDiv.style.backgroundColor = "#d1e7dd"; // Sửa lại màu cho dịu hơn (success-light)
+                                    optionDiv.style.borderColor = "#badbcc";
+                                }
+                            }
+                        });
+
+                        // Xử lý riêng phần loại 3
+                        const trueFalseOptions = question.querySelectorAll('.answer-option-truefalse');
+                        trueFalseOptions.forEach(function (optionDiv) {
+                            const input = optionDiv.querySelector('input');
+                            if (input) {
+                                const isChecked = input.checked;
+                                const isCorrect = input.getAttribute("data-correct")?.toLowerCase() === "true";
+
+                                if (isChecked && isCorrect) {
+                                    optionDiv.style.backgroundColor = "#d1e7dd";
+                                    optionDiv.style.borderColor = "#badbcc";
+                                }
+                            }
+                        });
+
+                        // Xử lý loại 2 (checkbox nhiều đáp án)
+                        const multiOptions = question.querySelectorAll('.answer-option-multi');
+                        multiOptions.forEach(function (optionDiv) {
+                            const input = optionDiv.querySelector('input');
+                            if (input) {
+                                const isChecked = input.checked;
+        const isCorrect = input.getAttribute("data-correct")?.toLowerCase() === "true";
+
+                                if (isChecked && isCorrect) {
+                                    optionDiv.style.backgroundColor = "#d1e7dd";
+                                    optionDiv.style.borderColor = "#badbcc";
+                                }
+                            }
+                        });
+                    });
                 });
-
-                // Nếu muốn xử lý loại 2 (checkbox nhiều đáp án)
-                const multiOptions = question.querySelectorAll('.answer-option-multi');
-                multiOptions.forEach(function (optionDiv) {
-                    const input = optionDiv.querySelector('input');
-                    if (input) {
-                        const isChecked = input.checked;
-                        const isCorrect = input.getAttribute("data-correct")?.toLowerCase() === "true";
-
-                        if (isChecked && isCorrect) {
-                            optionDiv.style.backgroundColor = "#8BE78B"; // Xanh lá
-                        }
-                    }
-                });
-            });
-        });
-
-
     </script>
 }
