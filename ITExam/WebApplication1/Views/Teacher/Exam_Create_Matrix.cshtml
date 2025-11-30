@@ -382,8 +382,6 @@
                 });
             }
 
-
-
         window.addEventListener('DOMContentLoaded', () => {
             const danhSachDaLuu = @Html.Raw(JsonConvert.SerializeObject(Model.Chapters));
             const container = document.getElementById('chuong-container');
@@ -426,6 +424,7 @@
                         html += `
                         <div class="my-2 d-flex gap-3">
                             <input style="width:70%" value="${realClo.CLOTitle}" disabled type="text" class="form-control" />
+
                             <input style="width:10%"
                                    type="number"
                                    value="${currentCount}"
@@ -434,8 +433,7 @@
                                    min="0"
                                    max="${currentMax}"
                                    title="Tối đa ${currentMax} câu hỏi"/>
-                                <input style="width:15%" type="number" value="${clo.QuestionCount}" class="form-control" placeholder="Số lượng" min="0" max="${clo.MaxQuestionCount}" />
-                                <span class="align-self-center text-muted">(Tối đa ${clo.MaxQuestionCount} câu hỏi)</span>
+
                             <span class="align-self-center text-muted">(Tối đa ${currentMax} câu hỏi)</span>
 
                             <input type="hidden" value="${savedClo.CLOId}" class="clo-id" />
