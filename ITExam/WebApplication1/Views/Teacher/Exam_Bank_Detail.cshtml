@@ -7,60 +7,79 @@
 }
 
 @section Style {
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css" integrity="..." crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <link rel="stylesheet" href="~/css/teacher-exam-bank-detail.css" />
 }
-<div class="container-fluid p-0">
-    <div class="pt-3 py-lg-0 px-lg-5 px-3">
-        <div class="row mx-0 justify-content-center pt-2">
-            <div class="col-lg-6">
-                <div class="section-title text-center position-relative mb-4">
-                    <h2 class="display-4">Chi tiết ngân hàng đề</h2>
-                </div>
-            </div>
-        </div>
-        <div class="border mb-3">
-            <div class="card shadow-sm border-0 rounded-3">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0 text-white">Thông tin ngân hàng đề</h5>
-                </div>
-                <div class="card-body">
-                    <ul class="list-group list-group-flush">
-                        <li class="list-group-item">
-                            <strong>Tên môn học:</strong> @nganHangDe.Name
-                        </li>
-                        <li class="list-group-item">
-                            <strong>Tên ngân hàng đề:</strong> @Model.ExamBankName
-                        </li>
-                        <li class="list-group-item">
-							<strong>Loại ngân hàng đề:</strong> @Model.ExamType
-                        </li>
-                        <li class="list-group-item">
-                            <strong>Ngày tạo:</strong> @Model.CreatedDate?.ToString("dd/MM/yyyy HH:mm")
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </div>
 
-        <div class="border">
-            <ul class="nav nav-tabs d-flex justify-content-between border-bottom px-3 py-3 flex-nowrap gap-3" id="myTab" role="tablist">
+<div class="container-fluid p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Chi tiết Ngân hàng đề</h2>
+            <p class="text-muted mb-0">Quản lý và xem trước nội dung câu hỏi</p>
+        </div>
+        <div>
+            <a class="btn btn-outline-secondary" asp-controller="Teacher" asp-action="ExamBank">
+                <i class="fas fa-arrow-left me-2"></i>Quay lại
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card info-card p-3">
+                <div class="info-icon bg-light text-primary">
+                    <i class="fas fa-book"></i>
+                </div>
+                <h6 class="text-muted text-uppercase small fw-bold">Môn học</h6>
+                <h5 class="mb-0 text-truncate">@nganHangDe.Name</h5>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card info-card p-3">
+                <div class="info-icon bg-light text-success">
+                    <i class="fas fa-folder-open"></i>
+                </div>
+                <h6 class="text-muted text-uppercase small fw-bold">Tên ngân hàng</h6>
+                <h5 class="mb-0 text-truncate">@Model.ExamBankName</h5>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card info-card p-3">
+                <div class="info-icon bg-light text-warning">
+                    <i class="fas fa-list-check"></i>
+                </div>
+                <h6 class="text-muted text-uppercase small fw-bold">Loại đề</h6>
+                <h5 class="mb-0">@Model.ExamType</h5>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card info-card p-3">
+                <div class="info-icon bg-light text-info">
+                    <i class="fas fa-calendar-alt"></i>
+                </div>
+                <h6 class="text-muted text-uppercase small fw-bold">Ngày tạo</h6>
+                <h5 class="mb-0">@Model.CreatedDate?.ToString("dd/MM/yyyy")</h5>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-3 bg-white">
+        <div class="card-header bg-white border-bottom-0 pt-3 pb-0 px-4">
+            <ul class="nav nav-tabs custom-tabs" id="myTab" role="tablist">
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link active rounded fw-bold border" style="color:#646cff ;box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;" id="noiDungDeThi-tab" data-bs-toggle="tab" data-bs-target="#noiDungDeThi"
-                            type="button" role="tab" aria-controls="noiDungDeThi" aria-selected="true">
-                        Danh sách câu hỏi ngân hàng đề
+                    <button class="nav-link active" id="noiDungDeThi-tab" data-bs-toggle="tab" data-bs-target="#noiDungDeThi" type="button" role="tab">
+                        <i class="fas fa-layer-group me-2"></i>Danh sách câu hỏi
                     </button>
                 </li>
-                    <a class="btn btn-danger asp-controller="Teacher" asp-action="ExamBank">Trở về</a>
             </ul>
+        </div>
 
+        <div class="card-body p-4 bg-light">
             <div class="tab-content">
-                <div class="tab-pane active" id="noiDungDeThi" role="tabpanel" aria-labelledby="noiDungDeThi-tab">
+                <div class="tab-pane active" id="noiDungDeThi" role="tabpanel">
                     @if (Model.ExamBankQuestions != null && Model.ExamBankQuestions.Any())
                     {
                         var stt = 1;
-
-                        // Nhóm câu hỏi theo chương
                         var groupedByChapter = Model.ExamBankQuestions
                         .GroupBy(c => c.ChapterId)
                         .OrderBy(g => g.Key);
@@ -68,61 +87,54 @@
                         foreach (var chapter in groupedByChapter)
                         {
                             var chapterName = Model.Subject?.Chapters?.FirstOrDefault(c => c.Id == chapter.Key)?.Title;
-                            <h4 class="container mt-4 mb-3 fw-bold">Chương: @chapterName</h4>
+
+                            <div class="chapter-title">
+                                @(string.IsNullOrEmpty(chapterName) ? "Chương Khác" : $"Chương: {chapterName}")
+                            </div>
 
                             foreach (var cauHoi in chapter)
                             {
-                                <div class="container mb-4">
-                                    <div class="card shadow-sm">
-                                        <div class="card-header bg-primary text-white d-flex align-items-center">
-                                            <span class="me-3 fw-bold">Câu @stt:</span>
-                                            <div class="flex-grow-1 noiDungCauHoi">@Html.Raw(cauHoi.QuestionContent)</div>
+                                <div class="question-card">
+                                    <div class="question-header">
+                                        <div class="question-badge">Câu @stt</div>
+                                        <div class="flex-grow-1 fw-bold text-dark question-content">
+                                            @Html.Raw(cauHoi.QuestionContent)
                                         </div>
-
-                                        <div class="card-body">
-                                            @{
-                                                var luaChons = new List<ITExam.ViewModels.QuestionOptionVM>();
-                                                if (!string.IsNullOrEmpty(cauHoi.Options))
-                                                {
-                                                    luaChons = Newtonsoft.Json.JsonConvert.DeserializeObject<List<ITExam.ViewModels.QuestionOptionVM>>(cauHoi.Options);
-                                                }
-                                            }
-
-                                                <div class="offset-md-1 row">
-                                                    @if (cauHoi.QuestionType == "2") // Checkbox
-                                                    {
-                                                        @foreach (var lc in luaChons)
-                                                        {
-                                                            <div class="form-check mb-2 col-12 col-md-6">
-                                                                <input disabled class="form-check-input" type="checkbox" @(lc.IsCorrectAnswer ? "checked" : "") />
-                                                                <label class="form-check-label noiDungLuaChon text-black">
-                                                                    @Html.Raw(lc.ChoiceContent)
-                                                                </label>
-                                                            </div>
-                                                        }
-                                                    }
-                                                    else // Radio Button
-                                                    {
-                                                        @foreach (var lc in luaChons)
-                                                        {
-                                                        <div class="form-check mb-2 col-12 col-md-6">
-                                                                <input disabled class="form-check-input" type="radio" name="question_@stt" @(lc.IsCorrectAnswer ? "checked" : "")  />
-                                                                <label class="form-check-label noiDungLuaChon text-black">
-                                                                    @Html.Raw(lc.ChoiceContent)
-                                                                </label>
-                                                            </div>
-                                                        }
-                                                    }
-                                                </div>
-                                        </div>
-
-                                        <div class="card-footer text-end bg-light">
+                                        <div class="ms-3">
                                             <a asp-controller="Teacher"
                                                asp-action="@(Model.ExamType == "Trắc nghiệm" ? "Exam_Bank_Add_Question_MultipleChoice" : "Exam_Bank_Add_Question_Essay")"
                                                asp-route-id="@(Model.ExamBankId)"
-                                               class="btn btn-primary">
-                                                Chỉnh sửa
+                                               class="btn btn-sm btn-light text-primary border" title="Chỉnh sửa câu hỏi này">
+                                                <i class="fas fa-pen"></i> Sửa
                                             </a>
+                                        </div>
+                                    </div>
+
+                                    <div class="card-body px-4 py-3">
+                                        @{
+                                            var luaChons = new List<ITExam.ViewModels.QuestionOptionVM>();
+                                            if (!string.IsNullOrEmpty(cauHoi.Options))
+                                            {
+                                                luaChons = Newtonsoft.Json.JsonConvert.DeserializeObject<List<ITExam.ViewModels.QuestionOptionVM>>(cauHoi.Options);
+                                            }
+                                        }
+
+                                        <div class="row">
+                                            @if (cauHoi.QuestionType == "2" || cauHoi.QuestionType == "Trắc nghiệm" || true) // Xử lý hiển thị Options
+                                            {
+                                                foreach (var lc in luaChons)
+                                                {
+                                                    // Class .correct sẽ tự động thêm style xanh lá nếu là đáp án đúng
+                                                    <div class="col-md-6">
+                                                        <div class="option-item @(lc.IsCorrectAnswer ? "correct" : "")">
+                                                            <div class="option-marker"></div>
+                                                            <div class="flex-grow-1 choice-content">
+                                                                @Html.Raw(lc.ChoiceContent)
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                }
+                                            }
                                         </div>
                                     </div>
                                 </div>
@@ -132,11 +144,14 @@
                     }
                     else
                     {
-                        <p class="text-center mt-3">Chưa có câu hỏi nào trong đề thi này.</p>
+                        <div class="text-center py-5">
+                            <img src="https://cdn-icons-png.flaticon.com/512/7486/7486744.png" width="120" class="mb-3 opacity-50" alt="No Data" />
+                            <h5 class="text-muted">Chưa có câu hỏi nào</h5>
+                            <p class="text-muted small">Vui lòng thêm câu hỏi mới hoặc import từ file.</p>
+                        </div>
                     }
                 </div>
             </div>
-
         </div>
     </div>
 </div>

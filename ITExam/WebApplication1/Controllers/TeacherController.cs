@@ -702,7 +702,7 @@ namespace ITExam.Controllers
             {
                 ClassId = maLopHoc,
                 ExamId = maDe,
-                IsExam = vm.LaDeThi,
+                IsExam = true,
                 AddedDate = DateTime.Now,
                 StartTime = vm.StartTime,
                 EndTime = vm.EndTime,
