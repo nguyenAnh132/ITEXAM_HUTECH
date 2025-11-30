@@ -1,4 +1,5 @@
 ﻿using ITExam.ExternalModels;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using System.Text;
 
@@ -7,16 +8,18 @@ namespace ITExam.Services
     public class GeminiService
     {
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly RoutingAPI _routingApi;
 
-        public GeminiService(IHttpClientFactory httpClientFactory, string apiKey)
+        public GeminiService(IHttpClientFactory httpClientFactory, IOptions<RoutingAPI> routingOptions)
         {
             _httpClientFactory = httpClientFactory;
+            _routingApi = routingOptions.Value;
         }
 
         public async Task<List<DatabaseQuestion>> GetQuestionsFromGeminiAsync(string prompt)
         {
             var client = _httpClientFactory.CreateClient();
-            var url = RoutingAPI.LLMApiUrl;
+            var url = _routingApi.LLMApiUrl;
 
             #region Tạo Request Body
             var requestBody = new

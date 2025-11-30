@@ -1,30 +1,166 @@
-﻿* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    outline: none;
+﻿:root {
+    --primary-color: #435ebe; /* Màu chủ đạo mới, hiện đại hơn */
+    --secondary-bg: #f2f7ff;
+    --success-light: #d1e7dd;
+    --success-text: #0f5132;
 }
 
-input {
-    outline: none;
+
+/* Card thông tin chung */
+.info-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
+    height: 100%;
+    border: none;
 }
 
-.noiDungCauHoi p {
-    margin-bottom: 0rem !important;
-    white-space: normal;
+    .info-card:hover {
+        transform: translateY(-2px);
+    }
+
+.info-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+}
+
+/* Tabs Styling */
+.custom-tabs .nav-link {
+    border: none;
+    color: #6c757d;
+    font-weight: 600;
+    padding: 1rem 1.5rem;
+    border-bottom: 3px solid transparent;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+    .custom-tabs .nav-link.active {
+        color: var(--primary-color);
+        border-bottom-color: var(--primary-color);
+    }
+
+/* Question Card */
+.question-card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    margin-bottom: 2rem;
+    background: #fff;
+    overflow: hidden;
+}
+
+.question-header {
+    background-color: #fff;
+    border-bottom: 1px solid #eee;
+    padding: 1.25rem;
+    display: flex;
+    align-items: flex-start;
+}
+
+.question-badge {
+    background: var(--primary-color);
+    color: white;
+    padding: 0.3rem 0.8rem;
+    border-radius: 6px;
+    font-weight: bold;
+    font-size: 0.9rem;
+    margin-right: 1rem;
+    white-space: nowrap;
+}
+
+/* Option Styling (Đáp án) */
+.option-item {
+    padding: 0.75rem 1rem;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    background: #fff;
+}
+
+    /* Style cho đáp án ĐÚNG */
+    .option-item.correct {
+        background-color: var(--secondary-bg);
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+        font-weight: 500;
+    }
+
+.option-marker {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid #adb5bd;
+    margin-right: 12px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.option-item.correct .option-marker {
+    border-color: var(--primary-color);
+    background: var(--primary-color);
+    color: white;
+}
+
+    .option-item.correct .option-marker::after {
+        content: "\f00c"; /* FontAwesome check icon */
+        font-family: "Font Awesome 6 Free";
+        font-weight: 900;
+        font-size: 12px;
+    }
+
+.chapter-title {
+    color: var(--primary-color);
+    border-left: 4px solid var(--primary-color);
+    padding-left: 1rem;
+    margin: 2rem 0 1.5rem 0;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 1.1rem;
+    letter-spacing: 0.5px;
+}
+
+.choice-content {
+    font-size: 1rem;
+    color: #333;
     word-break: break-word;
 }
 
-.noiDungLuaChon p {
-    margin-bottom: 0rem !important;
-    white-space: normal;
-    word-break: break-word;
+    .choice-content img {
+        max-width: 100% !important;
+        height: auto !important;
+        max-height: 150px;
+        display: block;
+        margin-top: 5px;
+        margin-bottom: 5px;
+        border-radius: 5px;
+        object-fit: contain;
+        border: 1px solid #dee2e6;
+    }
+
+.question-content {
+    font-size: 1.1rem;
+    color: #212529;
+    line-height: 1.6;
 }
 
-.noiDungCauHoi figure img,
-.noiDungLuaChon figure img {
-    max-width: 100%;
-    height: auto;
-    display: block; /* Loại bỏ khoảng trắng dưới ảnh */
-    object-fit: contain; /* Đảm bảo ảnh co lại hợp lý */
-}
+    .question-content img {
+        max-width: 100% !important;
+        height: auto !important;
+        max-height: 400px;
+        display: block;
+        margin: 10px 0;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }

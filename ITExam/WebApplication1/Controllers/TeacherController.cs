@@ -11,15 +11,16 @@ using ITExam.ViewModels.Exam.NewVM;
 using ITExam.ViewModels.ExamBank;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using NPOI.XWPF.UserModel;
+using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Text.RegularExpressions;
 using ChapterCLOVM = ITExam.ViewModels.Exam.ChapterCLOVM;
 using CLOItem = ITExam.ViewModels.Exam.CLOItem;
-using System.Diagnostics;
-using NPOI.XWPF.UserModel;
-using System.Text.RegularExpressions;
 
 namespace ITExam.Controllers
 {
@@ -31,12 +32,14 @@ namespace ITExam.Controllers
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IClassCodeService _classCodeService;
         private readonly ILogger<TeacherController> _logger;
-        public TeacherController(IHttpClientFactory httpClientFactory, ITExamDbContext context, IClassCodeService classCodeService, ILogger<TeacherController> logger)
+        private readonly RoutingAPI _routingApi;
+        public TeacherController(IHttpClientFactory httpClientFactory, ITExamDbContext context, IClassCodeService classCodeService, ILogger<TeacherController> logger, IOptions<RoutingAPI> routingOptions)
         {
             _httpClientFactory = httpClientFactory;
             _context = context;
             _classCodeService = classCodeService;
             _logger = logger;
+            _routingApi = routingOptions.Value;
         }
 
 
@@ -371,7 +374,7 @@ namespace ITExam.Controllers
             {
                 var encodedClassCode = Uri.EscapeDataString(classCodeFolder);
 
-                var finalUrl = $"{RoutingAPI.AppScriptUrl}?action=deleteClass&classCode={encodedClassCode}";
+                var finalUrl = $"{_routingApi.AppScriptUrl}?action=deleteClass&classCode={encodedClassCode}";
 
                 using (var client = new HttpClient())
                 {
@@ -531,7 +534,7 @@ namespace ITExam.Controllers
             var access_token = Request.Cookies["access_token"];
             var client = _httpClientFactory.CreateClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", access_token);
-            var response = await client.GetAsync(RoutingAPI.GetSubjectUrl);
+            var response = await client.GetAsync(_routingApi.GetSubjectUrl);
             if (!response.IsSuccessStatusCode)
                 return StatusCode((int)response.StatusCode, "Không thể lấy danh sách môn học.");
             var json = await response.Content.ReadAsStringAsync();
@@ -699,7 +702,7 @@ namespace ITExam.Controllers
             {
                 ClassId = maLopHoc,
                 ExamId = maDe,
-                IsExam = vm.LaDeThi,
+                IsExam = true,
                 AddedDate = DateTime.Now,
                 StartTime = vm.StartTime,
                 EndTime = vm.EndTime,
@@ -899,7 +902,7 @@ namespace ITExam.Controllers
                 var encodedClassCode = Uri.EscapeDataString(classCodeFolder);
                 var encodedExamName = Uri.EscapeDataString(examNameFolder);
 
-                var finalUrl = $"{RoutingAPI.AppScriptUrl}?action=deleteExam&classCode={encodedClassCode}&examName={encodedExamName}";
+                var finalUrl = $"{_routingApi.AppScriptUrl}?action=deleteExam&classCode={encodedClassCode}&examName={encodedExamName}";
 
                 using (var client = new HttpClient())
                 {
@@ -1033,7 +1036,7 @@ namespace ITExam.Controllers
                     try
                     {
                         var client = _httpClientFactory.CreateClient();
-                        var deleteUrl = $"{RoutingAPI.AppScriptUrl}?action=delete&fileId={fileIdToDelete}";
+                        var deleteUrl = $"{_routingApi.AppScriptUrl}?action=delete&fileId={fileIdToDelete}";
 
                         var response = await client.GetAsync(deleteUrl);
 
@@ -1309,7 +1312,7 @@ namespace ITExam.Controllers
             var access_token = Request.Cookies["access_token"];
             var client = _httpClientFactory.CreateClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", access_token);
-            var response = await client.GetAsync(RoutingAPI.GetSubjectUrl);
+            var response = await client.GetAsync(_routingApi.GetSubjectUrl);
             if (!response.IsSuccessStatusCode)
                 return StatusCode((int)response.StatusCode, "Không thể lấy dữ liệu môn học.");
             var json = await response.Content.ReadAsStringAsync();
@@ -1367,7 +1370,7 @@ namespace ITExam.Controllers
             string access_token = Request.Cookies["access_token"]!;
             var client = _httpClientFactory.CreateClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", access_token);
-            var response = await client.GetAsync(RoutingAPI.GetSubjectUrl);
+            var response = await client.GetAsync(_routingApi.GetSubjectUrl);
             if (!response.IsSuccessStatusCode)
                 return StatusCode((int)response.StatusCode, "Không thể lấy danh sách môn học.");
             var json = await response.Content.ReadAsStringAsync();
@@ -1470,7 +1473,7 @@ namespace ITExam.Controllers
             var access_token = Request.Cookies["access_token"];
             var client = _httpClientFactory.CreateClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", access_token);
-            var response = await client.GetAsync(RoutingAPI.GetSubjectUrl);
+            var response = await client.GetAsync(_routingApi.GetSubjectUrl);
             if (!response.IsSuccessStatusCode)
             {
                 return StatusCode((int)response.StatusCode, "Không thể lấy dữ liệu môn học.");
@@ -1563,7 +1566,7 @@ namespace ITExam.Controllers
             var access_token = Request.Cookies["access_token"];
             var client = _httpClientFactory.CreateClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", access_token);
-            var response = await client.GetAsync(RoutingAPI.GetSubjectUrl);
+            var response = await client.GetAsync(_routingApi.GetSubjectUrl);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -1658,7 +1661,7 @@ namespace ITExam.Controllers
                 var access_token = Request.Cookies["access_token"];
                 var client = _httpClientFactory.CreateClient();
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", access_token);
-                var response = await client.GetAsync(RoutingAPI.GetSubjectUrl);
+                var response = await client.GetAsync(_routingApi.GetSubjectUrl);
 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -1973,7 +1976,7 @@ namespace ITExam.Controllers
             var access_token = Request.Cookies["access_token"];
             var client = _httpClientFactory.CreateClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", access_token);
-            var response = await client.GetAsync(RoutingAPI.GetSubjectUrl);
+            var response = await client.GetAsync(_routingApi.GetSubjectUrl);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -2045,7 +2048,7 @@ namespace ITExam.Controllers
             var access_token = Request.Cookies["access_token"];
             var client = _httpClientFactory.CreateClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", access_token);
-            var response = await client.GetAsync(RoutingAPI.GetSubjectUrl);
+            var response = await client.GetAsync(_routingApi.GetSubjectUrl);
             if (!response.IsSuccessStatusCode)
             {
                 return StatusCode((int)response.StatusCode, "Không thể lấy dữ liệu môn học.");

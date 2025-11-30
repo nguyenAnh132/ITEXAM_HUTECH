@@ -4,8 +4,12 @@ using ITExam.Models;
 using ITExam.Services;
 using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
+
+//lấy routingapi từ secrets
+builder.Services.Configure<RoutingAPI>(builder.Configuration.GetSection("RoutingApi"));
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddDbContext<ITExamDbContext>(options =>
@@ -41,8 +45,7 @@ builder.Services.AddScoped<IRedisService, RedisService>();
 builder.Services.AddScoped<IClassCodeService, ClassCodeService>();
 builder.Services.AddMemoryCache();
 
-builder.Services.AddScoped<GeminiService>(sp =>
-    new GeminiService(sp.GetRequiredService<IHttpClientFactory>(), RoutingAPI.LLMApiUrl));
+builder.Services.AddScoped<GeminiService>();
 
 builder.Services.AddDistributedMemoryCache();
 
@@ -62,11 +65,11 @@ using (var scope = app.Services.CreateScope())
 }
 
 // Configure the HTTP request pipeline.
-if (!app.Environment.IsDevelopment())
-{
-    app.UseExceptionHandler("/Home/Error");
-    app.UseHsts();
-}
+//if (!app.Environment.IsDevelopment())
+//{
+//    app.UseExceptionHandler("/Home/Error");
+//    app.UseHsts();
+//}
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
