@@ -176,7 +176,11 @@
 
                         @if (Model.ExamType == "Trắc nghiệm")
                         {
-                            @foreach (var option in JsonConvert.DeserializeObject<List<dynamic>>(item.ChoiceContent))
+                            var optionList = string.IsNullOrEmpty(item.ChoiceContent)
+                                ? new List<dynamic>()
+                                : JsonConvert.DeserializeObject<List<dynamic>>(item.ChoiceContent);
+
+                            foreach (var option in optionList)
                             {
                                 var isCorrect = option.LaDapAn != null && option.LaDapAn.ToObject<bool>();
 
