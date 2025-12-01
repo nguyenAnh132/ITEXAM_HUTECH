@@ -1,4 +1,12 @@
-﻿using ITExam.Filters;
+﻿using System.Collections.Concurrent;
+using System.Globalization;
+using System.Net;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using Google.Apis.Drive.v3.Data;
+using Hangfire;
+using ITExam.Filters;
 using ITExam.Hubs;
 using ITExam.Models;
 using ITExam.ViewModels;
@@ -8,13 +16,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
-using System.Globalization;
-using System.Net;
-using System.Text;
-using System.Text.Json;
-using System.Text.RegularExpressions;
 using Microsoft.Extensions.Caching.Memory;
-using System.Collections.Concurrent;
+using Org.BouncyCastle.Utilities.Collections;
 
 namespace ITExam.Controllers
 {
@@ -320,6 +323,335 @@ namespace ITExam.Controllers
             return Json(new { success = true });
         }
 
+        
+        public async Task AutoSubmitExam(int examHistoryId)
+        {
+            var examHistory = await _context.ExamHistories
+                .FirstOrDefaultAsync(h => h.ExamHistoryId == examHistoryId);
+            if (examHistory == null)
+                return;
+            if (examHistory.SubmitTime.HasValue)
+                return;
+            if (examHistory.EndTime != default && DateTime.Now < examHistory.EndTime)
+                return;
+
+            var user = await _context.Users
+                .AsNoTracking()
+                .Where(us => us.UserId == examHistory!.UserId)
+                .Select(u => new
+                {
+                    u.UserId,
+                    u.FullName,
+                    u.Username
+                })
+                .FirstOrDefaultAsync();
+            if (user == null)
+                return;
+
+            int examId = examHistory.ExamId;
+            int classId = examHistory.ClassId;
+
+            // Lấy dữ liệu câu trả lời trắc nghiệm
+            var multiChoiceKey = $"multiChoiceAns:{examId}:{user.UserId}";
+            var multiChoiceCacheData = await _redis.GetStringAsync(multiChoiceKey);
+
+            // Lấy dữ liệu câu trả lời điền từ
+            var essayKey = $"essayAns:{examId}:{user.UserId}";
+            var essayCacheData = await _redis.GetStringAsync(essayKey);
+
+            var questionCount = await _context.ExamMatrices
+                .AsNoTracking()
+                .Where(mt => mt.ExamId == examId)
+                .SumAsync(mt => mt.QuestionCount);
+
+            if (questionCount <= 0)
+            {
+                examHistory.Score = 0;
+                examHistory.SubmitTime = DateTime.Now;
+
+                if (!string.IsNullOrEmpty(examHistory.HangfireJobId))
+                {
+                    BackgroundJob.Delete(examHistory.HangfireJobId);
+                    examHistory.HangfireJobId = null;
+                }
+
+                await _context.SaveChangesAsync();
+                return;
+            }
+
+            double scoreOfQuestion = 10.0 / questionCount;
+            double totalScore = 0;
+            int CorrectCount = 0;
+
+            // Xử lý câu trả lời trắc nghiệm
+            if (!string.IsNullOrEmpty(multiChoiceCacheData))
+            {
+                var multiChoiceAnsList = JsonSerializer.Deserialize<Dictionary<int, List<int>>>(multiChoiceCacheData);
+
+                if (multiChoiceAnsList != null && multiChoiceAnsList.Count > 0)
+                {
+                    foreach (var answer in multiChoiceAnsList)
+                    {
+                        int questionId = answer.Key;
+                        List<int> answers = answer.Value.OrderBy(x => x).ToList();
+
+                        var question = await _context.QuestionBanks
+                            .SingleOrDefaultAsync(ch => ch.QuestionId == questionId);
+                        if (question == null) continue;
+
+                        // Chỉ xử lý câu trắc nghiệm (loại 1, 2, 3)
+                        if (question.QuestionType == "1" || question.QuestionType == "2" || question.QuestionType == "3")
+                        {
+                            var correctAnswers = Newtonsoft.Json.JsonConvert.DeserializeObject<List<QuestionOptionVM>>(question.ChoiceContent!)!
+                                .Where(lc => lc.IsCorrectAnswer)
+                                .Select(lc => lc.ChoiceId)
+                                .OrderBy(x => x)
+                                .ToList();
+
+                            bool isCorrect = answers.SequenceEqual(correctAnswers);
+                            if (isCorrect)
+                            {
+                                totalScore += scoreOfQuestion;
+                                CorrectCount++;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Xử lý câu trả lời điền từ
+            if (!string.IsNullOrEmpty(essayCacheData))
+            {
+                var fillInAnsList = JsonSerializer.Deserialize<Dictionary<int, string>>(essayCacheData);
+
+                if (fillInAnsList != null && fillInAnsList.Count > 0)
+                {
+                    foreach (var answer in fillInAnsList)
+                    {
+                        int questionId = answer.Key;
+                        string cauTraLoiSV = answer.Value ?? "";
+                        if (string.IsNullOrWhiteSpace(cauTraLoiSV)) continue;
+
+                        var question = await _context.QuestionBanks
+                            .AsNoTracking()
+                            .SingleOrDefaultAsync(ch => ch.QuestionId == questionId);
+                        if (question == null) continue;
+
+                        if (question.QuestionType == "4")
+                        {
+                            // Lấy đáp án đúng từ ChoiceContent (có thể chứa HTML)
+                            var correctAnswers = Newtonsoft.Json.JsonConvert
+                                .DeserializeObject<List<QuestionOptionVM>>(question.ChoiceContent!)!
+                                .Where(lc => lc.IsCorrectAnswer)
+                                .Select(lc => lc.ChoiceContent ?? "")
+                                .Where(x => !string.IsNullOrWhiteSpace(x))
+                                .Select(x => NormalizeForComparison(x, removeDiacritics: false)) // true nếu muốn so sánh bỏ dấu (Hà nội = Ha noi)
+                                .Where(x => !string.IsNullOrEmpty(x))
+                                .ToList();
+
+                            // Chuẩn hóa câu trả lời SV
+                            string cauTraLoiSVNorm = NormalizeForComparison(cauTraLoiSV, removeDiacritics: false);
+
+                            // So sánh chính xác giữa các string đã normalize
+                            bool isCorrect = correctAnswers.Any(dapAn => string.Equals(dapAn, cauTraLoiSVNorm, StringComparison.Ordinal));
+
+                            if (isCorrect)
+                            {
+                                totalScore += scoreOfQuestion;
+                                CorrectCount++;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Lưu lịch sử làm bài
+            examHistory.Score = Math.Round(totalScore, 2);
+            examHistory.SubmitTime = DateTime.Now;
+            examHistory.Duration = (int)(examHistory.EndTime - examHistory.StartTime).TotalSeconds;
+            _context.ExamHistories.Update(examHistory);
+
+            // Lưu chi tiết làm bài - Trắc nghiệm
+            if (!string.IsNullOrEmpty(multiChoiceCacheData))
+            {
+                var multiChoiceAnsList = JsonSerializer.Deserialize<Dictionary<int, List<int>>>(multiChoiceCacheData);
+                if (multiChoiceAnsList != null)
+                {
+                    foreach (var ch in multiChoiceAnsList)
+                    {
+                        var question = ch.Key;
+                        var option = ch.Value;
+
+                        var detail = await _context.StudentAnswers
+                            .FirstOrDefaultAsync(ct => ct.ExamHistoryId == examHistory.ExamHistoryId && ct.QuestionId == question);
+                        if (detail != null)
+                        {
+                            detail.MultipleChoiceAnswer = string.Join(",", option);
+                            _context.StudentAnswers.Update(detail);
+                        }
+                    }
+                }
+            }
+
+            // Lưu chi tiết làm bài - Điền từ
+            if (!string.IsNullOrEmpty(essayCacheData))
+            {
+                var fillInAnsList = JsonSerializer.Deserialize<Dictionary<int, string>>(essayCacheData);
+                if (fillInAnsList != null)
+                {
+                    foreach (var ch in fillInAnsList)
+                    {
+                        var question = ch.Key;
+                        var answer = ch.Value;
+
+                        var detail = await _context.StudentAnswers
+                            .FirstOrDefaultAsync(ct => ct.ExamHistoryId == examHistory.ExamHistoryId && ct.QuestionId == question);
+                        if (detail != null)
+                        {
+                            detail.EssayAnswer = answer;
+                            _context.StudentAnswers.Update(detail);
+                        }
+                    }
+                }
+            }
+
+            if (!string.IsNullOrEmpty(examHistory.HangfireJobId))
+            {
+                BackgroundJob.Delete(examHistory.HangfireJobId);
+                examHistory.HangfireJobId = null;
+            }
+
+            await _context.SaveChangesAsync();
+
+            // Xóa Redis
+            await _redis.RemoveAsync(multiChoiceKey);
+            await _redis.RemoveAsync(essayKey);
+            string orderKey = $"examOptionOrder:{examId}:{user.UserId}";
+            await _redis.RemoveAsync(orderKey);
+
+            //Phuong
+
+            //try
+            //{
+            //    var examKey = ExamKey(examId.ToString(), classId.ToString());
+            //    var scoreMap = GetScores(examKey);
+            //    scoreMap[user.Username] = Math.Round(tongDiem, 2);
+            //}
+            //catch (Exception ex)
+            //{
+            //    Console.WriteLine($"Error saving score to IMemoryCache: {ex.Message}");
+            //}
+            //await _hubContext.Clients
+            //        .Group($"exam:{examId}:class:{classId}")
+            //        .SendAsync("StudentScoreUpdated", new
+            //        {
+            //            ExamId = examId.ToString(),
+            //            ClassId = classId.ToString(),
+            //            StudentId = user.Username,
+            //            StudentName = user.FullName ?? "",
+            //            Score = Math.Round(tongDiem, 2),
+            //            CorrectAnswers = soCauDung,
+            //            QuestionCount = tongCauHoi,
+            //            AccuracyRate = tongCauHoi > 0 ? Math.Round((double)soCauDung * 100 / tongCauHoi, 2) : 0,
+            //            Duration = (int)(DateTime.Now - history.StartTime).TotalSeconds,
+            //            SubmittedAt = DateTime.UtcNow
+            //        });
+
+        }
+
+
+        public async Task AutoSubmitEssayExam(int examHistoryId)
+        {
+            var examHistory = await _context.ExamHistories
+                .FirstOrDefaultAsync(h => h.ExamHistoryId == examHistoryId);
+            if (examHistory == null)
+                return;
+            if (examHistory.SubmitTime.HasValue)
+                return;
+            if (examHistory.EndTime != default && DateTime.Now < examHistory.EndTime)
+                return;
+
+            var user = await _context.Users
+                .AsNoTracking()
+                .Where(us => us.UserId == examHistory!.UserId)
+                .Select(u => new
+                {
+                    u.UserId,
+                    u.FullName,
+                    u.Username
+                })
+                .FirstOrDefaultAsync();
+            if (user == null)
+                return;
+
+            int examId = examHistory.ExamId;
+            int classId = examHistory.ClassId;
+
+            if (!examHistory.SubmitTime.HasValue)
+            {
+                examHistory.SubmitTime = DateTime.Now;
+                examHistory.Duration = (int)(examHistory.EndTime - examHistory.StartTime).TotalSeconds;
+
+                var key = $"essayAns:{examId}:{user.UserId}";
+                var savedAnswers = new Dictionary<int, string>();
+
+                try
+                {
+                    var cacheData = await _redis.GetStringAsync(key);
+                    if (!string.IsNullOrEmpty(cacheData))
+                    {
+                        var redisAnswers = JsonSerializer.Deserialize<Dictionary<string, string>>(cacheData);
+
+                        foreach (var kvp in redisAnswers!)
+                        {
+                            if (int.TryParse(kvp.Key, out int questionId))
+                            {
+                                savedAnswers[questionId] = kvp.Value;
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Lỗi đọc hoặc parse Redis key {Key}", key);
+                }
+
+                var studentAnswers = await _context.StudentAnswers
+                    .Where(ct => ct.ExamHistoryId == examHistory.ExamHistoryId)
+                    .ToListAsync();
+
+                foreach (var answer in studentAnswers)
+                {
+                    if (savedAnswers.ContainsKey(answer.QuestionId))
+                    {
+                        answer.EssayAnswer = savedAnswers[answer.QuestionId];
+                        _context.StudentAnswers.Update(answer);
+                    }
+                }
+
+                _context.ExamHistories.Update(examHistory);
+                await _context.SaveChangesAsync();
+
+                if (!string.IsNullOrEmpty(examHistory.HangfireJobId))
+                {
+                    BackgroundJob.Delete(examHistory.HangfireJobId);
+                    examHistory.HangfireJobId = null;
+                }
+
+                await _context.SaveChangesAsync();
+
+                try
+                {
+                    await _redis.RemoveAsync(key);
+                    _logger.LogInformation("REDIS (ExamResult_TL POST): Đã xóa key {Key} sau khi nộp bài.", key);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "LỖI (ExamResult_TL POST): Không thể xóa key Redis {Key}.", key);
+                }
+            }
+
+        }
 
         // Đề thi: Vào thi
         public async Task<IActionResult> TakeTheExam_TN(int maDe, int maLop)
@@ -342,23 +674,23 @@ namespace ITExam.Controllers
             }
 
             //Kiểm tra xem sinh viên đã thi chưa
-            var deThi = await _context.Exams.FindAsync(maDe);
-            if (deThi == null) return NotFound();
+            var exam = await _context.Exams.FindAsync(maDe);
+            if (exam == null) return NotFound();
 
-            var lichSu = await _context.ExamHistories
+            var examHistory = await _context.ExamHistories
                 .FirstOrDefaultAsync(l => l.UserId == user.UserId && l.ExamId == maDe && l.ClassId == maLop);
 
-            if (lichSu != null && lichSu.SubmitTime.HasValue)
+            if (examHistory != null && examHistory.SubmitTime.HasValue)
             {
                 TempData["Error"] = "Bạn đã nộp bài này rồi!";
                 return RedirectToAction("Class");
             }
 
-            var chiTietBaiLamList = new List<StudentAnswer>();
+            var details = new List<StudentAnswer>();
 
-            if (lichSu == null)
+            if (examHistory == null)
             {
-                lichSu = new ExamHistory
+                examHistory = new ExamHistory
                 {
                     UserId = user.UserId,
                     ExamId = maDe,
@@ -366,14 +698,23 @@ namespace ITExam.Controllers
                     StartTime = DateTime.Now,
                     Score = 0
                 };
-                _context.ExamHistories.Add(lichSu);
+                _context.ExamHistories.Add(examHistory);
+                await _context.SaveChangesAsync();
+
+                examHistory.EndTime = examHistory.StartTime.AddMinutes(exam.Duration);
+                var autoSubmitId = BackgroundJob.Schedule(
+                    () => AutoSubmitExam(examHistory.ExamHistoryId),
+                    TimeSpan.FromMinutes(exam.Duration)
+                );
+
+                examHistory.HangfireJobId = autoSubmitId;
                 await _context.SaveChangesAsync();
 
                 //Random đề thi cho sinh viên
                 var maTran = await _context.ExamMatrices.AsNoTracking().Where(m => m.ExamId == maDe).ToListAsync();
                 var random = new Random();
 
-                var cauHoiNHD = await _context.QuestionBanks.AsNoTracking().Where(ch => ch.ExamBankId == deThi.ExamBankId).ToListAsync();
+                var cauHoiNHD = await _context.QuestionBanks.AsNoTracking().Where(ch => ch.ExamBankId == exam.ExamBankId).ToListAsync();
 
                 foreach (var item in maTran)
                 {
@@ -390,11 +731,11 @@ namespace ITExam.Controllers
                     {
                         var chiTiet = new StudentAnswer
                         {
-                            ExamHistoryId = lichSu.ExamHistoryId,
+                            ExamHistoryId = examHistory.ExamHistoryId,
                             QuestionId = ch.QuestionId
                         };
                         _context.StudentAnswers.Add(chiTiet);
-                        chiTietBaiLamList.Add(chiTiet);
+                        details.Add(chiTiet);
                     }
                 }
 
@@ -402,12 +743,12 @@ namespace ITExam.Controllers
             }
             else
             {
-                chiTietBaiLamList = await _context.StudentAnswers.AsNoTracking()
-                    .Where(ct => ct.ExamHistoryId == lichSu.ExamHistoryId)
+                details = await _context.StudentAnswers.AsNoTracking()
+                    .Where(ct => ct.ExamHistoryId == examHistory.ExamHistoryId)
                     .ToListAsync();
             }
 
-            var danhSachCauHoi = (from ct in chiTietBaiLamList
+            var danhSachCauHoi = (from ct in details
                       join ch in _context.QuestionBanks.AsNoTracking()
                       on ct.QuestionId equals ch.QuestionId
                       select ch)
@@ -446,13 +787,13 @@ namespace ITExam.Controllers
                 // Lưu vào Redis (Thời gian hết hạn = thời gian làm bài + buffer 30p)
                 await _redis.SetStringAsync(orderKey, JsonSerializer.Serialize(shuffleMap), new DistributedCacheEntryOptions
                 {
-                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(deThi.Duration + 30)
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(exam.Duration + 30)
                 });
             }
             else
             {
                 // Nếu đã có (F5 hoặc vào lại): Lấy ra dùng
-                shuffleMap = JsonSerializer.Deserialize<Dictionary<int, List<int>>>(orderCacheData);
+                shuffleMap = JsonSerializer.Deserialize<Dictionary<int, List<int>>>(orderCacheData)!;
             }
             // --- END: LOGIC ĐẢO THỨ TỰ ĐÁP ÁN ---
 
@@ -470,16 +811,16 @@ namespace ITExam.Controllers
                 ? new Dictionary<int, string>()
                 : JsonSerializer.Deserialize<Dictionary<int, string>>(essayCacheData);
 
-            int thoiGianLamBai = deThi.Duration * 60;
-            int thoiGianDaTroiQua = (int)(DateTime.Now - lichSu.StartTime).TotalSeconds;
+            int thoiGianLamBai = exam.Duration * 60;
+            int thoiGianDaTroiQua = (int)(DateTime.Now - examHistory.StartTime).TotalSeconds;
             int thoiGianConLai = thoiGianLamBai - thoiGianDaTroiQua;
             if (thoiGianConLai < 0) thoiGianConLai = 0;
 
             var vm = new MultipleChoiceExamEntryVM
             {
-                ExamId = deThi.ExamId,
-                ExamName = deThi.ExamName,
-                ExamType = deThi.ExamType,
+                ExamId = exam.ExamId,
+                ExamName = exam.ExamName,
+                ExamType = exam.ExamType,
                 Duration = thoiGianConLai,
                 UserId = user.UserId,
                 StudentId = user.Username,
@@ -497,23 +838,23 @@ namespace ITExam.Controllers
                         var orderList = shuffleMap[ch.QuestionId]; // List ID đã random: [3, 1, 2]
 
                         // Join hoặc OrderBy để sắp xếp originalChoices theo thứ tự của orderList
-                        finalChoices = originalChoices
+                        finalChoices = originalChoices!
                             .OrderBy(c => orderList.IndexOf(c.ChoiceId))
                             .Select(lc => new ChoiceVM
                             {
                                 ChoiceId = lc.ChoiceId,
-                                ChoiceContent = lc.ChoiceContent,
-                                IsSelected = luuLuaChon.ContainsKey(ch.QuestionId) && luuLuaChon[ch.QuestionId].Contains(lc.ChoiceId)
+                                ChoiceContent = lc.ChoiceContent!,
+                                IsSelected = luuLuaChon!.ContainsKey(ch.QuestionId) && luuLuaChon[ch.QuestionId].Contains(lc.ChoiceId)
                             }).ToList();
                     }
                     else
                     {
                         // Fallback nếu không tìm thấy trong map (trường hợp hiếm)
-                        finalChoices = originalChoices.Select(lc => new ChoiceVM
+                        finalChoices = originalChoices!.Select(lc => new ChoiceVM
                         {
                             ChoiceId = lc.ChoiceId,
-                            ChoiceContent = lc.ChoiceContent,
-                            IsSelected = luuLuaChon.ContainsKey(ch.QuestionId) && luuLuaChon[ch.QuestionId].Contains(lc.ChoiceId)
+                            ChoiceContent = lc.ChoiceContent!,
+                            IsSelected = luuLuaChon!.ContainsKey(ch.QuestionId) && luuLuaChon[ch.QuestionId].Contains(lc.ChoiceId)
                         }).ToList();
                     }
 
@@ -521,15 +862,15 @@ namespace ITExam.Controllers
                     {
                         QuestionId = ch.QuestionId,
                         QuestionContent = ch.QuestionContent,
-                        QuestionType = ch.QuestionType,
-                        FillInAns = ch.QuestionType == "4" && luuCauTraLoiTuLuan.ContainsKey(ch.QuestionId)
+                        QuestionType = ch.QuestionType!,
+                        FillInAns = ch.QuestionType == "4" && luuCauTraLoiTuLuan!.ContainsKey(ch.QuestionId)
                             ? luuCauTraLoiTuLuan[ch.QuestionId]
                             : string.Empty,
                         Choices = finalChoices
                     };
                 }).ToList(),
                 ClassId = maLop,
-                ClassName = lopHoc.ClassName
+                ClassName = lopHoc!.ClassName
             };
 
             return View(vm);
@@ -561,7 +902,6 @@ namespace ITExam.Controllers
         }
 
 
-
         //Đề thi : Vào thi tự luận
         public async Task<IActionResult> TakeTheExam_TL(int maDe, int maLop)
         {
@@ -582,33 +922,42 @@ namespace ITExam.Controllers
                 return RedirectToAction("Logout", "Auth");
             }
 
-            var deThi = await _context.Exams.FindAsync(maDe);
-            if (deThi == null) return NotFound();
+            var exam = await _context.Exams.FindAsync(maDe);
+            if (exam == null) return NotFound();
 
             //Truy vấn lịch sử làm bài của sinh viên trong lớp đó
-            var lichSu = await _context.ExamHistories
+            var examHistory = await _context.ExamHistories
                 .AsNoTracking()
                 .FirstOrDefaultAsync(l => l.UserId == user.UserId && l.ExamId == maDe && l.ClassId == maLop);
 
             //Nếu đã có lịch sử làm bài và đã nộp bài thì không cho vào thi nữa
-            if (lichSu != null && lichSu.SubmitTime.HasValue)
+            if (examHistory != null && examHistory.SubmitTime.HasValue)
             {
                 TempData["Error"] = "Bạn đã nộp bài này rồi!";
                 return RedirectToAction("Class");
             }
 
             //Nếu chưa có lịch sử làm bài thì tạo mới
-            var chiTietBaiLamList = new List<StudentAnswer>();
-            if (lichSu == null)
+            var details = new List<StudentAnswer>();
+            if (examHistory == null)
             {
-                lichSu = new ExamHistory
+                examHistory = new ExamHistory
                 {
                     UserId = user.UserId,
                     ExamId = maDe,
                     ClassId = maLop,
                     StartTime = DateTime.Now,
                 };
-                _context.ExamHistories.Add(lichSu);
+                _context.ExamHistories.Add(examHistory);
+                await _context.SaveChangesAsync();
+
+                examHistory.EndTime = examHistory.StartTime.AddMinutes(exam.Duration);
+                var autoSubmitId = BackgroundJob.Schedule(
+                    () => AutoSubmitEssayExam(examHistory.ExamHistoryId),
+                    TimeSpan.FromMinutes(exam.Duration)
+                );
+
+                examHistory.HangfireJobId = autoSubmitId;
                 await _context.SaveChangesAsync();
 
                 //Random đề thi cho sinh viên
@@ -616,7 +965,7 @@ namespace ITExam.Controllers
                 var random = new Random();
 
                 //Truy vấn danh sách câu hỏi theo mã ngân hàng đề
-                var cauHoiNHD = await _context.QuestionBanks.AsNoTracking().Where(ch => ch.ExamBankId == deThi.ExamBankId).ToListAsync();
+                var cauHoiNHD = await _context.QuestionBanks.AsNoTracking().Where(ch => ch.ExamBankId == exam.ExamBankId).ToListAsync();
 
                 foreach (var item in maTran)
                 {
@@ -633,11 +982,11 @@ namespace ITExam.Controllers
                     {
                         var chiTiet = new StudentAnswer
                         {
-                            ExamHistoryId = lichSu.ExamHistoryId,
+                            ExamHistoryId = examHistory.ExamHistoryId,
                             QuestionId = ch.QuestionId
                         };
                         _context.StudentAnswers.Add(chiTiet);
-                        chiTietBaiLamList.Add(chiTiet);
+                        details.Add(chiTiet);
                     }
                 }
 
@@ -645,14 +994,14 @@ namespace ITExam.Controllers
             }
             else
             {
-                chiTietBaiLamList = await _context.StudentAnswers
-                    .Where(ct => ct.ExamHistoryId == lichSu.ExamHistoryId)
+                details = await _context.StudentAnswers
+                    .Where(ct => ct.ExamHistoryId == examHistory.ExamHistoryId)
                     .ToListAsync();
             }
 
             var danhSachCauHoi = _context.QuestionBanks
                 .AsNoTracking()
-                .Where(ch => chiTietBaiLamList.Select(c => c.QuestionId).Contains(ch.QuestionId))
+                .Where(ch => details.Select(c => c.QuestionId).Contains(ch.QuestionId))
                 .ToList();
 
             var lopHoc = await _context.Classes.FindAsync(maLop);
@@ -680,21 +1029,21 @@ namespace ITExam.Controllers
                 luuCauTraLoi = new Dictionary<string, string>(); 
             }
 
-            int thoiGianLamBai = deThi.Duration * 60;
-            int thoiGianDaTroiQua = (int)(DateTime.Now - lichSu.StartTime).TotalSeconds;
+            int thoiGianLamBai = exam.Duration * 60;
+            int thoiGianDaTroiQua = (int)(DateTime.Now - examHistory.StartTime).TotalSeconds;
             int thoiGianConLai = thoiGianLamBai - thoiGianDaTroiQua;
             if (thoiGianConLai < 0) thoiGianConLai = 0;
 
             var viewModel = new EssayExamStartVM
             {
-                ExamId = deThi.ExamId,
-                ExamName = deThi.ExamName,
-                ExamType = deThi.ExamType,
+                ExamId = exam.ExamId,
+                ExamName = exam.ExamName,
+                ExamType = exam.ExamType,
                 Duration = thoiGianConLai,
                 UserId = user.UserId,
                 StudentId = user.Username,
                 FullName = user.FullName,
-                ClassCode = lopHoc.ClassCode ?? lopHoc.ClassName,
+                ClassCode = lopHoc!.ClassCode ?? lopHoc.ClassName,
                 Questions = danhSachCauHoi.Select(ch =>
                 {
                     // SỬA LỖI: PHẢI DÙNG .ToString()
@@ -865,6 +1214,13 @@ namespace ITExam.Controllers
                 .FirstOrDefaultAsync(ls => ls.UserId == user.UserId && ls.ExamId == maDe);
             if (examHistory == null) return NotFound();
 
+            if (!string.IsNullOrEmpty(examHistory.HangfireJobId))
+            {
+                BackgroundJob.Delete(examHistory.HangfireJobId);
+                examHistory.HangfireJobId = null;
+                await _context.SaveChangesAsync();
+            }
+
             // Lấy dữ liệu câu trả lời trắc nghiệm
             var multiChoiceKey = $"multiChoiceAns:{maDe}:{user.UserId}";
             var multiChoiceCacheData = await _redis.GetStringAsync(multiChoiceKey);
@@ -900,7 +1256,7 @@ namespace ITExam.Controllers
                         // Chỉ xử lý câu trắc nghiệm (loại 1, 2, 3)
                         if (cauHoi.QuestionType == "1" || cauHoi.QuestionType == "2" || cauHoi.QuestionType == "3")
                         {
-                            var dapAnDung = Newtonsoft.Json.JsonConvert.DeserializeObject<List<QuestionOptionVM>>(cauHoi.ChoiceContent)
+                            var dapAnDung = Newtonsoft.Json.JsonConvert.DeserializeObject<List<QuestionOptionVM>>(cauHoi.ChoiceContent!)!
                                 .Where(lc => lc.IsCorrectAnswer)
                                 .Select(lc => lc.ChoiceId)
                                 .OrderBy(x => x)
@@ -939,7 +1295,7 @@ namespace ITExam.Controllers
                         {
                             // Lấy đáp án đúng từ ChoiceContent (có thể chứa HTML)
                             var dapAnDungList = Newtonsoft.Json.JsonConvert
-                                .DeserializeObject<List<QuestionOptionVM>>(cauHoi.ChoiceContent)
+                                .DeserializeObject<List<QuestionOptionVM>>(cauHoi.ChoiceContent!)!
                                 .Where(lc => lc.IsCorrectAnswer)
                                 .Select(lc => lc.ChoiceContent ?? "")
                                 .Where(x => !string.IsNullOrWhiteSpace(x))
@@ -1110,12 +1466,17 @@ namespace ITExam.Controllers
                 return RedirectToAction("Logout", "Auth");
 
             var lichSu = await _context.ExamHistories
-                .AsNoTracking()
                 .FirstOrDefaultAsync(l => l.UserId == userId && l.ExamId == model.MaDe && l.ClassId == model.MaLop);
-
             if (lichSu == null)
             {
                 return NotFound(new { message = "Không tìm thấy lịch sử làm bài." }); 
+            }
+
+            if (!string.IsNullOrEmpty(lichSu.HangfireJobId))
+            {
+                BackgroundJob.Delete(lichSu.HangfireJobId);
+                lichSu.HangfireJobId = null;
+                await _context.SaveChangesAsync();
             }
 
             if (!lichSu.SubmitTime.HasValue)
@@ -1179,6 +1540,8 @@ namespace ITExam.Controllers
             var redirectUrl = Url.Action("ExamResult_TL", "Student", new { maDe = model.MaDe, maLop = model.MaLop });
             return Ok(new { success = true, redirectUrl });
         }
+
+
         public async Task<IActionResult> List_History_Detail()
         {
             var accessToken = Request.Cookies["access_token"];

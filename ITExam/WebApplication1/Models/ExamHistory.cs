@@ -19,6 +19,12 @@ namespace ITExam.Models
         public DateTime StartTime { get; set; }
 
         [DataType(DataType.DateTime)]
+        public DateTime EndTime { get; set; }
+
+        [MaxLength(100)]
+        public string? HangfireJobId { get; set; }
+
+        [DataType(DataType.DateTime)]
         public DateTime? SubmitTime { get; set; }
 
         [Required(ErrorMessage = "Thời gian làm bài là bắt buộc")]
