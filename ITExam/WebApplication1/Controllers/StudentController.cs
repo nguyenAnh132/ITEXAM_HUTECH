@@ -69,7 +69,8 @@ namespace ITExam.Controllers
                     ClassName = cd.Class.ClassName,
                     CreatedDate = cd.Class.CreatedDate,
                     StudentCount = cd.Class.ClassDetails.Count(),
-                    ExamCount = cd.Class.ClassExams.Count()
+                    ExamCount = cd.Class.ClassExams.Count(),
+                    LecturerName = cd.Class.User.FullName
                 })
                 .ToListAsync();
 

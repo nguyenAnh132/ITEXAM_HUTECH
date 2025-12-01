@@ -57,6 +57,7 @@
                 @foreach (var dt in Model)
                 {
                     var classname = dt.ClassName.Length > 30 ? dt.ClassName.Substring(0, 30) + "..." : dt.ClassName;
+                    var lecturerName = dt.LecturerName.Length > 15 ? dt.LecturerName.Substring(0, 15) + "..." : dt.LecturerName;
                     <div class="col-12 col-sm-6 col-lg-4 class-card" data-tenlop="@dt.ClassName.ToLowerInvariant()">
                         <div class="card-info-item position-relative overflow-hidden rounded shadow-sm bg-black">
                             <img class="img-fluid w-100" src="~/img/class-avatar.png" alt="Ảnh bài thi" style="height: 270px; object-fit: cover;">
@@ -76,6 +77,10 @@
                                         <div class="col-12 col-md-6 mb-1">
                                             <i class="fa-solid fa-clock me-1"></i>
                                             Ngày tạo: @dt.CreatedDate.ToString("dd-MM-yyyy")
+                                        </div>
+                                        <div class="col-12 col-md-6 mb-1" title="Giảng viên: @dt.LecturerName">
+                                            <i class="fa-solid fa-user-graduate me-1"></i>
+                                            @lecturerName
                                         </div>
                                     </div>
                                 </div>
