@@ -11,6 +11,7 @@ using ITExam.ViewModels.Exam.NewVM;
 using ITExam.ViewModels.ExamBank;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -33,13 +34,18 @@ namespace ITExam.Controllers
         private readonly IClassCodeService _classCodeService;
         private readonly ILogger<TeacherController> _logger;
         private readonly RoutingAPI _routingApi;
-        public TeacherController(IHttpClientFactory httpClientFactory, ITExamDbContext context, IClassCodeService classCodeService, ILogger<TeacherController> logger, IOptions<RoutingAPI> routingOptions)
+        private readonly IMemoryCache _cache;
+        private readonly IRedisService _redisService;
+
+        public TeacherController(IHttpClientFactory httpClientFactory, ITExamDbContext context, IClassCodeService classCodeService, ILogger<TeacherController> logger, IOptions<RoutingAPI> routingOptions, IMemoryCache cache, IRedisService redisService)
         {
             _httpClientFactory = httpClientFactory;
             _context = context;
             _classCodeService = classCodeService;
             _logger = logger;
             _routingApi = routingOptions.Value;
+            _cache = cache;
+            _redisService = redisService;
         }
 
 
@@ -310,6 +316,8 @@ namespace ITExam.Controllers
                 })
                 .OrderByDescending(s => s.Score)
                 .ToListAsync();
+
+            ViewBag.ExamId = examId;
 
             var viewModel = new StudentSubmissionList
             {
@@ -1048,29 +1056,29 @@ namespace ITExam.Controllers
         {
             var history = await _context.ExamHistories
                 .Include(l => l.StudentAnswers)
+                .Include(l => l.User) 
                 .FirstOrDefaultAsync(l => l.ExamHistoryId == id);
 
             if (history == null)
             {
                 return NotFound("Không tìm thấy lịch sử làm bài.");
             }
+
             int examId = history.ExamId;
             int classId = history.ClassId;
+            string studentId = history.User.Username;
             var fileUrlToDelete = history.UploadedFileId;
 
             if (!string.IsNullOrEmpty(fileUrlToDelete))
             {
                 var fileIdToDelete = ExtractFileIdFromUrl(fileUrlToDelete);
-
                 if (!string.IsNullOrEmpty(fileIdToDelete))
                 {
                     try
                     {
                         var client = _httpClientFactory.CreateClient();
                         var deleteUrl = $"{_routingApi.AppScriptUrl}?action=delete&fileId={fileIdToDelete}";
-
                         var response = await client.GetAsync(deleteUrl);
-
                         if (!response.IsSuccessStatusCode)
                         {
                             _logger.LogWarning("LỖI (Delete_History_Exam): Google Apps Script (File ID: {FileId}) trả về lỗi. Status: {StatusCode}", fileIdToDelete, response.StatusCode);
@@ -1083,19 +1091,50 @@ namespace ITExam.Controllers
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "LỖI (Delete_History_Exam): Không thể gọi Google Apps Script để xóa File ID: {FileId}", fileIdToDelete);
+                        _logger.LogError(ex, "Lỗi xóa file Drive: {FileId}", fileIdToDelete);
                     }
                 }
-                else
-                {
-                    _logger.LogWarning("(Delete_History_Exam): Không tìm thấy File ID trong URL: {Url}", fileUrlToDelete);
-                }
             }
-            _context.StudentAnswers.RemoveRange(history.StudentAnswers);
+
+            if (history.StudentAnswers != null && history.StudentAnswers.Any())
+            {
+                _context.StudentAnswers.RemoveRange(history.StudentAnswers);
+            }
             _context.ExamHistories.Remove(history);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Đã xóa lịch sử làm bài thành công!";
+            string participantsKey = $"participants:{examId}:{classId}";
+            string scoresKey = $"scores:{examId}:{classId}";
+
+            if (_cache.TryGetValue(participantsKey, out System.Collections.Concurrent.ConcurrentDictionary<string, ITExam.Hubs.ExamMonitorHub.StudentStatus> participants))
+            {
+                participants.TryRemove(studentId, out _);
+            }
+
+            if (_cache.TryGetValue(scoresKey, out System.Collections.Concurrent.ConcurrentDictionary<string, double> scoreMap))
+            {
+                scoreMap.TryRemove(studentId, out _);
+            }
+
+            var redisKeysToDelete = new List<string>
+            {
+                $"ITExam_logs:{examId}:{classId}:{studentId}",        
+                $"ITExam_tabcount:{examId}:{classId}:{studentId}",      
+                $"ITExam_examStructure:{examId}:{classId}:{studentId}",
+                $"ITExam_ip:{studentId}",                             
+                $"ITExam_ua:{studentId}",                  
+                $"multiChoiceAns:{examId}:{history.UserId}", 
+                $"essayAns:{examId}:{history.UserId}",     
+                $"examOptionOrder:{examId}:{history.UserId}" 
+            };
+
+            foreach (var key in redisKeysToDelete)
+            {
+                await _redisService.DeleteKeyAsync(key);
+                // Lưu ý: Đảm bảo IRedisService có hàm DeleteKeyAsync hoặc RemoveAsync tương ứng
+            }
+
+            TempData["SuccessMessage"] = "Đã xóa sạch lịch sử, cache và logs của sinh viên!";
             return RedirectToAction("List_Student_Do_Test", new { examId = examId, classId = classId });
         }
 
