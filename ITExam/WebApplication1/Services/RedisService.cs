@@ -23,7 +23,7 @@ namespace ITExam.Services
         public RedisService(IConnectionMultiplexer redis)
         {
             _redis = redis;
-            _db = redis.GetDatabase();
+            _db = redis.GetDatabase(0);
         }
 
         public async Task AddLogAsync(string key, string log)
