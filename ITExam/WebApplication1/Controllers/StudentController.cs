@@ -562,7 +562,8 @@ namespace ITExam.Controllers
                 StudentId = user.Username,
                 StudentName = user.FullName ?? "",
                 TabLeaveCount = tabLeaveCount, 
-                SubmittedAt = DateTime.UtcNow
+                SubmittedAt = DateTime.UtcNow,
+                ExamHistoryId = examHistory.ExamHistoryId
             });
 
             await _redisService.AddLogAsync($"ITExam_logs:{examId}:{classId}:{user.Username}",
@@ -581,7 +582,8 @@ namespace ITExam.Controllers
                  QuestionCount = questionCount,
                  AccuracyRate = questionCount > 0 ? Math.Round((double)CorrectCount * 100 / questionCount, 2) : 0,
                  Duration = (int)(DateTime.Now - examHistory.StartTime).TotalSeconds,
-                 SubmittedAt = DateTime.UtcNow
+                 SubmittedAt = DateTime.UtcNow,
+                 ExamHistoryId = examHistory.ExamHistoryId
              });
         }
 
@@ -1441,7 +1443,8 @@ namespace ITExam.Controllers
                     QuestionCount = viewModel.QuestionCount,
                     AccuracyRate = viewModel.AccuracyRate,
                     Duration = viewModel.Duration,
-                    SubmittedAt = DateTime.UtcNow
+                    SubmittedAt = DateTime.UtcNow,
+                    ExamHistoryId = examHistory.ExamHistoryId
                 });
 
             return View(viewModel);
