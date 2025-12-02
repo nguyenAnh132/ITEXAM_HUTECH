@@ -32,3 +32,51 @@ input {
 .btn_action {
     width: 120px;
 }
+
+.upload-container {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+/* Ẩn input file gốc đi */
+.file-input {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    opacity: 0;
+    cursor: pointer;
+    z-index: 2;
+}
+
+.upload-label {
+    display: block;
+    padding: 40px 20px;
+    background-color: #f8f9fa;
+    border: 2px dashed #dee2e6;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.upload-container:hover .upload-label,
+.file-input:focus + .upload-label {
+    border-color: #0d6efd;
+    background-color: #e9ecef;
+}
+
+.upload-container:hover .icon-upload i {
+    transform: scale(1.1);
+    opacity: 1;
+    transition: transform 0.3s;
+}
+
+.hover-elevate {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+    .hover-elevate:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 .5rem 1rem rgba(0,0,0,.15) !important;
+    }

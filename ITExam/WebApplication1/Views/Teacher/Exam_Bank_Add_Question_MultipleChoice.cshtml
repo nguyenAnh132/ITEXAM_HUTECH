@@ -83,33 +83,54 @@
 
                                 <hr />
 
-                                <div class="card">
-                                    <div class="card-header">
-                                        <h5 class="card-title">Import câu hỏi từ file Word (.docx)</h5>
+                                <div class="card shadow-sm border-0 rounded-3">
+                                    <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+                                        <h5 class="card-title fw-bold text-primary">
+                                            <i class="fas fa-file-word me-2"></i>Import câu hỏi từ file Word
+                                        </h5>
                                     </div>
-                                    <div class="card-body">
-                                        <p>
-                                            Vui lòng upload file theo đúng <a href="/templates/mau-import-dinh-dang.docx" target="_blank">mẫu quy định (mới)</a>.
-                                            <br />
-                                            (Đáp án đúng được xác định bằng **In Đậm**, <u>Gạch Chân</u>, hoặc <font color="red">Màu Khác</font>.)
-                                        </p>
+                                    <div class="card-body p-4">
+                                        <div class="alert alert-light border-start border-4 border-info shadow-sm" role="alert">
+                                            <div class="d-flex">
+                                                <div class="me-3 text-info"><i class="fas fa-info-circle fa-2x"></i></div>
+                                                <div>
+                                                    <p class="mb-1 fw-bold">Quy định định dạng file:</p>
+                                                    <p class="mb-1 small text-muted">
+                                                        Vui lòng tải file theo đúng <a href="javascript:void(0)"
+                                                                                       class="fw-bold text-decoration-none text-primary"
+                                                                                       data-bs-toggle="modal"
+                                                                                       data-bs-target="#modalPreviewMau">
+                                                            <i class="fas fa-eye me-1"></i> Xem và tải mẫu quy định
+                                                        </a>.
+                                                    </p>
+                                                    <p class="mb-0 small text-muted">
+                                                        Đáp án đúng được xác định bằng:
+                                                        <span class="badge bg-secondary">In Đậm</span>,
+                                                        <span class="badge bg-secondary text-decoration-underline">Gạch Chân</span>, hoặc
+                                                        <span class="badge bg-danger">Màu Đỏ</span>.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
 
-                                        <form asp-action="Exam_Bank_Import_From_Word_Formatted" method="post"
-                                              enctype="multipart/form-data">
-
+                                        <form asp-action="Exam_Bank_Import_From_Word_Formatted" method="post" enctype="multipart/form-data">
                                             <input type="hidden" asp-for="ExamBankId" />
 
-                                            <div class="row align-items-end align-items-md-center">
+                                            <div class="upload-container text-center mb-4">
+                                                <input type="file" name="wordFile" id="fileInput" class="file-input" accept=".docx" required onchange="updateFileName(this)" />
+                                                <label for="fileInput" class="upload-label">
+                                                    <div class="icon-upload mb-3">
+                                                        <i class="fas fa-cloud-upload-alt fa-3x text-primary opacity-50"></i>
+                                                    </div>
+                                                    <h6 class="fw-bold text-dark" id="uploadText">Click để chọn file hoặc Kéo thả vào đây</h6>
+                                                    <p class="text-muted small mb-0">Hỗ trợ định dạng: .docx</p>
+                                                </label>
+                                            </div>
 
-                                                <div class="col-12 col-md-auto mb-3 mb-md-0">
-                                                    <input type="file" name="wordFile" class="form-control-file" accept=".docx" required />
-                                                </div>
-
-                                                <div class="col-12 col-md-auto mt-2">
-                                                    <button type="submit" class="btn btn-primary btn-block w-100 w-md-auto">
-                                                        <i class="fas fa-upload"></i> Tải lên và Xử lý
-                                                    </button>
-                                                </div>
+                                            <div class="d-grid">
+                                                <button type="submit" class="btn btn-primary btn-lg rounded-pill shadow-sm hover-elevate">
+                                                    <i class="fas fa-magic me-2"></i> Tải lên và Xử lý
+                                                </button>
                                             </div>
                                         </form>
                                     </div>
@@ -286,6 +307,36 @@
     </div>
 </div>
 
+<div class="modal fade" id="modalPreviewMau" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold text-white" id="modalLabel">
+                    <i class="fas fa-file-word me-2"></i>Mẫu định dạng file Word
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body bg-light text-center p-0">
+                <img src=~/img/upload_example.png
+                     class="img-fluid w-100"
+                     alt="Mẫu file import"
+                     style="object-fit: contain; max-height: 70vh;">
+            </div>
+
+            <div class="modal-footer bg-white d-flex justify-content-between">
+                <span class="text-muted small">
+                    <i class="fas fa-info-circle"></i> Hãy soạn thảo giống hình bên trên để hệ thống đọc chính xác.
+                </span>
+                <div>
+                    <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Đóng</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
 
 @section Script
  {
@@ -819,5 +870,23 @@
 
             checkChanges();
         });
+    </script>
+    <script>
+        function updateFileName(input) {
+            var uploadText = document.getElementById('uploadText');
+            var icon = document.querySelector('.icon-upload i');
+
+            if (input.files && input.files.length > 0) {
+                var fileName = input.files[0].name;
+                uploadText.innerHTML = `<span class="text-success"><i class="fas fa-check-circle"></i> Đã chọn: ${fileName}</span>`;
+                uploadText.classList.add('text-success');
+
+                icon.className = "fas fa-file-word fa-3x text-primary";
+            } else {
+                uploadText.innerHTML = "Click để chọn file hoặc Kéo thả vào đây";
+                uploadText.classList.remove('text-success');
+                icon.className = "fas fa-cloud-upload-alt fa-3x text-primary opacity-50";
+            }
+        }
     </script>
  }
