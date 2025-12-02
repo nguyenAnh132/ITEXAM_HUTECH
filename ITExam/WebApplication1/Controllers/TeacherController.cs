@@ -650,16 +650,16 @@ namespace ITExam.Controllers
                 TempData["ErrorMessage"] = "Dữ liệu gửi lên không hợp lệ.";
                 return Json(new { success = false, message = "Dữ liệu rỗng." });
             }
-
-
-            bool hasInvalidItem = model.Chapters.SelectMany(c => c.CLOs)
-                                                .Any(clo => clo.QuestionCount > 0 && clo.CloScore <= 0);
-
-            if (hasInvalidItem)
+            if (model.IsEssayExam)
             {
-                TempData["ErrorMessage"] = "Tồn tại câu hỏi có số lượng nhưng chưa nhập điểm (Điểm phải lớn hơn 0).";
+                bool hasInvalidItem = model.Chapters.SelectMany(c => c.CLOs)
+                    .Any(clo => clo.QuestionCount > 0 && clo.CloScore <= 0);
 
-                return Json(new { success = false, message = "Vui lòng kiểm tra lại điểm số." });
+                if (hasInvalidItem)
+                {
+                    TempData["ErrorMessage"] = "Đề tự luận yêu cầu nhập điểm cho từng CLO (Điểm > 0).";
+                    return Json(new { success = false, message = "Vui lòng kiểm tra lại điểm số." });
+                }
             }
 
             try
@@ -674,7 +674,9 @@ namespace ITExam.Controllers
                 {
                     foreach (var clo in chuong.CLOs)
                     {
-                        if (clo.QuestionCount > 0 && clo.CloScore > 0)
+                        bool isValid = clo.QuestionCount > 0 && (!model.IsEssayExam || clo.CloScore > 0);
+
+                        if (isValid)
                         {
                             var item = new ExamMatrix
                             {
@@ -682,7 +684,7 @@ namespace ITExam.Controllers
                                 ChapterId = chuong.ChapterId,
                                 CLOId = clo.CLOId,
                                 QuestionCount = clo.QuestionCount,
-                                CloScore = clo.CloScore
+                                CloScore = model.IsEssayExam ? clo.CloScore : 0
                             };
                             _context.ExamMatrices.Add(item);
                         }

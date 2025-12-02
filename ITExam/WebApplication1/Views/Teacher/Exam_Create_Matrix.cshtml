@@ -477,7 +477,7 @@
                 }
             }
 
-            const data = { ExamId: @Model.ExamId, Chapters: matrix };
+            const data = { ExamId: @Model.ExamId,IsEssayExam: isEssayExam, Chapters: matrix };
             fetch('/Teacher/Save_Exam_Matrix', {
                 method: 'POST', headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
