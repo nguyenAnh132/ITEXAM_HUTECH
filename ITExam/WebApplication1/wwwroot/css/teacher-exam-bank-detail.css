@@ -122,12 +122,11 @@
 
 .chapter-title {
     color: var(--primary-color);
-    border-left: 4px solid var(--primary-color);
     padding-left: 1rem;
     margin: 2rem 0 1.5rem 0;
     font-weight: 700;
     text-transform: uppercase;
-    font-size: 1.1rem;
+    font-size: 1.5rem;
     letter-spacing: 0.5px;
 }
 

@@ -15,8 +15,6 @@
                 <div class="section-title text-center position-relative mb-4">
                     <h2 class="display-4">Ma trận đề thi</h2>
                     <h6 class="d-inline-block position-relative text-secondary text-uppercase pb-2">Môn học: @ViewBag.SubjectName</h6>
-                    <br />
-                    <h6 class="d-inline-block position-relative text-secondary text-uppercase pb-2">Ngân hàng đề: @Model.ExamBankName</h6>
                 </div>
             </div>
         </div>
@@ -186,10 +184,26 @@
             Chapter.Clos.forEach(clo => {
                     console.log(`CLO: ${clo.CLOTitle} | MaxCauHoi: ${clo.MaxCauHoi}`);
                 cloHTML += `
-                    <div class="my-2 d-flex gap-3 ">
-                        <input style="width:70%" value="${clo.CLOTitle}" disabled type="text" class="form-control" />
-                        <input style="width:10%" type="number" value="0" class="form-control" placeholder="Số lượng" max="${clo.MaxQuestionCount}" title="Tối đa ${clo.MaxQuestionCount} câu hỏi" />
-                        <span class="align-self-center text-muted">(Tối đa ${clo.MaxQuestionCount} câu hỏi)</span>
+                     <div class="my-2 d-flex flex-wrap flex-md-nowrap gap-3 align-items-center">
+                        <input type="text"
+                               value="${clo.CLOTitle}"
+                               disabled
+                               class="form-control flex-grow-1"
+                        />
+
+                        <input type="number"
+                               value="0"
+                               class="form-control"
+                               placeholder="SL"
+                               style="width: 6rem;"
+                               max="${clo.MaxQuestionCount}"
+                               title="Tối đa ${clo.MaxQuestionCount} câu hỏi"
+                        />
+
+                        <span class="text-muted text-nowrap">
+                            (Tối đa: ${clo.MaxQuestionCount})
+                        </span>
+
                         <input type="hidden" value="${clo.CLOId}" class="clo-id" />
                     </div>`;
             });
@@ -249,13 +263,27 @@
                     chuong.Clos.forEach((clo, i) => {
                         const giaTri = cloDataTam[i]?.value || 0;
                               cloHTML += `
-                        <div class="my-2 d-flex  gap-3">
-                            <input style="width:70%" value="${clo.CLOTitle}" disabled type="text" class="form-control" />
+                                <div class="my-2 d-flex gap-3 align-items-center">
+            <input value="${clo.CLOTitle}"
+                   disabled
+                   type="text"
+                   class="form-control flex-grow-1" />
 
-                            <input style="width:10%" type="number" value="${giaTri}" class="form-control" placeholder="Số câu hoặc điểm" min="0" max="${clo.MaxQuestionCount}" title="Tối đa ${clo.MaxQuestionCount} câu hỏi"/>
-                            <span class="align-self-center text-muted">(Tối đa ${clo.MaxQuestionCount} câu hỏi)</span>
-                            <input type="hidden" value="${clo.CLOId}" class="clo-id" />
-                        </div>`;
+            <input style="width: 8rem;"
+                   type="number"
+                   value="${giaTri}"
+                   class="form-control"
+                   placeholder="Số câu hoặc điểm"
+                   min="0"
+                   max="${clo.MaxQuestionCount}"
+                   title="Tối đa ${clo.MaxQuestionCount} câu hỏi"/>
+
+            <span class="text-muted text-nowrap">
+                (Tối đa: ${clo.MaxQuestionCount} )
+            </span>
+
+            <input type="hidden" value="${clo.CLOId}" class="clo-id" />
+        </div>`;
                     });
                     cloListContainer.innerHTML = cloHTML;
                 }
@@ -422,22 +450,27 @@
                         }
 
                         html += `
-                        <div class="my-2 d-flex gap-3">
-                            <input style="width:70%" value="${realClo.CLOTitle}" disabled type="text" class="form-control" />
+                                <div class="my-2 d-flex gap-3 align-items-center">
+            <input value="${realClo.CLOTitle}"
+                   disabled
+                   type="text"
+                   class="form-control flex-grow-1" />
 
-                            <input style="width:10%"
-                                   type="number"
-                                   value="${currentCount}"
-                                   class="form-control"
-                                   placeholder="Số lượng"
-                                   min="0"
-                                   max="${currentMax}"
-                                   title="Tối đa ${currentMax} câu hỏi"/>
+            <input style="width: 7rem;"
+                   type="number"
+                   value="${currentCount}"
+                   class="form-control"
+                   placeholder="Số lượng"
+                   min="0"
+                   max="${currentMax}"
+                   title="Tối đa ${currentMax} câu hỏi"/>
 
-                            <span class="align-self-center text-muted">(Tối đa ${currentMax} câu hỏi)</span>
+            <span class="text-muted text-nowrap">
+                (Tối đa ${currentMax})
+            </span>
 
-                            <input type="hidden" value="${savedClo.CLOId}" class="clo-id" />
-                        </div>`;
+            <input type="hidden" value="${savedClo.CLOId}" class="clo-id" />
+        </div>`;
                     }
                 });
 
