@@ -25,6 +25,9 @@ namespace ITExam.Models
         [Range(1, 100, ErrorMessage = "Số lượng câu hỏi phải từ 1 đến 100")]
         public int QuestionCount { get; set; }
 
+        [Range(0.0, 10.0, ErrorMessage = "Số lượng câu hỏi phải từ 1 đến 100")]
+        public double CloScore { get; set; }
+
         public Exam Exam { get; set; }
     }
 }

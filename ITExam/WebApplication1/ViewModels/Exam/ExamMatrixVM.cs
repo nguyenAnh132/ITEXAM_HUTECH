@@ -7,6 +7,7 @@
         public string ExamBankName { get; set; }
         public List<ChapterCLOVM> Chapters { get; set; }
         public int Duration { get; set; }
+        public bool IsEssayExam { get; set; }
 
     }
 
@@ -23,6 +24,8 @@
         public string CLO { get; set; }
         public int QuestionCount { get; set; }
         public int MaxQuestionCount { get; set; }
+
+        public double CloScore { get; set; }
     }
 
 }

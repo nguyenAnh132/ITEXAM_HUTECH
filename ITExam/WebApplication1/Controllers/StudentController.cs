@@ -678,6 +678,7 @@ namespace ITExam.Controllers
 
         }
 
+
         // Đề thi: Vào thi
         public async Task<IActionResult> TakeTheExam_TN(int maDe, int maLop)
         {
@@ -726,6 +727,8 @@ namespace ITExam.Controllers
                 _context.ExamHistories.Add(examHistory);
                 await _context.SaveChangesAsync();
 
+
+                //plan
                 examHistory.EndTime = examHistory.StartTime.AddMinutes(exam.Duration);
                 var autoSubmitId = BackgroundJob.Schedule(
                     () => AutoSubmitExam(examHistory.ExamHistoryId),

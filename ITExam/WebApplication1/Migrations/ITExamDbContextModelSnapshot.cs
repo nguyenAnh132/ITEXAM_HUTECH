@@ -143,6 +143,31 @@ namespace ITExam.Migrations
                     b.ToTable("ClassExam");
                 });
 
+            modelBuilder.Entity("ITExam.Models.EssayCriterion", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Percent")
+                        .HasColumnType("int");
+
+                    b.Property<int>("QuestionId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("QuestionId");
+
+                    b.ToTable("EssayCriteria");
+                });
+
             modelBuilder.Entity("ITExam.Models.Exam", b =>
                 {
                     b.Property<int>("ExamId")
@@ -283,6 +308,9 @@ namespace ITExam.Migrations
                     b.Property<int>("ChapterId")
                         .HasColumnType("int");
 
+                    b.Property<double>("CloScore")
+                        .HasColumnType("float");
+
                     b.Property<int>("ExamId")
                         .HasColumnType("int");
 
@@ -319,9 +347,6 @@ namespace ITExam.Migrations
                     b.Property<string>("QuestionContent")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<double?>("QuestionScore")
-                        .HasColumnType("float");
 
                     b.Property<string>("QuestionType")
                         .HasColumnType("nvarchar(max)");
@@ -489,6 +514,17 @@ namespace ITExam.Migrations
                     b.Navigation("Exam");
                 });
 
+            modelBuilder.Entity("ITExam.Models.EssayCriterion", b =>
+                {
+                    b.HasOne("ITExam.Models.QuestionBank", "Question")
+                        .WithMany("EssayCriteria")
+                        .HasForeignKey("QuestionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Question");
+                });
+
             modelBuilder.Entity("ITExam.Models.Exam", b =>
                 {
                     b.HasOne("ITExam.Models.ExamBank", "ExamBank")
@@ -619,6 +655,8 @@ namespace ITExam.Migrations
 
             modelBuilder.Entity("ITExam.Models.QuestionBank", b =>
                 {
+                    b.Navigation("EssayCriteria");
+
                     b.Navigation("StudentAnswers");
                 });
 

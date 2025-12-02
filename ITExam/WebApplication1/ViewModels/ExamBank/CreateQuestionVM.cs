@@ -33,5 +33,7 @@ namespace ITExam.ViewModels.ExamBank
         public List<ChapterDto> ChapterList { get; set; } = new List<ChapterDto>();
 
         public List<QuestionDto> QuestionDTOList { get; set; } = new List<QuestionDto>();
+
+        public List<EssayCriterionVM>? Criteria { get; set; }
     }
 }

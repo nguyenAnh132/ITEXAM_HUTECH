@@ -85,7 +85,7 @@
                                         <span class="fw-bold text-primary" id="tong-so-cau">0</span>
                                     </div>
                                     <button class="btn btn-primary w-100 mt-3" onclick="submitMatrix()">
-                                        <i class="fa-solid fa-check me-1"></i> Lưu ma trận
+                                        Lưu ma trận
                                     </button>
                                 </div>
                             </div>
@@ -148,9 +148,10 @@
     <script src="~/js/notification.js"></script>
     <script>
         const chuongData = @Html.Raw(ViewData["ChapterJson"]);
-        console.log(chuongData);
+        let isEssayExam = @(Model.IsEssayExam.ToString().ToLower());
         let index = 0;
 
+        // --- 1. SỰ KIỆN THÊM MỚI (GIỮ NGUYÊN LOGIC CŨ) ---
         document.getElementById('btn-add-chuong').addEventListener('click', function () {
             const container = document.getElementById('chuong-container');
             const rowId = `row-${index++}`;
@@ -181,234 +182,51 @@
                 if (!Chapter) return;
 
                 let cloHTML = '';
-            Chapter.Clos.forEach(clo => {
-                    console.log(`CLO: ${clo.CLOTitle} | MaxCauHoi: ${clo.MaxCauHoi}`);
-                cloHTML += `
-                     <div class="my-2 d-flex flex-wrap flex-md-nowrap gap-3 align-items-center">
-                        <input type="text"
-                               value="${clo.CLOTitle}"
-                               disabled
-                               class="form-control flex-grow-1"
-                        />
 
-                        <input type="number"
-                               value="0"
-                               class="form-control"
-                               placeholder="SL"
-                               style="width: 6rem;"
-                               max="${clo.MaxQuestionCount}"
-                               title="Tối đa ${clo.MaxQuestionCount} câu hỏi"
-                        />
+                Chapter.Clos.forEach(clo => {
+                    cloHTML += createCountInputHtml(clo.CLOTitle, 0, clo.MaxQuestionCount, clo.CLOId);
+                });
 
-                        <span class="text-muted text-nowrap">
-                            (Tối đa: ${clo.MaxQuestionCount})
-                        </span>
+                if (isEssayExam) {
+                    cloHTML += startPointSectionHtml();
+                    Chapter.Clos.forEach(clo => {
 
-                        <input type="hidden" value="${clo.CLOId}" class="clo-id" />
-                    </div>`;
-            });
+                        cloHTML += createPointInputHtml(ChapterId, clo.CLOTitle, 0, clo.CLOId, true);
+                    });
+                    cloHTML += endPointSectionHtml();
+                }
+
                 cloListContainer.innerHTML = cloHTML;
                 capNhatThongTinCauHoi();
                 capNhatDanhSachChuongComboBox();
+                if(isEssayExam) validateTotalPoints();
             }
         });
 
         document.addEventListener('input', function (e) {
-            if (e.target.matches('.clo-list input[type="number"]')) {
-                capNhatThongTinCauHoi();
+            const row = e.target.closest('.js-clo-row');
+            if (row) {
+                const cloId = row.querySelector('.clo-id').value;
+                const sl = parseInt(e.target.value) || 0;
+                const chapterContainer = row.closest('[id^="row-"]');
+
+                const wrapper = chapterContainer.querySelector(`.clo-point-wrapper[data-chapter-id="${chapterId}"][data-clo-id="${cloId}"]`);
+
+                if (wrapper) {
+                    const input = wrapper.querySelector('input');
+                    if (sl > 0) {
+                        wrapper.classList.remove('d-none');
+                    } else {
+                        wrapper.classList.add('d-none');
+                        if (input) input.value = 0;
+                    }
+                    validateTotalPoints();
+                }
+            }
+            if (e.target.matches('.clo-point-input')) {
+                validateTotalPoints();
             }
         });
-
-        function xoaDongChuong(rowId) {
-            document.getElementById(rowId).remove();
-            capNhatDanhSachChuongComboBox();
-            capNhatThongTinCauHoi();
-        }
-
-            function capNhatDanhSachChuongComboBox() {
-            const daChon = Array.from(document.querySelectorAll('.chuong-select'))
-                .map(sel => sel.value)
-                .filter(val => val && val !== '-- Chọn chương --');
-
-            document.querySelectorAll('.chuong-select').forEach(select => {
-                const current = select.value;
-                const parent = select.closest('.border');
-                const cloListContainer = parent.querySelector('.clo-list');
-
-
-                const cloDataTam = [];
-                cloListContainer.querySelectorAll('.d-flex').forEach(div => {
-                    const label = div.querySelector('input[type="text"]')?.value;
-                    const value = div.querySelector('input[type="number"]')?.value;
-                    if (label) cloDataTam.push({ label, value });
-                });
-
-
-                select.innerHTML = '<option value="" disabled selected hidden>-- Chọn chương --</option>';
-                chuongData.forEach(c => {
-                    if (!daChon.includes(c.ChuongId.toString()) || c.ChuongId.toString() === current) {
-                        const opt = document.createElement('option');
-                        opt.value = c.ChuongId;
-                        opt.textContent = c.TenChuong;
-                        if (current === c.ChuongId.toString()) {
-                            opt.selected = true;
-                        }
-                        select.appendChild(opt);
-                    }
-                });
-
-                const chuong = chuongData.find(c => c.ChuongId.toString() === current);
-                if (chuong) {
-                    let cloHTML = '';
-                    chuong.Clos.forEach((clo, i) => {
-                        const giaTri = cloDataTam[i]?.value || 0;
-                              cloHTML += `
-                                <div class="my-2 d-flex gap-3 align-items-center">
-            <input value="${clo.CLOTitle}"
-                   disabled
-                   type="text"
-                   class="form-control flex-grow-1" />
-
-            <input style="width: 8rem;"
-                   type="number"
-                   value="${giaTri}"
-                   class="form-control"
-                   placeholder="Số câu hoặc điểm"
-                   min="0"
-                   max="${clo.MaxQuestionCount}"
-                   title="Tối đa ${clo.MaxQuestionCount} câu hỏi"/>
-
-            <span class="text-muted text-nowrap">
-                (Tối đa: ${clo.MaxQuestionCount} )
-            </span>
-
-            <input type="hidden" value="${clo.CLOId}" class="clo-id" />
-        </div>`;
-                    });
-                    cloListContainer.innerHTML = cloHTML;
-                }
-            });
-        }
-
-
-        function capNhatThongTinCauHoi() {
-            const chuongContainers = document.querySelectorAll('#chuong-container > .border');
-            const thongTinContainer = document.getElementById('summary-chuong-cauhoi');
-            const tongSoCauSpan = document.getElementById('tong-so-cau');
-            thongTinContainer.innerHTML = '';
-
-            let tongSoCau = 0;
-
-            chuongContainers.forEach(chuongDiv => {
-                const chuongTen = chuongDiv.querySelector('.chuong-select option:checked')?.textContent;
-                const cloInputs = chuongDiv.querySelectorAll('.clo-list input[type="number"]');
-
-                let tongChuong = 0;
-                cloInputs.forEach(input => {
-                    const so = parseInt(input.value) || 0;
-                    tongChuong += so;
-                });
-
-                if (chuongTen && tongChuong > 0) {
-                    const row = `<div class="d-flex justify-content-between mb-2">
-                                    <span>${chuongTen}</span>
-                                    <span class="fw-bold">${tongChuong} câu</span>
-                                 </div>`;
-                    thongTinContainer.insertAdjacentHTML('beforeend', row);
-                }
-
-                tongSoCau += tongChuong;
-            });
-
-            tongSoCauSpan.textContent = tongSoCau;
-        }
-
-            function showToast(message, color) {
-                Toastify({
-                    text: message,
-                    duration: 4000,
-                    close: true,
-                    gravity: "bottom",
-                    position: "right",
-                    stopOnFocus: true,
-                    style: { background: color }
-                }).showToast();
-            }
-
-            function submitMatrix() {
-                const chuongContainers = document.querySelectorAll('#chuong-container > .border');
-                const matrix = [];
-
-                let hasError = false;
-
-                chuongContainers.forEach(ch => {
-                    const chuongSelect = ch.querySelector('.chuong-select');
-                    const ChapterId = parseInt(chuongSelect.value || 0);
-                    const ChapterTitle = chuongSelect.options[chuongSelect.selectedIndex]?.textContent || "";
-                    const cloInputs = ch.querySelectorAll('.clo-list .d-flex');
-
-                    const cloData = Array.from(cloInputs).map(div => {
-                        const CLO = div.querySelector('input[type="text"]').value;
-                        const CLOId = parseInt(div.querySelector('.clo-id').value || 0);
-                        const count = parseInt(div.querySelector('input[type="number"]').value || 0);
-                        const max = parseInt(div.querySelector('input[type="number"]').getAttribute('max'));
-
-                        if (count > max) {
-                            showToast(`"${CLO}" trong "${ChapterTitle}" vượt quá ${max}`, "#dc3545");
-                            hasError = true;
-                        }
-
-                            if (count < 0) {
-                                    showToast("Số lượng câu hỏi không được âm", "#dc3545");
-                                hasError = true;
-                            }
-                        return {
-                            CLOId: CLOId,
-                            CLO: CLO,
-                            QuestionCount: count
-                        };
-                    }).filter(c => c.QuestionCount > 0);
-
-                    if (ChapterId > 0 && cloData.length > 0) {
-                        matrix.push({
-                            ChapterId: ChapterId,
-                            Chuong: ChapterTitle,
-                            CLOs: cloData
-                        });
-                    }
-                });
-
-                if (hasError) return;
-
-                const data = {
-                    ExamId: @Model.ExamId,
-                    Chapters: matrix
-                };
-
-                fetch('/Teacher/Save_Exam_Matrix', {
-                    method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(data)
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        showToast("Đã lưu ma trận đề!", "#28a745");
-                        setTimeout(() => {
-                            window.location.href = "/Teacher/Exam_Create_Matrix/" + data.deThiId;
-                        }, 1000);
-                    } else {
-                        showToast("❌ Có lỗi xảy ra khi lưu ma trận.", "#dc3545");
-                    }
-                })
-                .catch(err => {
-                    console.error(err);
-                        showToast("Lỗi kết nối máy chủ.", "#dc3545");
-                });
-            }
 
         window.addEventListener('DOMContentLoaded', () => {
             const danhSachDaLuu = @Html.Raw(JsonConvert.SerializeObject(Model.Chapters));
@@ -416,15 +234,14 @@
 
             danhSachDaLuu.forEach(savedChuong => {
                 if (!savedChuong) return;
-
                 const realChapter = chuongData.find(c => c.ChuongId == savedChuong.ChapterId);
-
                 if (!realChapter) return;
 
                 const cloCoSoLuong = savedChuong.CLOs.filter(c => c.QuestionCount > 0);
                 if (cloCoSoLuong.length === 0) return;
 
                 const rowId = `row-${index++}`;
+
 
                 let html = `
                     <div class="border p-3 rounded mb-3" id="${rowId}">
@@ -437,86 +254,261 @@
                             </button>
                         </div>
                         <div class="clo-list">`;
-
                 savedChuong.CLOs.forEach(savedClo => {
                     const realClo = realChapter.Clos.find(c => c.CLOId == savedClo.CLOId);
-
                     if (realClo) {
                         const currentMax = realClo.MaxQuestionCount;
                         let currentCount = savedClo.QuestionCount;
+                        if (currentCount > currentMax) currentCount = currentMax;
 
-                        if (currentCount > currentMax) {
-                            currentCount = currentMax;
-                        }
-
-                        html += `
-                                <div class="my-2 d-flex gap-3 align-items-center">
-            <input value="${realClo.CLOTitle}"
-                   disabled
-                   type="text"
-                   class="form-control flex-grow-1" />
-
-            <input style="width: 7rem;"
-                   type="number"
-                   value="${currentCount}"
-                   class="form-control"
-                   placeholder="Số lượng"
-                   min="0"
-                   max="${currentMax}"
-                   title="Tối đa ${currentMax} câu hỏi"/>
-
-            <span class="text-muted text-nowrap">
-                (Tối đa ${currentMax})
-            </span>
-
-            <input type="hidden" value="${savedClo.CLOId}" class="clo-id" />
-        </div>`;
+                        html += createCountInputHtml(realClo.CLOTitle, currentCount, currentMax, savedClo.CLOId);
                     }
                 });
+
+                if (isEssayExam) {
+                    html += startPointSectionHtml();
+
+                    savedChuong.CLOs.forEach(savedClo => {
+                         const realClo = realChapter.Clos.find(c => c.CLOId == savedClo.CLOId);
+                        if (realClo) {
+                            const savedPoint = savedClo.CloScore || 0;
+                            const isHidden = savedClo.QuestionCount <= 0;
+
+                            html += createPointInputHtml(savedChuong.ChapterId, realClo.CLOTitle, savedPoint, savedClo.CLOId, isHidden);
+                        }
+                    });
+
+                    html += endPointSectionHtml();
+                }
 
                 html += `</div></div>`;
 
                 container.insertAdjacentHTML('beforeend', html);
 
-                capNhatDanhSachChuongComboBox();
-
                 const select = document.getElementById(rowId).querySelector('.chuong-select');
+                chuongData.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.ChuongId;
+                    opt.textContent = c.TenChuong;
+                    select.appendChild(opt);
+                });
                 select.value = savedChuong.ChapterId;
             });
 
+            capNhatDanhSachChuongComboBox();
             capNhatThongTinCauHoi();
+            if(isEssayExam) validateTotalPoints();
+
+            const submitBtn = document.getElementById("submitBtn");
+            const inputs = document.querySelectorAll("#editExamForm input");
+            const checkChanges = () => {
+                let changed = false;
+                inputs.forEach(input => {
+                     if (input.getAttribute("data-original") !== null && input.value !== input.getAttribute("data-original")) changed = true;
+                });
+                if(submitBtn) submitBtn.disabled = !changed;
+            };
+            inputs.forEach(input => input.addEventListener("input", checkChanges));
         });
 
 
-            function luuThongTinDeThi() {
-                const soLuongMaDe = parseInt(document.getElementById("soLuongMaDeInput").value || 1);
-                const thoiGianLamBai = parseInt(document.getElementById("thoiGianLamBaiInput").value || 0);
+        function createCountInputHtml(title, count, max, cloId) {
+            return `
+            <div class="my-2 d-flex gap-3 align-items-center js-clo-row">
+                <input value="${title}" disabled type="text" class="form-control flex-grow-1" />
+                <input style="width: 7rem;" type="number" value="${count}"
+                       class="form-control clo-count" placeholder="Số lượng"
+                       min="0" max="${max}" ${max === 0 ? "disabled" : ""} title="Tối đa ${max} câu hỏi"/>
+                <span class="text-muted text-nowrap">(Tối đa ${max})</span>
+                <input type="hidden" value="${cloId}" class="clo-id" />
+            </div>`;
+        }
 
-                fetch('/Teacher/UpdateExam', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        ExamId: @Model.ExamId,
-                        SoLuongMaDe: soLuongMaDe,
-                        Duration: Duration
-                    })
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        showToast("Đã cập nhật thông tin đề thi!", "#28a745");
-                    } else {
-                        showToast("❌ Lỗi khi cập nhật.", "#dc3545");
+        function startPointSectionHtml() {
+            return `
+            <div class="mt-4 mb-3 position-relative border-opacity-25 rounded p-3 bg-light bg-opacity-10">
+                <span class="position-absolute top-0 start-0 translate-middle-y ms-3 px-2 bg-white text-primary fw-bold small shadow-sm border-opacity-10 rounded">
+                    Cấu hình điểm chi tiết
+                </span>
+                <div class="row g-2">`;
+        }
+
+        function createPointInputHtml(chapterId, title, point, cloId, isHidden) {
+            return `
+            <div class="col-6 col-md-3 clo-point-wrapper ${isHidden ? 'd-none' : ''}"
+                 id="point-wrapper-${chapterId}_${cloId}"
+                 data-chapter-id="${chapterId}"
+                 data-clo-id="${cloId}">
+                <div class="border rounded p-2 bg-white h-100 shadow-sm">
+                    <label class="form-label small text-muted mb-1 text-truncate w-100 fw-bold" title="${title}">
+                        ${title}
+                    </label>
+                    <div class="input-group input-group-sm">
+                        <input type="number"
+                               class="form-control clo-point-input fw-bold text-primary text-center"
+                               placeholder="0"
+                               min="0"
+                               step="0.5"
+                               value="${point}"
+                               data-clo-id="${title}_${cloId}">
+                        <span class="input-group-text px-2">điểm</span>
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        function endPointSectionHtml() {
+            return `</div>
+                <div class="text-center text-muted small fst-italic mt-2 empty-point-notice" style="display:none">
+                    (Nhập số lượng câu hỏi để hiện ô điểm)
+                </div>
+            </div>`;
+        }
+
+        function togglePointInput(chapterId, cloId, soLuong) {
+
+            const wrapper = document.getElementById(`point-wrapper-${chapterId}_${cloId}`);
+            if (wrapper) {
+                const input = wrapper.querySelector('input');
+                if (soLuong > 0) {
+                    wrapper.classList.remove('d-none');
+                } else {
+                    wrapper.classList.add('d-none');
+                    if(input) input.value = 0;
+                }
+                validateTotalPoints();
+            }
+        }
+
+        function validateTotalPoints() {
+            if (!isEssayExam) return;
+            const allPointInputs = document.querySelectorAll('.clo-point-input');
+            let totalScore = 0;
+            allPointInputs.forEach(inp => {
+                if (!inp.closest('.d-none')) totalScore += parseFloat(inp.value) || 0;
+            });
+            totalScore = Math.round(totalScore * 100) / 100;
+
+            const btnSave = document.querySelector('button[onclick="submitMatrix()"]');
+            if (btnSave) {
+                if (totalScore === 10) {
+                    btnSave.disabled = false;
+                    btnSave.innerHTML = `<i class="fa-solid fa-check me-1"></i> Lưu ma trận`;
+                    btnSave.classList.remove('btn-secondary'); btnSave.classList.add('btn-primary');
+                } else {
+                    btnSave.disabled = true;
+                    btnSave.innerHTML = `Tổng: ${totalScore}/10`;
+                    btnSave.classList.remove('btn-primary'); btnSave.classList.add('btn-secondary');
+                }
+            }
+        }
+
+        function submitMatrix() {
+            const chuongContainers = document.querySelectorAll('#chuong-container > .border');
+            const matrix = [];
+            let hasError = false;
+
+            chuongContainers.forEach(ch => {
+                const chuongSelect = ch.querySelector('.chuong-select');
+                const ChapterId = parseInt(chuongSelect.value || 0);
+                const ChapterTitle = chuongSelect.options[chuongSelect.selectedIndex]?.textContent || "";
+
+                const cloInputs = ch.querySelectorAll('.clo-list .js-clo-row');
+
+                const cloData = Array.from(cloInputs).map(div => {
+                    const CLO = div.querySelector('input[type="text"]').value;
+                    const CLOId = parseInt(div.querySelector('.clo-id').value || 0);
+                    const count = parseInt(div.querySelector('.clo-count').value || 0);
+                    const max = parseInt(div.querySelector('.clo-count').getAttribute('max'));
+
+                    let point = 0;
+                    if(isEssayExam) {
+                        const pInput = ch.querySelector(`#point-wrapper-${ChapterId}_${CLOId} input`);
+                        if(pInput && !pInput.closest('.d-none')) point = parseFloat(pInput.value) || 0;
                     }
-                })
-                .catch(err => {
-                    console.error(err);
-                    showToast("❌ Lỗi kết nối máy chủ.", "#dc3545");
+
+                    if (count > max) { showToast(`Số lượng câu hỏi "${CLO}" không được vượt quá ${max}`, "#dc3545"); hasError = true; }
+                    if (count < 0) { showToast("Số lượng không được âm", "#dc3545"); hasError = true; }
+
+                    return { CLOId, CLO, QuestionCount: count, CloScore: point };
+                }).filter(c => c.QuestionCount > 0);
+
+                if (ChapterId > 0 && cloData.length > 0) {
+                    matrix.push({ ChapterId, Chuong: ChapterTitle, CLOs: cloData });
+                }
+            });
+
+            if (hasError) return;
+
+            if(isEssayExam) {
+                let finalTotal = 0;
+                matrix.forEach(chap => chap.CLOs.forEach(c => finalTotal += c.CloScore));
+                if(Math.round(finalTotal * 100)/100 !== 10) {
+                    showToast(`Tổng điểm ${finalTotal} != 10`, "#dc3545"); return;
+                }
+            }
+
+            const data = { ExamId: @Model.ExamId, Chapters: matrix };
+            fetch('/Teacher/Save_Exam_Matrix', {
+                method: 'POST', headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showToast("Đã lưu thay đổi!", "#28a745");
+                    setTimeout(() => window.location.href = "/Teacher/Exam_Create_Matrix/" + data.deThiId, 1000);
+                } else showToast("Lỗi lưu.", "#dc3545");
+            })
+            .catch(() => showToast("Lỗi kết nối.", "#dc3545"));
+        }
+
+        function xoaDongChuong(rowId) {
+            document.getElementById(rowId).remove();
+            capNhatDanhSachChuongComboBox();
+            capNhatThongTinCauHoi();
+            if(isEssayExam) validateTotalPoints();
+        }
+        function capNhatDanhSachChuongComboBox() {
+            const daChon = Array.from(document.querySelectorAll('.chuong-select')).map(s=>s.value).filter(v=>v && v!=='-- Chọn chương --');
+            document.querySelectorAll('.chuong-select').forEach(sel => {
+                const cur = sel.value; sel.innerHTML = '<option value="" disabled selected hidden>-- Chọn chương --</option>';
+                chuongData.forEach(c => {
+                    if(!daChon.includes(c.ChuongId.toString()) || c.ChuongId.toString()===cur) {
+                        const opt = document.createElement('option'); opt.value=c.ChuongId; opt.textContent=c.TenChuong;
+                        if(cur===c.ChuongId.toString()) opt.selected=true; sel.appendChild(opt);
+                    }
                 });
+            });
+        }
+        function capNhatThongTinCauHoi() {
+            const sumContainer = document.getElementById('summary-chuong-cauhoi');
+            const sumSpan = document.getElementById('tong-so-cau');
+            sumContainer.innerHTML = ''; let total=0;
+            document.querySelectorAll('#chuong-container > .border').forEach(div => {
+                const name = div.querySelector('.chuong-select option:checked')?.textContent;
+                let subTotal=0;
+                div.querySelectorAll('.clo-count').forEach(inp => subTotal += parseInt(inp.value)||0);
+                if(name && subTotal>0) {
+                    sumContainer.insertAdjacentHTML('beforeend', `<div class="d-flex justify-content-between mb-2"><span>${name}</span><fw-bold>${subTotal} câu</fw-bold></div>`);
+                }
+                total+=subTotal;
+            });
+            sumSpan.textContent = total;
+        }
+        function showToast(message, color) {
+                Toastify({
+                    text: message,
+                    duration: 4000,
+                    close: true,
+                    gravity: "bottom",
+                    position: "right",
+                    stopOnFocus: true,
+                    style: { background: color }
+                }).showToast();
             }
     </script>
+
     <script>
         document.addEventListener("DOMContentLoaded", () => {
             const submitBtn = document.getElementById("submitBtn");

@@ -26,11 +26,10 @@ namespace ITExam.Models
         [Required(ErrorMessage = "Mã ngân hàng đề là bắt buộc")]
         public int ExamBankId { get; set; } // MaNHD (Ma ngan hang de)
 
-        [Range(0, 10, ErrorMessage = "Điểm câu hỏi phải từ 0 đến 10")]
-        public double? QuestionScore { get; set; } // Chỉ áp dụng cho tự luận
-
         public ExamBank ExamBank { get; set; } // Cha
 
         public ICollection<StudentAnswer> StudentAnswers { get; set; }
+        public ICollection<EssayCriterion> EssayCriteria { get; set; }
+
     }
 }

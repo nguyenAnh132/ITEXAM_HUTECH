@@ -521,6 +521,7 @@ namespace ITExam.Controllers
                     e.ExamId,
                     e.ExamName,
                     e.Duration,
+                    IsEssayExam = e.ExamType == "Tự luận" ? true : false,
                     ExamBankName = e.ExamBank.ExamBankName,
                     ExamBankId = e.ExamBank.ExamBankId,
                     SubjectId = e.ExamBank.SubjectId
@@ -574,15 +575,18 @@ namespace ITExam.Controllers
             {
                 ChapterId = ch.Id,
                 ChapterTitle = ch.Title,
-                CLOs = ch.Clos.Select(clo => new CLOItem
+                CLOs = ch.Clos.Select(clo =>
                 {
-                    CLOId = clo.Id,
-                    CLO = clo.Title,
-                    QuestionCount = matrices
-                      .FirstOrDefault(m => m.ChapterId == ch.Id && m.CLOId == clo.Id)
-                      ?.QuestionCount ?? 0,
-                    MaxQuestionCount = questionBanks
-                    .Count(c => c.ChapterId == ch.Id && c.CLOId == clo.Id)
+                    var matrix = matrices.FirstOrDefault(m => m.ChapterId == ch.Id && m.CLOId == clo.Id);
+
+                    return new CLOItem
+                    {
+                        CLOId = clo.Id,
+                        CLO = clo.Title,
+                        QuestionCount = matrix?.QuestionCount ?? 0,
+                        CloScore = matrix?.CloScore ?? 0,
+                        MaxQuestionCount = questionBanks.Count(c => c.ChapterId == ch.Id && c.CLOId == clo.Id)
+                    };
                 }).ToList()
             }).ToList();
 
@@ -592,7 +596,8 @@ namespace ITExam.Controllers
                 ExamName = exam.ExamName,
                 ExamBankName = exam.ExamBankName,
                 Duration = exam.Duration,
-                Chapters = chapters!
+                Chapters = chapters!,
+                IsEssayExam = exam.IsEssayExam
             };
 
             ViewBag.SubjectName = subjectName;
@@ -653,7 +658,8 @@ namespace ITExam.Controllers
                             ExamId = model.ExamId,
                             ChapterId = chuong.ChapterId,
                             CLOId = clo.CLOId,
-                            QuestionCount = clo.QuestionCount
+                            QuestionCount = clo.QuestionCount,
+                            CloScore = clo.CloScore
                         };
                         _context.ExamMatrices.Add(item);
                     }
@@ -1344,7 +1350,6 @@ namespace ITExam.Controllers
                     QuestionId = q.QuestionId,
                     QuestionContent = q.QuestionContent,
                     Options = q.ChoiceContent,
-                    QuestionScore = q.QuestionScore,
                     QuestionType = q.QuestionType,
                     ChapterId = q.ChapterId,
                     CloId = q.CLOId
@@ -2005,9 +2010,18 @@ namespace ITExam.Controllers
                 QuestionId = ch.QuestionId,
                 QuestionContent = ch.QuestionContent,
                 CloId = ch.CLOId ?? 0,
-                ChapterId = ch.ChapterId ?? 0
+                ChapterId = ch.ChapterId ?? 0,
+
+                Criteria = _context.EssayCriterias
+                    .Where(c => c.QuestionId == ch.QuestionId)
+                    .Select(c => new EssayCriterionVM
+                    {
+                        Content = c.Content,
+                        Percent = c.Percent
+                    }).ToList()
 
             }).ToList();
+
 
             var viewModel = new CreateQuestionVM
             {
@@ -2039,36 +2053,21 @@ namespace ITExam.Controllers
                 return RedirectToAction("Exam_Bank_Add_Question_Essay", new { id = model.ExamBankId });
             }
 
-            var examBank = await _context.ExamBanks
-                .FindAsync(model.ExamBankId);
+            var examBank = await _context.ExamBanks.FindAsync(model.ExamBankId);
             if (examBank == null)
-            {
                 return NotFound("Không tìm thấy ngân hàng đề.");
-            }
 
-            int subjectId = examBank.SubjectId;
-            var access_token = Request.Cookies["access_token"];
-            var client = _httpClientFactory.CreateClient();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", access_token);
-            var response = await client.GetAsync(_routingApi.GetSubjectUrl);
-            if (!response.IsSuccessStatusCode)
-            {
-                return StatusCode((int)response.StatusCode, "Không thể lấy dữ liệu môn học.");
-            }
-            var json = await response.Content.ReadAsStringAsync();
-            var root = JsonConvert.DeserializeObject<JObject>(json);
-            var subjectList = root!["data"]!.ToObject<List<SubjectDto>>();
-            var subject = subjectList!.FirstOrDefault(s => s.Id == subjectId);
-
-            model.ChapterList = subject?.Chapters ?? new List<ChapterDto>();
+            QuestionBank question;
 
             if (model.QuestionId > 0)
             {
-                var question = await _context.QuestionBanks.FirstOrDefaultAsync(q => q.QuestionId == model.QuestionId);
+                question = await _context.QuestionBanks
+                    .FirstOrDefaultAsync(q => q.QuestionId == model.QuestionId);
+
                 if (question == null)
                 {
                     TempData["ErrorMessage"] = "Lỗi: Câu hỏi không tồn tại.";
-                    return View(model);
+                    return RedirectToAction("Exam_Bank_Add_Question_Essay", new { id = model.ExamBankId });
                 }
 
                 question.QuestionContent = model.QuestionContent;
@@ -2076,16 +2075,30 @@ namespace ITExam.Controllers
                 question.ChapterId = model.ChapterId > 0 ? model.ChapterId : null;
 
                 await _context.SaveChangesAsync();
+
                 TempData["SuccessMessage"] = "Câu hỏi đã được cập nhật thành công.";
+
+                var oldCriteriaIds = await _context.EssayCriterias
+                    .Where(c => c.QuestionId == question.QuestionId)
+                    .Select(c => c.Id)
+                    .ToListAsync();
+
+                if (oldCriteriaIds.Any())
+                {
+                    await _context.EssayCriterias
+                        .Where(e => oldCriteriaIds.Contains(e.Id))
+                        .ExecuteDeleteAsync();
+                }
             }
             else
             {
-                var question = new QuestionBank
+                question = new QuestionBank
                 {
                     QuestionContent = model.QuestionContent,
                     ExamBankId = model.ExamBankId,
                     CLOId = model.CLOId > 0 ? model.CLOId : null,
                     ChapterId = model.ChapterId > 0 ? model.ChapterId : null,
+                    QuestionType = "Tự luận"
                 };
 
                 _context.QuestionBanks.Add(question);
@@ -2094,8 +2107,29 @@ namespace ITExam.Controllers
                 TempData["SuccessMessage"] = "Câu hỏi đã được thêm thành công.";
             }
 
+            if (model.Criteria != null)
+            {
+                foreach (var c in model.Criteria)
+                {
+                    if (string.IsNullOrWhiteSpace(c.Content))
+                        continue;
+
+                    var cri = new EssayCriterion
+                    {
+                        QuestionId = question.QuestionId,
+                        Content = c.Content,
+                        Percent = c.Percent
+                    };
+
+                    _context.EssayCriterias.Add(cri);
+                }
+
+                await _context.SaveChangesAsync();
+            }
+
             return RedirectToAction("Exam_Bank_Add_Question_Essay", new { id = model.ExamBankId });
         }
+
 
 
         //Ngân hàng đề : Câu hỏi : Xóa câu hỏi
