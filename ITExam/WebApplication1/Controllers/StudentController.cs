@@ -1,10 +1,4 @@
-﻿using System.Collections.Concurrent;
-using System.Globalization;
-using System.Net;
-using System.Text;
-using System.Text.Json;
-using System.Text.RegularExpressions;
-using Google.Apis.Drive.v3.Data;
+﻿using Google.Apis.Drive.v3.Data;
 using Hangfire;
 using ITExam.Filters;
 using ITExam.Hubs;
@@ -12,12 +6,21 @@ using ITExam.Models;
 using ITExam.ViewModels;
 using ITExam.ViewModels.Class;
 using ITExam.ViewModels.Exam;
+using MathNet.Numerics.Distributions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Memory;
+using NPOI.HPSF;
 using Org.BouncyCastle.Utilities.Collections;
+using System.Collections.Concurrent;
+using System.Globalization;
+using System.Net;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using ITExam.Services;
 
 namespace ITExam.Controllers
 {
@@ -28,18 +31,20 @@ namespace ITExam.Controllers
 
         private readonly ITExamDbContext _context;
         private readonly IDistributedCache _redis;
+        private readonly IRedisService _redisService;
         private readonly IHubContext<ExamMonitorHub> _hubContext;
         private readonly ILogger<StudentController> _logger;
         private readonly IMemoryCache _cache;
 
 
-        public StudentController(ITExamDbContext context, IDistributedCache redis, IHubContext<ExamMonitorHub> hubContext, ILogger<StudentController> logger, IMemoryCache cache)
+        public StudentController(ITExamDbContext context, IDistributedCache redis, IRedisService redisService, IHubContext<ExamMonitorHub> hubContext, ILogger<StudentController> logger, IMemoryCache cache)
         {
             _context = context;
             _redis = redis;
             _hubContext = hubContext;
-            _logger=logger;
+            _logger = logger;
             _cache = cache;
+            _redisService = redisService;
         }
         public IActionResult Index()
         {
@@ -61,9 +66,9 @@ namespace ITExam.Controllers
                 return RedirectToAction("Logout", "Auth");
 
             var @class = await _context.ClassDetails
-                .AsNoTracking() 
+                .AsNoTracking()
                 .Where(cd => cd.UserId == userId)
-                .Select(cd => new ClassVM 
+                .Select(cd => new ClassVM
                 {
                     ClassId = cd.Class.ClassId,
                     ClassName = cd.Class.ClassName,
@@ -97,7 +102,7 @@ namespace ITExam.Controllers
             }
 
             var classInfo = await _context.Classes
-                .AsNoTracking() 
+                .AsNoTracking()
                 .Where(c => c.ClassCode == req.Code)
                 .Select(c => new
                 {
@@ -120,7 +125,7 @@ namespace ITExam.Controllers
             {
                 UserId = userId,
                 JoinDate = DateTime.Now,
-                ClassId = classInfo.ClassId 
+                ClassId = classInfo.ClassId
             };
 
             try
@@ -195,7 +200,7 @@ namespace ITExam.Controllers
             if (lopHoc == null)
             {
                 return Json(new { exists = false, message = "Lớp học không tồn tại...." });
-            }  
+            }
 
             return Json(new { exists = true, className = lopHoc.ClassName });
         }
@@ -233,7 +238,7 @@ namespace ITExam.Controllers
             {
                 return NotFound();
             }
-            
+
             var studentListOfClass = await _context.ClassDetails
                 .AsNoTracking()
                 .Where(cd => cd.ClassId == id)
@@ -324,7 +329,7 @@ namespace ITExam.Controllers
             return Json(new { success = true });
         }
 
-        
+
         public async Task AutoSubmitExam(int examHistoryId)
         {
             var examHistory = await _context.ExamHistories
@@ -530,36 +535,55 @@ namespace ITExam.Controllers
             string orderKey = $"examOptionOrder:{examId}:{user.UserId}";
             await _redis.RemoveAsync(orderKey);
 
-            //Phuong
+            try
+            {
+                var examKey = ExamKey(examId.ToString(), classId.ToString());
+                var scoreMap = GetScores(examKey);
+                scoreMap[user.Username] = Math.Round(totalScore, 2);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error saving score to IMemoryCache: {ex.Message}");
+            }
 
-            //try
-            //{
-            //    var examKey = ExamKey(examId.ToString(), classId.ToString());
-            //    var scoreMap = GetScores(examKey);
-            //    scoreMap[user.Username] = Math.Round(tongDiem, 2);
-            //}
-            //catch (Exception ex)
-            //{
-            //    Console.WriteLine($"Error saving score to IMemoryCache: {ex.Message}");
-            //}
-            //await _hubContext.Clients
-            //        .Group($"exam:{examId}:class:{classId}")
-            //        .SendAsync("StudentScoreUpdated", new
-            //        {
-            //            ExamId = examId.ToString(),
-            //            ClassId = classId.ToString(),
-            //            StudentId = user.Username,
-            //            StudentName = user.FullName ?? "",
-            //            Score = Math.Round(tongDiem, 2),
-            //            CorrectAnswers = soCauDung,
-            //            QuestionCount = tongCauHoi,
-            //            AccuracyRate = tongCauHoi > 0 ? Math.Round((double)soCauDung * 100 / tongCauHoi, 2) : 0,
-            //            Duration = (int)(DateTime.Now - history.StartTime).TotalSeconds,
-            //            SubmittedAt = DateTime.UtcNow
-            //        });
+            int tabLeaveCount = 0;
+            var tabCountStr = await _redisService.GetStringAsync($"ITExam_tabcount:{examId}:{classId}:{user.Username}");
+            Console.WriteLine($"ITExam_tabcount:{examId}:{classId}:{user.Username}-{tabCountStr}");
+            if (!string.IsNullOrEmpty(tabCountStr) && int.TryParse(tabCountStr, out int parsedCount))
+            {
+                tabLeaveCount = parsedCount;
+            }
 
+            await _hubContext.Clients
+            .Group($"exam:{examId}:class:{classId}")
+            .SendAsync("StudentSubmittedExam", new
+            {
+                ExamId = examId.ToString(),
+                StudentId = user.Username,
+                StudentName = user.FullName ?? "",
+                TabLeaveCount = tabLeaveCount, 
+                SubmittedAt = DateTime.UtcNow
+            });
+
+            await _redisService.AddLogAsync($"ITExam_logs:{examId}:{classId}:{user.Username}",
+                $"[SUBMIT] [{DateTime.Now:HH:mm:ss}] {user.FullName} đã nộp bài thi. Số lần chuyển tab {tabLeaveCount}");
+
+            await _hubContext.Clients
+             .Group($"exam:{examId}:class:{classId}")
+             .SendAsync("StudentScoreUpdated", new
+             {
+                 ExamId = examId.ToString(),
+                 ClassId = classId.ToString(),
+                 StudentId = user.Username,
+                 StudentName = user.FullName ?? "",
+                 Score = Math.Round(totalScore, 2),
+                 CorrectAnswers = CorrectCount,
+                 QuestionCount = questionCount,
+                 AccuracyRate = questionCount > 0 ? Math.Round((double)CorrectCount * 100 / questionCount, 2) : 0,
+                 Duration = (int)(DateTime.Now - examHistory.StartTime).TotalSeconds,
+                 SubmittedAt = DateTime.UtcNow
+             });
         }
-
 
         public async Task AutoSubmitEssayExam(int examHistoryId)
         {
@@ -665,8 +689,8 @@ namespace ITExam.Controllers
                 .Select(u => new
                 {
                     u.UserId,
-                    u.Username, 
-                    u.FullName  
+                    u.Username,
+                    u.FullName
                 })
                 .FirstOrDefaultAsync();
             if (user == null)
@@ -750,9 +774,9 @@ namespace ITExam.Controllers
             }
 
             var danhSachCauHoi = (from ct in details
-                      join ch in _context.QuestionBanks.AsNoTracking()
-                      on ct.QuestionId equals ch.QuestionId
-                      select ch)
+                                  join ch in _context.QuestionBanks.AsNoTracking()
+                                  on ct.QuestionId equals ch.QuestionId
+                                  select ch)
                       .ToList();
 
             var lopHoc = await _context.Classes.FindAsync(maLop);
@@ -1027,7 +1051,7 @@ namespace ITExam.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "LỖI (TakeTheExam_TL): Deserialize Redis key <string, string> THẤT BẠI. Key {Key}", key);
-                luuCauTraLoi = new Dictionary<string, string>(); 
+                luuCauTraLoi = new Dictionary<string, string>();
             }
 
             int thoiGianLamBai = exam.Duration * 60;
@@ -1375,7 +1399,7 @@ namespace ITExam.Controllers
                             .FirstOrDefaultAsync(ct => ct.ExamHistoryId == examHistory.ExamHistoryId && ct.QuestionId == cauHoi);
                         if (chiTietBaiLam != null)
                         {
-                            chiTietBaiLam.EssayAnswer = cauTraLoi; 
+                            chiTietBaiLam.EssayAnswer = cauTraLoi;
                             _context.StudentAnswers.Update(chiTietBaiLam);
                         }
                     }
@@ -1393,7 +1417,7 @@ namespace ITExam.Controllers
             try
             {
                 var examKey = ExamKey(maDe.ToString(), maLop.ToString());
-                var scoreMap = GetScores(examKey); 
+                var scoreMap = GetScores(examKey);
                 scoreMap[user.Username] = viewModel.Score;
             }
             catch (Exception ex)
@@ -1402,20 +1426,20 @@ namespace ITExam.Controllers
             }
 
             await _hubContext.Clients
-                    .Group($"exam:{maDe}:class:{maLop}")
-                    .SendAsync("StudentScoreUpdated", new
-                    {
-                        ExamId = maDe.ToString(),
-                        ClassId = maLop.ToString(),
-                        StudentId = user.Username,
-                        StudentName = user.FullName ?? "",
-                        Score = viewModel.Score,
-                        CorrectAnswers = viewModel.CorrectAnswers,
-                        QuestionCount = viewModel.QuestionCount,
-                        AccuracyRate = viewModel.AccuracyRate,
-                        Duration = viewModel.Duration,
-                        SubmittedAt = DateTime.UtcNow
-                    });
+                .Group($"exam:{maDe}:class:{maLop}")
+                .SendAsync("StudentScoreUpdated", new
+                {
+                    ExamId = maDe.ToString(),
+                    ClassId = maLop.ToString(),
+                    StudentId = user.Username,
+                    StudentName = user.FullName ?? "",
+                    Score = viewModel.Score,
+                    CorrectAnswers = viewModel.CorrectAnswers,
+                    QuestionCount = viewModel.QuestionCount,
+                    AccuracyRate = viewModel.AccuracyRate,
+                    Duration = viewModel.Duration,
+                    SubmittedAt = DateTime.UtcNow
+                });
 
             return View(viewModel);
         }
@@ -1455,7 +1479,7 @@ namespace ITExam.Controllers
 
 
         [HttpPost]
-        public async Task<IActionResult> ExamResult_TL([FromBody] EssaySubmitVM model) 
+        public async Task<IActionResult> ExamResult_TL([FromBody] EssaySubmitVM model)
         {
             var accessToken = Request.Cookies["access_token"];
             var userId = await _context.Users
@@ -1470,7 +1494,7 @@ namespace ITExam.Controllers
                 .FirstOrDefaultAsync(l => l.UserId == userId && l.ExamId == model.MaDe && l.ClassId == model.MaLop);
             if (lichSu == null)
             {
-                return NotFound(new { message = "Không tìm thấy lịch sử làm bài." }); 
+                return NotFound(new { message = "Không tìm thấy lịch sử làm bài." });
             }
 
             if (!string.IsNullOrEmpty(lichSu.HangfireJobId))
@@ -1484,11 +1508,11 @@ namespace ITExam.Controllers
             {
                 lichSu.SubmitTime = DateTime.Now;
                 lichSu.Duration = (int)(DateTime.Now - lichSu.StartTime).TotalSeconds;
-                lichSu.UploadedFileId = model.UploadedFileId; 
+                lichSu.UploadedFileId = model.UploadedFileId;
 
 
                 var key = $"essayAns:{model.MaDe}:{userId}";
-                var savedAnswers = new Dictionary<int, string>(); 
+                var savedAnswers = new Dictionary<int, string>();
 
                 try
                 {
@@ -1525,7 +1549,7 @@ namespace ITExam.Controllers
                 }
 
                 _context.ExamHistories.Update(lichSu);
-                await _context.SaveChangesAsync(); 
+                await _context.SaveChangesAsync();
 
                 try
                 {
@@ -1645,7 +1669,7 @@ namespace ITExam.Controllers
             var result = questionList.Select((question, index) => new
             {
                 id = index + 1,
-                category = "HTML", 
+                category = "HTML",
                 question = question.QuestionContent,
                 options = Newtonsoft.Json.JsonConvert
                              .DeserializeObject<List<QuestionOptionVM>>(question.ChoiceContent)
