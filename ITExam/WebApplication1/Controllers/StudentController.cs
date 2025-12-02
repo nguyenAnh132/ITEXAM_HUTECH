@@ -35,9 +35,10 @@ namespace ITExam.Controllers
         private readonly IHubContext<ExamMonitorHub> _hubContext;
         private readonly ILogger<StudentController> _logger;
         private readonly IMemoryCache _cache;
+        private readonly GeminiService geminiService;
 
 
-        public StudentController(ITExamDbContext context, IDistributedCache redis, IRedisService redisService, IHubContext<ExamMonitorHub> hubContext, ILogger<StudentController> logger, IMemoryCache cache)
+        public StudentController(ITExamDbContext context, IDistributedCache redis, IRedisService redisService, IHubContext<ExamMonitorHub> hubContext, ILogger<StudentController> logger, IMemoryCache cache, GeminiService geminiService)
         {
             _context = context;
             _redis = redis;
@@ -45,6 +46,7 @@ namespace ITExam.Controllers
             _logger = logger;
             _cache = cache;
             _redisService = redisService;
+            this.geminiService = geminiService;
         }
         public IActionResult Index()
         {
@@ -665,6 +667,13 @@ namespace ITExam.Controllers
                     examHistory.HangfireJobId = null;
                 }
 
+                await _context.SaveChangesAsync();
+
+                string jobId = BackgroundJob.Enqueue(() =>
+                    GadingEssayExamByAI(examHistory.ExamHistoryId, examHistory.UserId)
+                );
+
+                examHistory.HangfireJobId = jobId;
                 await _context.SaveChangesAsync();
 
                 try
@@ -1484,6 +1493,154 @@ namespace ITExam.Controllers
         }
 
 
+        public async Task GadingEssayExamByAI(int examHistoryId, int userId)
+        {
+            var examHistory = await _context.ExamHistories
+                .AsNoTracking()
+                .Where(e => e.ExamHistoryId == examHistoryId)
+                .Select(e => new
+                {
+                    e.ExamHistoryId,
+                    e.UploadedFileId,
+                    e.ExamId
+                })
+                .FirstOrDefaultAsync();
+
+            if (examHistory == null)
+                throw new Exception("Không tìm thấy lịch sử làm bài");
+
+            var oldResult = await _context.EssayGradingResults
+                .AsNoTracking()
+                .FirstOrDefaultAsync(g => g.ExamHistoryId == examHistoryId);
+
+            if (oldResult != null && oldResult.Status == "Success")
+                throw new Exception("Bài thi đã được chấm trước đó. Không thể chấm lại.");
+
+            var answers = await _context.StudentAnswers
+                .AsNoTracking()
+                .Include(a => a.QuestionBank)
+                .Where(a => a.ExamHistoryId == examHistoryId)
+                .ToListAsync();
+
+            if (!answers.Any())
+                throw new Exception("Không có câu trả lời tự luận để chấm.");
+
+            var questionIds = answers.Select(a => a.QuestionId).ToList();
+
+            var criteria = await _context.EssayCriterias
+                .AsNoTracking()
+                .Where(c => questionIds.Contains(c.QuestionId))
+                .ToListAsync();
+
+            var matrices = await _context.ExamMatrices
+                .AsNoTracking()
+                .Where(m => m.ExamId == examHistory.ExamId)
+                .ToListAsync();
+
+            float GetMaxScore(int? cloId)
+            {
+                var m = matrices.FirstOrDefault(x => x.CLOId == cloId);
+                if (m == null) return 0;
+                return (float)m.CloScore / m.QuestionCount;
+            }
+
+            var essayAnswers = answers.Select(a => new
+            {
+                a.QuestionId,
+                a.QuestionBank.QuestionContent,
+                a.EssayAnswer,
+                MaxScore = GetMaxScore(a.QuestionBank.CLOId),
+                EssayCriteria = criteria
+                    .Where(c => c.QuestionId == a.QuestionId)
+                    .Select(c => new { c.Content, c.Percent })
+                    .ToList()
+            }).ToList();
+
+            var gradingResult = oldResult ?? new EssayGradingResult
+            {
+                ExamHistoryId = examHistoryId,
+                Status = "Running",
+                CreatedAt = DateTime.UtcNow
+            };
+
+            if (oldResult == null)
+            {
+                _context.EssayGradingResults.Add(gradingResult);
+                await _context.SaveChangesAsync();
+            }
+            else
+            {
+                gradingResult.Status = "Running";
+                _context.EssayGradingResults.Update(gradingResult);
+                await _context.SaveChangesAsync();
+            }
+
+            var promptBuilder = new StringBuilder();
+            promptBuilder.AppendLine("Bạn là hệ thống chấm bài tự luận theo tiêu chí.");
+            promptBuilder.AppendLine("");
+
+            foreach (var ans in essayAnswers)
+            {
+                promptBuilder.AppendLine($"Câu hỏi ID: {ans.QuestionId}");
+                promptBuilder.AppendLine($"Nội dung câu hỏi: {ans.QuestionContent}");
+                promptBuilder.AppendLine($"Điểm tối đa: {ans.MaxScore}");
+
+                if(ans.EssayCriteria != null)
+                {
+                    promptBuilder.AppendLine("Tiêu chí:");
+
+                    foreach (var cri in ans.EssayCriteria)
+                    {
+                        promptBuilder.AppendLine($"- {cri.Content}, chiếm ({cri.Percent}%)");
+                    }
+                }
+
+                promptBuilder.AppendLine($"Câu trả lời của sinh viên: {ans.EssayAnswer}");
+                promptBuilder.AppendLine("---------------------------");
+            }
+
+            if (!string.IsNullOrEmpty(examHistory.UploadedFileId))
+                promptBuilder.AppendLine($"File bổ sung của sinh viên: {examHistory.UploadedFileId}");
+
+            string prompt = promptBuilder.ToString();
+
+            try
+            {
+                var gradingList = await geminiService.GadingEssayExamAsync(prompt);
+
+                decimal totalScore = 0;
+
+                foreach (var item in gradingList)
+                {
+                    totalScore += item.Score;
+
+                    var detail = new EssayGradingDetail
+                    {
+                        GradingResultId = gradingResult.Id,
+                        QuestionId = item.QuestionId,
+                        Score = item.Score,
+                        Comment = item.Comment
+                    };
+
+                    _context.EssayGradingDetails.Add(detail);
+                }
+
+                gradingResult.TotalScore = totalScore;
+                gradingResult.Status = "Success";
+                gradingResult.OverallComment = "Chấm bài bằng AI hoàn tất.";
+
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                gradingResult.Status = "Error";
+                gradingResult.OverallComment = ex.Message;
+                await _context.SaveChangesAsync();
+                throw;
+            }
+        }
+
+
         [HttpPost]
         public async Task<IActionResult> ExamResult_TL([FromBody] EssaySubmitVM model)
         {
@@ -1496,25 +1653,25 @@ namespace ITExam.Controllers
             if (userId == 0)
                 return RedirectToAction("Logout", "Auth");
 
-            var lichSu = await _context.ExamHistories
+            var examHistory = await _context.ExamHistories
                 .FirstOrDefaultAsync(l => l.UserId == userId && l.ExamId == model.MaDe && l.ClassId == model.MaLop);
-            if (lichSu == null)
+            if (examHistory == null)
             {
                 return NotFound(new { message = "Không tìm thấy lịch sử làm bài." });
             }
 
-            if (!string.IsNullOrEmpty(lichSu.HangfireJobId))
+            if (!string.IsNullOrEmpty(examHistory.HangfireJobId))
             {
-                BackgroundJob.Delete(lichSu.HangfireJobId);
-                lichSu.HangfireJobId = null;
+                BackgroundJob.Delete(examHistory.HangfireJobId);
+                examHistory.HangfireJobId = null;
                 await _context.SaveChangesAsync();
             }
 
-            if (!lichSu.SubmitTime.HasValue)
+            if (!examHistory.SubmitTime.HasValue)
             {
-                lichSu.SubmitTime = DateTime.Now;
-                lichSu.Duration = (int)(DateTime.Now - lichSu.StartTime).TotalSeconds;
-                lichSu.UploadedFileId = model.UploadedFileId;
+                examHistory.SubmitTime = DateTime.Now;
+                examHistory.Duration = (int)(DateTime.Now - examHistory.StartTime).TotalSeconds;
+                examHistory.UploadedFileId = model.UploadedFileId;
 
 
                 var key = $"essayAns:{model.MaDe}:{userId}";
@@ -1542,7 +1699,7 @@ namespace ITExam.Controllers
                 }
 
                 var studentAnswers = await _context.StudentAnswers.AsNoTracking()
-                    .Where(ct => ct.ExamHistoryId == lichSu.ExamHistoryId)
+                    .Where(ct => ct.ExamHistoryId == examHistory.ExamHistoryId)
                     .ToListAsync();
 
                 foreach (var answer in studentAnswers)
@@ -1554,19 +1711,26 @@ namespace ITExam.Controllers
                     }
                 }
 
-                _context.ExamHistories.Update(lichSu);
+                _context.ExamHistories.Update(examHistory);
                 await _context.SaveChangesAsync();
 
                 try
                 {
                     await _redis.RemoveAsync(key);
-                    _logger.LogInformation(">>> REDIS (ExamResult_TL POST): Đã xóa key {Key} sau khi nộp bài.", key);
+                    _logger.LogInformation(" REDIS (ExamResult_TL POST): Đã xóa key {Key} sau khi nộp bài.", key);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, ">>> LỖI (ExamResult_TL POST): Không thể xóa key Redis {Key}.", key);
+                    _logger.LogWarning(ex, ">LỖI (ExamResult_TL POST): Không thể xóa key Redis {Key}.", key);
                 }
             }
+
+            string jobId = BackgroundJob.Enqueue(() =>
+                GadingEssayExamByAI(examHistory.ExamHistoryId, userId)
+            );
+
+            examHistory.HangfireJobId = jobId;
+            await _context.SaveChangesAsync();
 
             var redirectUrl = Url.Action("ExamResult_TL", "Student", new { maDe = model.MaDe, maLop = model.MaLop });
             return Ok(new { success = true, redirectUrl });

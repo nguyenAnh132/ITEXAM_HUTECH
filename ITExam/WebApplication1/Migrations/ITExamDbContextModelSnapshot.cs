@@ -22,6 +22,64 @@ namespace ITExam.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("EssayGradingDetail", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Comment")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("GradingResultId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("QuestionId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Score")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GradingResultId");
+
+                    b.ToTable("EssayGradingDetail");
+                });
+
+            modelBuilder.Entity("EssayGradingResult", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("ExamHistoryId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("OverallComment")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("TotalScore")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExamHistoryId");
+
+                    b.ToTable("EssayGradingResult");
+                });
+
             modelBuilder.Entity("ITExam.Models.ActivityLog", b =>
                 {
                     b.Property<int>("ActivityLogId")
@@ -436,6 +494,28 @@ namespace ITExam.Migrations
                     b.HasKey("UserId");
 
                     b.ToTable("User");
+                });
+
+            modelBuilder.Entity("EssayGradingDetail", b =>
+                {
+                    b.HasOne("EssayGradingResult", "GradingResult")
+                        .WithMany()
+                        .HasForeignKey("GradingResultId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("GradingResult");
+                });
+
+            modelBuilder.Entity("EssayGradingResult", b =>
+                {
+                    b.HasOne("ITExam.Models.ExamHistory", "ExamHistory")
+                        .WithMany()
+                        .HasForeignKey("ExamHistoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ExamHistory");
                 });
 
             modelBuilder.Entity("ITExam.Models.ActivityLog", b =>
