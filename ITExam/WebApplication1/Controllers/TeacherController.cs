@@ -638,36 +638,59 @@ namespace ITExam.Controllers
         public async Task<IActionResult> Save_Exam_Matrix([FromBody] ExamMatrixVM model)
         {
             if (model == null || model.Chapters == null)
-                return BadRequest(new { success = false, message = "Dữ liệu không hợp lệ." });
-
-            var oldMatrix = await _context.ExamMatrices
-                .Where(m => m.ExamId == model.ExamId)
-                .ToListAsync();
-
-            _context.ExamMatrices.RemoveRange(oldMatrix);
-            await _context.SaveChangesAsync();
-
-            foreach (var chuong in model.Chapters)
             {
-                foreach (var clo in chuong.CLOs)
+                TempData["ErrorMessage"] = "Dữ liệu gửi lên không hợp lệ.";
+                return Json(new { success = false, message = "Dữ liệu rỗng." });
+            }
+
+
+            bool hasInvalidItem = model.Chapters.SelectMany(c => c.CLOs)
+                                                .Any(clo => clo.QuestionCount > 0 && clo.CloScore <= 0);
+
+            if (hasInvalidItem)
+            {
+                TempData["ErrorMessage"] = "Tồn tại câu hỏi có số lượng nhưng chưa nhập điểm (Điểm phải lớn hơn 0).";
+
+                return Json(new { success = false, message = "Vui lòng kiểm tra lại điểm số." });
+            }
+
+            try
+            {
+                var oldMatrix = await _context.ExamMatrices
+                    .Where(m => m.ExamId == model.ExamId)
+                    .ToListAsync();
+
+                _context.ExamMatrices.RemoveRange(oldMatrix);
+
+                foreach (var chuong in model.Chapters)
                 {
-                    if (clo.QuestionCount > 0)
+                    foreach (var clo in chuong.CLOs)
                     {
-                        var item = new ExamMatrix
+                        if (clo.QuestionCount > 0 && clo.CloScore > 0)
                         {
-                            ExamId = model.ExamId,
-                            ChapterId = chuong.ChapterId,
-                            CLOId = clo.CLOId,
-                            QuestionCount = clo.QuestionCount,
-                            CloScore = clo.CloScore
-                        };
-                        _context.ExamMatrices.Add(item);
+                            var item = new ExamMatrix
+                            {
+                                ExamId = model.ExamId,
+                                ChapterId = chuong.ChapterId,
+                                CLOId = clo.CLOId,
+                                QuestionCount = clo.QuestionCount,
+                                CloScore = clo.CloScore
+                            };
+                            _context.ExamMatrices.Add(item);
+                        }
                     }
                 }
-            }
-            await _context.SaveChangesAsync();
 
-            return Json(new { success = true, deThiId = model.ExamId });
+                await _context.SaveChangesAsync();
+
+                TempData["SuccessMessage"] = "Lưu ma trận đề thi thành công!";
+                return Json(new { success = true, deThiId = model.ExamId });
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = "Đã xảy ra lỗi trong quá trình lưu: " + ex.Message;
+                return Json(new { success = false, message = ex.Message });
+            }
         }
 
 
@@ -1172,40 +1195,112 @@ namespace ITExam.Controllers
 
         //Đề thi: Chấm bài một sinh viên - OK
         [HttpGet]
-        [HttpPost]
         public async Task<IActionResult> Grading_The_Exam_Of_Student(int id)
         {
-            var vm = await _context.ExamHistories
+            var history = await _context.ExamHistories
                 .AsNoTracking()
-                .Where(x => x.ExamHistoryId == id)
-                .Select(x => new EssaySubmissionToGradeVM
+                .Include(x => x.User)
+                .Include(x => x.Exam)
+                    .ThenInclude(e => e.ExamBank) 
+                .Include(x => x.StudentAnswers)
+                    .ThenInclude(sa => sa.QuestionBank)
+                        .ThenInclude(qb => qb.EssayCriteria) 
+                .FirstOrDefaultAsync(x => x.ExamHistoryId == id);
+
+            if (history == null) return NotFound();
+
+            int subjectId = history.Exam.ExamBank.SubjectId;
+            var access_token = Request.Cookies["access_token"];
+            var client = _httpClientFactory.CreateClient();
+            if (!string.IsNullOrEmpty(access_token))
+            {
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", access_token);
+            }
+
+            var response = await client.GetAsync(_routingApi.GetSubjectUrl);
+
+            List<ChapterDto> listChaptersApi = new List<ChapterDto>();
+
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync();
+                var root = JsonConvert.DeserializeObject<JObject>(json);
+                var dataToken = root!["data"];
+                var subjectList = dataToken!.ToObject<List<SubjectDto>>();
+                var monHoc = subjectList!.FirstOrDefault(s => s.Id == subjectId);
+                if (monHoc != null) listChaptersApi = monHoc.Chapters ?? new List<ChapterDto>();
+            }
+
+            var matrices = await _context.ExamMatrices
+                .AsNoTracking()
+                .Where(m => m.ExamId == history.ExamId)
+                .ToListAsync();
+
+            // 4. Map dữ liệu
+            var vm = new EssaySubmissionToGradeVM
+            {
+                HistoryId = history.ExamHistoryId,
+                FullName = history.User.FullName,
+                StudentID = history.User.Username,
+                ExamTitle = history.Exam.ExamName,
+                SubmissionTime = history.SubmitTime,
+                ExamId = history.ExamId,
+                ClassId = history.ClassId,
+                UploadedFileLink = history.UploadedFileId,
+                ListQuestions = new List<GradedEssayQuestionVM>()
+            };
+
+            foreach (var ans in history.StudentAnswers)
+            {
+                var qb = ans.QuestionBank;
+
+                double maxScore = 0;
+                var matrixRow = matrices.FirstOrDefault(m => m.ChapterId == qb.ChapterId && m.CLOId == qb.CLOId);
+                if (matrixRow != null && matrixRow.QuestionCount > 0)
                 {
-                    HistoryId = x.ExamHistoryId,
-                    FullName = x.User.FullName,
-                    StudentID = x.User.Username,
-                    ExamTitle = x.Exam.ExamName,
-                    SubmissionTime = x.SubmitTime,
-                    ExamId = x.ExamId,
-                    ClassId = x.ClassId,
-                    UploadedFileLink = x.UploadedFileId,
+                    maxScore = Math.Round(matrixRow.CloScore / matrixRow.QuestionCount, 2);
+                }
 
-                    ListQuestions = x.StudentAnswers.Select(ct => new GradedEssayQuestionVM
+                var chapterApi = listChaptersApi.FirstOrDefault(c => c.Id == qb.ChapterId);
+                var cloApi = chapterApi?.Clos.FirstOrDefault(c => c.Id == qb.CLOId);
+
+                var qVM = new GradedEssayQuestionVM
+                {
+                    QuestionId = ans.QuestionId,
+                    QuestionContent = qb.QuestionContent,
+                    StudentAnswer = ans.EssayAnswer ?? "",
+                    GradedScore = ans.Score,
+                    MaxScore = maxScore,
+                    ChapterId = qb.ChapterId ?? 0,
+                    ChapterTitle = chapterApi?.Title ?? $"Chương {qb.ChapterId}",
+                    CloId = qb.CLOId ?? 0,
+                    CloTitle = cloApi?.Title ?? $"CLO {qb.CLOId}",
+                    Criteria = new List<CriteriaGradingVM>()
+                };
+
+                if (qb.EssayCriteria != null && qb.EssayCriteria.Any())
+                {
+                    foreach (var cri in qb.EssayCriteria)
                     {
-                        QuestionId = ct.QuestionId,
-                        QuestionContent = ct.QuestionBank.QuestionContent,
-                        StudentAnswer = ct.EssayAnswer!,
-                        GradedScore = ct.Score
-                    }).ToList()
-                })
-                .FirstOrDefaultAsync();
+                        double criMaxPoint = Math.Round(maxScore * cri.Percent/100, 2);
 
-            if (vm == null) return NotFound();
+                        qVM.Criteria.Add(new CriteriaGradingVM
+                        {
+                            CriterionId = cri.Id, 
+                            Content = cri.Content, 
+                            Rate = cri.Percent/100,
+                            MaxPoint = criMaxPoint,
+                            CurrentPoint = null 
+                        });
+                    }
+                }
 
-            if (!string.IsNullOrEmpty(vm.UploadedFileLink))
-                _logger.LogInformation("Đã có file đính kèm cho HistoryId {HistoryId}: {FileUrl}",
-                    id, vm.UploadedFileLink);
-            else
-                _logger.LogInformation("Sinh viên không nộp file cho HistoryId: {HistoryId}", id);
+                vm.ListQuestions.Add(qVM);
+            }
+            vm.ListQuestions = vm.ListQuestions
+                .OrderBy(q => q.ChapterId)
+                .ThenBy(q => q.CloId)
+                .ToList();
 
             return View(vm);
         }
@@ -1223,7 +1318,6 @@ namespace ITExam.Controllers
                 return NotFound("Không tìm thấy bài làm");
 
             double totalScore = 0;
-            int totalQuestions = model.ListQuestions.Count;
 
             foreach (var question in model.ListQuestions)
             {
@@ -1231,18 +1325,22 @@ namespace ITExam.Controllers
                 if (answer != null)
                 {
                     answer.Score = question.GradedScore;
+
                     totalScore += question.GradedScore ?? 0;
                 }
             }
 
-            double maxPossibleScore = totalQuestions * 10;
+            if (totalScore > 10)
+            {
+                totalScore = 10;
+            }
 
-            double normalizedScore = (totalScore / maxPossibleScore) * 10;
+            history.Score = Math.Round(totalScore, 2);
 
-            Console.WriteLine($"Total Score: {totalScore}, Max Possible Score: {maxPossibleScore}, Normalized Score: {normalizedScore}");
-
-            history.Score = Math.Round(normalizedScore, 2);
-            history.SubmitTime = history.SubmitTime ?? DateTime.Now;
+            if (history.SubmitTime == null)
+            {
+                history.SubmitTime = DateTime.Now;
+            }
 
             await _context.SaveChangesAsync();
 

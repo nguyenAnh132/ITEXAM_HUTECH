@@ -205,24 +205,31 @@
 
         document.addEventListener('input', function (e) {
             const row = e.target.closest('.js-clo-row');
-            if (row) {
+
+            if (row && !e.target.matches('.clo-point-input')) {
                 const cloId = row.querySelector('.clo-id').value;
                 const sl = parseInt(e.target.value) || 0;
                 const chapterContainer = row.closest('[id^="row-"]');
 
-                const wrapper = chapterContainer.querySelector(`.clo-point-wrapper[data-chapter-id="${chapterId}"][data-clo-id="${cloId}"]`);
+                const selectBox = chapterContainer.querySelector('.chuong-select');
+                const chapterId = selectBox ? selectBox.value : null;
 
-                if (wrapper) {
-                    const input = wrapper.querySelector('input');
-                    if (sl > 0) {
-                        wrapper.classList.remove('d-none');
-                    } else {
-                        wrapper.classList.add('d-none');
-                        if (input) input.value = 0;
+                if (chapterId) {
+                    const wrapper = chapterContainer.querySelector(`.clo-point-wrapper[data-chapter-id="${chapterId}"][data-clo-id="${cloId}"]`);
+
+                    if (wrapper) {
+                        const input = wrapper.querySelector('input');
+                        if (sl > 0) {
+                            wrapper.classList.remove('d-none');
+                        } else {
+                            wrapper.classList.add('d-none');
+                            if (input) input.value = 0;
+                        }
+                        validateTotalPoints(); 
                     }
-                    validateTotalPoints();
                 }
             }
+
             if (e.target.matches('.clo-point-input')) {
                 validateTotalPoints();
             }
@@ -382,23 +389,45 @@
 
         function validateTotalPoints() {
             if (!isEssayExam) return;
+
             const allPointInputs = document.querySelectorAll('.clo-point-input');
             let totalScore = 0;
+            let hasEmptyInput = false; 
+
             allPointInputs.forEach(inp => {
-                if (!inp.closest('.d-none')) totalScore += parseFloat(inp.value) || 0;
+                if (!inp.closest('.d-none')) {
+                    const valStr = inp.value.trim();
+
+                    if (valStr === '' ||valStr === '0') {
+                        hasEmptyInput = true;
+                        inp.classList.add('is-invalid'); 
+                    } else {
+                        inp.classList.remove('is-invalid'); 
+                    }
+
+                    totalScore += parseFloat(valStr) || 0;
+                }
             });
+
             totalScore = Math.round(totalScore * 100) / 100;
 
             const btnSave = document.querySelector('button[onclick="submitMatrix()"]');
             if (btnSave) {
-                if (totalScore === 10) {
+                if (totalScore === 10 && !hasEmptyInput) {
                     btnSave.disabled = false;
                     btnSave.innerHTML = `<i class="fa-solid fa-check me-1"></i> Lưu ma trận`;
-                    btnSave.classList.remove('btn-secondary'); btnSave.classList.add('btn-primary');
+                    btnSave.classList.remove('btn-secondary');
+                    btnSave.classList.add('btn-primary');
                 } else {
                     btnSave.disabled = true;
-                    btnSave.innerHTML = `Tổng: ${totalScore}/10`;
-                    btnSave.classList.remove('btn-primary'); btnSave.classList.add('btn-secondary');
+                    btnSave.classList.remove('btn-primary');
+                    btnSave.classList.add('btn-secondary');
+
+                    if (hasEmptyInput) {
+                        btnSave.innerHTML = `Vui lòng nhập đủ điểm`;
+                    } else {
+                        btnSave.innerHTML = `Tổng: ${totalScore}/10`;
+                    }
                 }
             }
         }
