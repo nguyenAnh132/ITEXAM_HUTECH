@@ -321,7 +321,7 @@
                                 </div>
                             }
                             // Trường hợp không có loại hoặc tự luận thường
-                            else if (item.QuestionType == null && !string.IsNullOrEmpty(item.EssayAnswer))
+                            else if (item.QuestionType == "Tự luận" && !string.IsNullOrEmpty(item.EssayAnswer))
                             {
                                 <div class="bg-white p-3 rounded border content-container">
                                     @Html.Raw(item.EssayAnswer)

@@ -38,6 +38,7 @@
         public string? UploadedFileLink { get; set; }
         public int ExamId { get; set; }
         public int ClassId { get; set; }
+        public string? AiOverallComment { get; set; }
 
         // Danh sách câu hỏi dạng phẳng (Flat List) để dễ Binding khi POST
         // Chúng ta sẽ Group bằng LINQ ở View
@@ -58,6 +59,8 @@
         public string ChapterTitle { get; set; }
         public int CloId { get; set; }
         public string CloTitle { get; set; }
+        public decimal? AiScore { get; set; } 
+        public string? AiComment { get; set; }
 
         // Danh sách tiêu chí (nếu có)
         public List<CriteriaGradingVM> Criteria { get; set; } = new List<CriteriaGradingVM>();
