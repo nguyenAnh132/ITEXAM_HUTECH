@@ -580,11 +580,7 @@ namespace ITExam.Controllers
                  StudentId = user.Username,
                  StudentName = user.FullName ?? "",
                  Score = Math.Round(totalScore, 2),
-                 CorrectAnswers = CorrectCount,
-                 QuestionCount = questionCount,
-                 AccuracyRate = questionCount > 0 ? Math.Round((double)CorrectCount * 100 / questionCount, 2) : 0,
                  Duration = (int)(DateTime.Now - examHistory.StartTime).TotalSeconds,
-                 SubmittedAt = DateTime.UtcNow,
                  ExamHistoryId = examHistory.ExamHistoryId
              });
         }
@@ -1448,11 +1444,7 @@ namespace ITExam.Controllers
                     StudentId = user.Username,
                     StudentName = user.FullName ?? "",
                     Score = viewModel.Score,
-                    CorrectAnswers = viewModel.CorrectAnswers,
-                    QuestionCount = viewModel.QuestionCount,
-                    AccuracyRate = viewModel.AccuracyRate,
                     Duration = viewModel.Duration,
-                    SubmittedAt = DateTime.UtcNow,
                     ExamHistoryId = examHistory.ExamHistoryId
                 });
 
@@ -1489,6 +1481,20 @@ namespace ITExam.Controllers
 
 
             ViewBag.MaLop = maLop;
+            await _hubContext.Clients
+                .Group($"exam:{maDe}:class:{maLop}")
+                .SendAsync("StudentScoreUpdated", new
+                {
+                    ExamId = maDe.ToString(),
+                    ClassId = maLop.ToString(),
+                    StudentId = user.Username,
+                    StudentName = user.FullName ?? "",
+                    Score = examHistory.Score,
+                    Duration = examHistory.Duration,
+                    SubmittedAt = DateTime.UtcNow,
+                    ExamHistoryId = examHistory.ExamHistoryId
+                });
+
             return View(/* viewModel */);
         }
 
