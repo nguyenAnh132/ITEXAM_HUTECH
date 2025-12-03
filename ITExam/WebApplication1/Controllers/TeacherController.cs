@@ -1102,6 +1102,20 @@ namespace ITExam.Controllers
             {
                 _context.StudentAnswers.RemoveRange(history.StudentAnswers);
             }
+
+            var essayGadingResult = await _context.EssayGradingResults
+                .FirstOrDefaultAsync(e => e.ExamHistoryId == id);
+
+            if (essayGadingResult != null)
+            {
+                await _context.EssayGradingDetails
+                    .Where(e => e.GradingResultId == essayGadingResult.Id)
+                    .ExecuteDeleteAsync();
+
+                _context.EssayGradingResults.Remove(essayGadingResult);
+                await _context.SaveChangesAsync();
+            }
+
             _context.ExamHistories.Remove(history);
             await _context.SaveChangesAsync();
 
@@ -1110,12 +1124,12 @@ namespace ITExam.Controllers
 
             if (_cache.TryGetValue(participantsKey, out System.Collections.Concurrent.ConcurrentDictionary<string, ITExam.Hubs.ExamMonitorHub.StudentStatus> participants))
             {
-                participants.TryRemove(studentId, out _);
+                participants!.TryRemove(studentId, out _);
             }
 
             if (_cache.TryGetValue(scoresKey, out System.Collections.Concurrent.ConcurrentDictionary<string, double> scoreMap))
             {
-                scoreMap.TryRemove(studentId, out _);
+                scoreMap!.TryRemove(studentId, out _);
             }
 
             var redisKeysToDelete = new List<string>

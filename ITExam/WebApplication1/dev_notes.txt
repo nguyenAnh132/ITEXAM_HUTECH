@@ -89,7 +89,7 @@ var accessToken = Request.Cookies["access_token"];
 
 
 
-//===================================================
+//===============================================================================================================================================
 Đăng: Ngày giờ, Góp ý, Test Responsive (test kỹ) - File mô tả 
 
 Phát, Phương: Sửa lỗi responsive, tối ưu giao diện
@@ -97,3 +97,4 @@ Phát, Phương: Sửa lỗi responsive, tối ưu giao diện
 Tòng: Test toanf bộ hệ thống + Viết modal hướng dẫn ở trong ma trận đề thi, Sửa ma trận đề khi xóa câu hỏi ngân hàng đề,lỗi xóa lớp học.
 
 Tú Anh: Chấm thi tự luận bằng AI, tạo mô tả chấm bằng AI, viết lại nộp bài thi tự động khi sinh viên out bài thi trắc nghiệm, tự luận, Caching
+
