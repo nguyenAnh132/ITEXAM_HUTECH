@@ -170,6 +170,42 @@
 
                                     <div class="col-lg-4 bg-light bg-opacity-25">
                                         <div class="p-4 grading-panel">
+                                            @* @if (!string.IsNullOrEmpty(Model.AiOverallComment)) *@
+                                            @* { *@
+                                            @*     <div class="alert alert-info shadow-sm border-0 d-flex align-items-start mb-4" role="alert" style="background-color: #e3f2fd; border-left: 5px solid #2196f3 !important;"> *@
+                                            @*         <i class="fa-solid fa-robot fa-lg mt-1 me-3 text-primary"></i> *@
+                                            @*         <div> *@
+                                            @*             <h6 class="alert-heading fw-bold text-primary">Nhận xét tổng quan từ AI Assistant</h6> *@
+                                            @*             <p class="mb-0 text-dark">@Model.AiOverallComment</p> *@
+                                            @*         </div> *@
+                                            @*     </div> *@
+                                            @* } *@
+                                            @if (question.AiScore.HasValue)
+                                            {
+                                                <div class="card border-0 shadow-sm mb-3" style="background: linear-gradient(135deg, #e3f2fd 0%, #f1f8ff 100%);">
+                                                    <div class="card-body p-3">
+                                                        <div class="d-flex justify-content-between align-items-center mb-2 border-bottom border-primary border-opacity-10 pb-2">
+                                                            <h6 class="fw-bold text-primary mb-0">
+                                                                <i class="fa-solid fa-robot me-2"></i>Đề xuất chấm bởi AI
+                                                            </h6>
+                                                            <span class="badge bg-primary text-white shadow-sm fs-6">
+                                                                @question.AiScore / @question.MaxScore
+                                                            </span>
+                                                        </div>
+
+                                                        <div class="mb-3">
+                                                            <small class="text-dark opacity-75 fst-italic">"@question.AiComment"</small>
+                                                        </div>
+
+                                                        @* Nút áp dụng nhanh điểm AI *@
+                                                        <button type="button"
+                                                                class="btn btn-sm btn-outline-primary w-100 fw-bold btn-apply-ai"
+                                                                onclick="applyAiScore(@globalIndex, @question.AiScore)">
+                                                            <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Áp dụng điểm này
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            }
                                             <div class="bg-white p-3 rounded-3 shadow-sm border">
                                                 <label class="form-label fw-bold text-danger d-flex justify-content-between">
                                                     <span>ĐIỂM TỔNG KẾT</span>
@@ -328,5 +364,24 @@
                 });
             });
         });
+
+                function applyAiScore(index, score) {
+            const totalInput = document.getElementById(`total-score-${index}`);
+            if (totalInput) {
+                totalInput.value = score;
+
+                // Tạo hiệu ứng highlight để báo hiệu đã nhận điểm
+                totalInput.style.backgroundColor = "#e8f5e9"; // Xanh nhạt
+                totalInput.style.transition = "background-color 0.5s";
+
+                setTimeout(() => {
+                     totalInput.style.backgroundColor = "#fff";
+                }, 800);
+
+                // Reset các ô tiêu chí con về 0 (hoặc logic khác tùy bạn) vì ta đang nhập điểm tổng
+                // Nếu muốn giữ logic tính tổng từ tiêu chí thì không cần dòng alert này
+                // alert("Đã áp dụng điểm đề xuất của AI!");
+            }
+        }
     </script>
 }

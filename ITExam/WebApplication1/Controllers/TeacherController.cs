@@ -1238,18 +1238,20 @@ namespace ITExam.Controllers
         [HttpGet]
         public async Task<IActionResult> Grading_The_Exam_Of_Student(int id)
         {
+            // 1. Logic cũ: Lấy lịch sử thi
             var history = await _context.ExamHistories
                 .AsNoTracking()
                 .Include(x => x.User)
                 .Include(x => x.Exam)
-                    .ThenInclude(e => e.ExamBank) 
+                    .ThenInclude(e => e.ExamBank)
                 .Include(x => x.StudentAnswers)
                     .ThenInclude(sa => sa.QuestionBank)
-                        .ThenInclude(qb => qb.EssayCriteria) 
+                        .ThenInclude(qb => qb.EssayCriteria)
                 .FirstOrDefaultAsync(x => x.ExamHistoryId == id);
 
             if (history == null) return NotFound();
 
+            // 2. Logic cũ: Gọi API lấy Chapter/CLO
             int subjectId = history.Exam.ExamBank.SubjectId;
             var access_token = Request.Cookies["access_token"];
             var client = _httpClientFactory.CreateClient();
@@ -1272,12 +1274,33 @@ namespace ITExam.Controllers
                 if (monHoc != null) listChaptersApi = monHoc.Chapters ?? new List<ChapterDto>();
             }
 
+            // 3. Logic cũ: Lấy Matrix để tính MaxScore
             var matrices = await _context.ExamMatrices
                 .AsNoTracking()
                 .Where(m => m.ExamId == history.ExamId)
                 .ToListAsync();
 
-            // 4. Map dữ liệu
+            // ---------------------------------------------------------
+            // === PHẦN MỚI THÊM: LẤY DỮ LIỆU AI CHẤM ===
+            // ---------------------------------------------------------
+
+            // A. Lấy kết quả tổng quan (Bảng cha)
+            var aiResult = await _context.EssayGradingResults
+                .AsNoTracking()
+                .FirstOrDefaultAsync(r => r.ExamHistoryId == id);
+
+            // B. Lấy chi tiết từng câu (Bảng con) nếu có kết quả
+            List<EssayGradingDetail> aiDetails = new List<EssayGradingDetail>();
+            if (aiResult != null)
+            {
+                aiDetails = await _context.EssayGradingDetails
+                    .AsNoTracking()
+                    .Where(d => d.GradingResultId == aiResult.Id)
+                    .ToListAsync();
+            }
+            // ---------------------------------------------------------
+
+            // 4. Map dữ liệu vào ViewModel
             var vm = new EssaySubmissionToGradeVM
             {
                 HistoryId = history.ExamHistoryId,
@@ -1288,7 +1311,10 @@ namespace ITExam.Controllers
                 ExamId = history.ExamId,
                 ClassId = history.ClassId,
                 UploadedFileLink = history.UploadedFileId,
-                ListQuestions = new List<GradedEssayQuestionVM>()
+                ListQuestions = new List<GradedEssayQuestionVM>(),
+
+                // === MỚI THÊM: Map nhận xét chung của AI ===
+                AiOverallComment = aiResult?.OverallComment
             };
 
             foreach (var ans in history.StudentAnswers)
@@ -1305,6 +1331,9 @@ namespace ITExam.Controllers
                 var chapterApi = listChaptersApi.FirstOrDefault(c => c.Id == qb.ChapterId);
                 var cloApi = chapterApi?.Clos.FirstOrDefault(c => c.Id == qb.CLOId);
 
+                // === MỚI THÊM: Tìm chi tiết điểm AI chấm cho câu hỏi này ===
+                var aiDetailForThisQuestion = aiDetails.FirstOrDefault(d => d.QuestionId == ans.QuestionId);
+
                 var qVM = new GradedEssayQuestionVM
                 {
                     QuestionId = ans.QuestionId,
@@ -1316,7 +1345,11 @@ namespace ITExam.Controllers
                     ChapterTitle = chapterApi?.Title ?? $"Chương {qb.ChapterId}",
                     CloId = qb.CLOId ?? 0,
                     CloTitle = cloApi?.Title ?? $"CLO {qb.CLOId}",
-                    Criteria = new List<CriteriaGradingVM>()
+                    Criteria = new List<CriteriaGradingVM>(),
+
+                    // === MỚI THÊM: Map điểm và nhận xét chi tiết của AI ===
+                    AiScore = aiDetailForThisQuestion?.Score,   // Nếu chưa chấm thì null
+                    AiComment = aiDetailForThisQuestion?.Comment // Nếu chưa chấm thì null
                 };
 
                 if (qb.EssayCriteria != null && qb.EssayCriteria.Any())
@@ -1327,17 +1360,18 @@ namespace ITExam.Controllers
 
                         qVM.Criteria.Add(new CriteriaGradingVM
                         {
-                            CriterionId = cri.Id, 
-                            Content = cri.Content, 
+                            CriterionId = cri.Id,
+                            Content = cri.Content,
                             Rate = cri.Percent/100,
                             MaxPoint = criMaxPoint,
-                            CurrentPoint = null 
+                            CurrentPoint = null
                         });
                     }
                 }
 
                 vm.ListQuestions.Add(qVM);
             }
+
             vm.ListQuestions = vm.ListQuestions
                 .OrderBy(q => q.ChapterId)
                 .ThenBy(q => q.CloId)
