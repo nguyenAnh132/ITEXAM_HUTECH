@@ -1168,10 +1168,9 @@ namespace ITExam.Controllers
             foreach (var key in redisKeysToDelete)
             {
                 await _redisService.DeleteKeyAsync(key);
-                // Lưu ý: Đảm bảo IRedisService có hàm DeleteKeyAsync hoặc RemoveAsync tương ứng
             }
 
-            TempData["SuccessMessage"] = "Đã xóa sạch lịch sử, cache và logs của sinh viên!";
+            TempData["SuccessMessage"] = "Đã xóa lịch sử làm bài của sinh viên!";
             return RedirectToAction("List_Student_Do_Test", new { examId = examId, classId = classId });
         }
 
