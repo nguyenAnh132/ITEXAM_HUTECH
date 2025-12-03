@@ -306,34 +306,40 @@
                                 }
                             }
                             // Tự luận (Loại 4)
-                            else if (item.QuestionType == "4" && !string.IsNullOrEmpty(item.EssayAnswer))
+                            else if ((Model.ExamType == "Tự luận" || item.QuestionType == "4") && !string.IsNullOrEmpty(item.EssayAnswer))
                             {
-                                var studentAnswer = item.EssayAnswer.Trim();
-                                var options = JsonConvert.DeserializeObject<List<dynamic>>(item.ChoiceContent);
-
-                                <div class="bg-white p-3 rounded border content-container">
-                                    <div class="fst-italic mb-2">@Html.Raw(studentAnswer)</div> @foreach (var option in options)
-                                    {
-                                        var correctAnswer = option.NoiDung.ToString().Trim();
-                                        // So sánh đơn giản (bạn có thể cải tiến logic này nếu cần)
-                                        if (("<p>" + studentAnswer + "</p>").Equals(correctAnswer, StringComparison.OrdinalIgnoreCase)
-                                        || studentAnswer.Equals(correctAnswer, StringComparison.OrdinalIgnoreCase))
-                                        {
-                                            <div class="badge bg-success">Kết quả: Chính xác</div>
-                                        }
-                                        else
-                                        {
-                                            <div class="badge bg-danger">Kết quả: Không chính xác</div>
-                                        }
-                                    }
-                                </div>
-                            }
-                            // Trường hợp không có loại hoặc tự luận thường
-                            else if (item.QuestionType == "Tự luận" && !string.IsNullOrEmpty(item.EssayAnswer))
-                            {
-                                <div class="bg-white p-3 rounded border content-container">
+                                @* 1. Hiển thị nội dung bài làm *@
+                                <div class="bg-white p-3 rounded border content-container" style="white-space: pre-wrap;">
                                     @Html.Raw(item.EssayAnswer)
                                 </div>
+
+                                @* 2. (Tùy chọn) Logic so sánh với đáp án mẫu nếu có *@
+                                @if (!string.IsNullOrEmpty(item.ChoiceContent) && item.ChoiceContent != "[]" && item.ChoiceContent != "null")
+                                {
+                                    try
+                                    {
+                                        // Chỉ chạy logic chấm tự động nếu chuỗi ChoiceContent là JSON hợp lệ
+                                        var options = JsonConvert.DeserializeObject<List<dynamic>>(item.ChoiceContent);
+                                        if (options != null)
+                                        {
+                                            var studentAnswer = item.EssayAnswer.Trim();
+                                            foreach (var option in options)
+                                            {
+                                                var correctAnswer = option.NoiDung?.ToString()?.Trim() ?? "";
+
+                                                // So sánh tương đối (bỏ qua viết hoa/thường)
+                                                if (studentAnswer.Equals(correctAnswer, StringComparison.OrdinalIgnoreCase)
+                                                || ("<p>" + studentAnswer + "</p>").Equals(correctAnswer, StringComparison.OrdinalIgnoreCase))
+                                                {
+                                                    <div class="mt-2 text-success fw-bold">
+                                                        Kết quả: Khớp với đáp án mẫu
+                                                    </div>
+                                                }
+                                            }
+                                        }
+                                    }
+                                    catch { /* Bỏ qua nếu ChoiceContent không phải JSON (trường hợp đề tự luận thuần túy) */ }
+                                }
                             }
                             else
                             {
