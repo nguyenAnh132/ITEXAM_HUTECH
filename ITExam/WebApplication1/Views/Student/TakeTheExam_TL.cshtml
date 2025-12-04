@@ -252,7 +252,7 @@
                   try {  
                     await connection.invoke(  
                       "SelectAnswer",  
-                      EXAM_ID ?? examId,         // tương thích tên biến  
+                      EXAM_ID ?? examId,           
                       CLASS_ID ?? classId,  
                       STUDENT_ID ?? studentId,  
                       FULLNAME ?? studentName,  
@@ -288,17 +288,14 @@
               return;  
             }  
 
-            // 3) Sau khi lưu Redis thành công -> gửi Hub (flush answer deltas + SubmitExam)  
             try {  
-              // gửi cấu trúc đề nếu bạn muốn đảm bảo (không bắt buộc khi submit):  
               if (window.ITExamEssay?.sendExamStructureOnce) {  
                 try { await window.ITExamEssay.sendExamStructureOnce(true); } catch {}  
               }  
 
-              await flushAllAnswersToHub(); // đẩy nốt phần còn lại vào log cá nhân  
+              await flushAllAnswersToHub();   
 
               if (typeof connection === "object" && connection?.invoke) {  
-                // Báo submit lên Hub  
                 try {  
                   await connection.invoke(  
                     "SubmitExam",  
@@ -308,12 +305,10 @@
                     FULLNAME ?? studentName  
                   );  
                 } catch (err) {  
-                  // không chặn việc nộp form nếu Hub lỗi  
                   console.warn("SubmitExam hub error:", err);  
                 }  
               }  
             } finally {  
-              // 4) Submit form sau cùng  
               const form = e.target.closest("form");  
               if (form) form.submit();  
             }  
@@ -454,12 +449,11 @@
                     body: JSON.stringify({
                         MaDe: @Model.ExamId,
                         MaLop: @Model.ClassId,
-                        UploadedFileId: UploadedFileId // Gửi URL (hoặc null nếu không có file)
+                        UploadedFileId: UploadedFileId 
                     })
                 });
                 const data = await finalSubmitResp.json();
                 if (finalSubmitResp.ok) {
-                    // Nếu backend trả về OK, chuyển hướng sang trang kết quả
                     window.location.href = data.redirectUrl;
                 } else {
                     alert("Lỗi khi hoàn tất nộp bài.");

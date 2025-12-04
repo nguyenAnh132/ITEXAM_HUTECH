@@ -107,15 +107,15 @@ referrerpolicy="no-referrer" />
                                              <td>
                                                 @if (sv.SubmitTime != DateTime.MinValue)
                                                 {
-                                                    <a asp-controller="Teacher" asp-action="Exam_History_Detail" asp-route-id="@sv.ExamHistoryId" class="btn btn-outline-primary">Chi tiết làm bài</a>
-                                                    <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteLichSuModal"
+                                                    <a asp-controller="Teacher" asp-action="Exam_History_Detail" asp-route-id="@sv.ExamHistoryId" class="btn btn-sm btn-outline-primary">Chi tiết làm bài</a>
+                                                    <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteLichSuModal"
                                                             onclick="setExamHistoryIdToDelete(@sv.ExamHistoryId)">
                                                         Xóa lịch sử làm bài
                                                     </button>
                                                 }
                                                 else
                                                 {
-                                                    <i class="text-primary"><b>Sinh viên đang làm bài thi</b></i>
+                                                    <div class="text-primary"><b>Đang làm bài...</b></div>
                                                 }
                                             </td> 
                                          </tr> 
@@ -210,7 +210,6 @@ referrerpolicy="no-referrer" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
     <script>
         const CLASS_ID = "@Model.ClassInfo.ClassId";
-        // LƯU Ý: Bạn cần đảm bảo Controller truyền ExamId xuống View này.
         const EXAM_ID = "@ViewBag.ExamId";
 
         const connection = new signalR.HubConnectionBuilder()
@@ -218,14 +217,12 @@ referrerpolicy="no-referrer" />
             .withAutomaticReconnect()
             .build();
 
-        // 1. Helper: Định dạng thời gian (HH:mm:ss dd/MM/yyyy)
         function formatDateTime(dateString) {
             if (!dateString || dateString === "0001-01-01T00:00:00") return "";
             const date = new Date(dateString);
             return date.toLocaleString('vi-VN');
         }
 
-        // 2. Helper: Định dạng thời gian làm bài (Phút giây)
         function formatDuration(seconds) {
             if (!seconds) return "0 phút 0 giây";
             const m = Math.floor(seconds / 60);
@@ -233,9 +230,7 @@ referrerpolicy="no-referrer" />
             return `${m} phút ${s} giây`;
         }
 
-        // 3. Helper: Tạo hoặc lấy dòng sinh viên (TR)
         function getOrCreateRow(studentId, studentName, joinedAt) {
-            // Tìm dòng theo MSSV (giả sử cột 1 chứa MSSV)
             const rows = document.querySelectorAll("#table-body tr");
             let targetRow = null;
 
@@ -246,11 +241,9 @@ referrerpolicy="no-referrer" />
                 }
             });
 
-            // Nếu chưa có thì tạo mới
             if (!targetRow) {
                 const tbody = document.getElementById("table-body");
 
-                // Xóa dòng "Chưa có sinh viên nào" nếu có
                 const emptyRow = tbody.querySelector("td[colspan='7']");
                 if (emptyRow) emptyRow.parentElement.remove();
 
@@ -263,7 +256,7 @@ referrerpolicy="no-referrer" />
                     <td class="duration">0 phút 0 giây</td>
                     <td class="score">0</td>
                     <td class="action">
-                        <i class="text-primary"><b>Sinh viên đang làm bài thi...</b></i>
+                        <i class="text-primary"><b>Đang làm bài thi...</b></i>
                     </td>
                 `;
                 tbody.appendChild(newRow);
@@ -273,30 +266,24 @@ referrerpolicy="no-referrer" />
         }
 
         // --- SỰ KIỆN SIGNALR ---
-
-        // A. Sinh viên vào phòng thi (JOIN)
         connection.on("StudentJoined", (data) => {
             console.log("Student Joined:", data);
             getOrCreateRow(data.studentId, data.studentName, data.joinedAt);
         });
 
-        // B. Sinh viên nộp bài (SUBMIT)
         connection.on("StudentSubmittedExam", (data) => {
             console.log("Student Submitted:", data);
             const row = getOrCreateRow(data.studentId, data.studentName, null);
 
-            // Cập nhật thời gian nộp
             if(data.submittedAt) {
                 row.querySelector(".submit-time").innerText = formatDateTime(data.submittedAt);
             }
 
-            // Cập nhật hành động: Hiển thị 2 nút bấm
-            // Lưu ý: data.examHistoryId phải được thêm ở Backend như hướng dẫn Bước 1
             if (data.examHistoryId) {
                 const actionCell = row.querySelector(".action");
                 actionCell.innerHTML = `
-                    <a href="/Teacher/Exam_History_Detail/${data.examHistoryId}" class="btn btn-outline-primary">Chi tiết làm bài</a>
-                    <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteLichSuModal"
+                    <a href="/Teacher/Exam_History_Detail/${data.examHistoryId}" class="btn btn-sm btn-outline-primary">Chi tiết làm bài</a>
+                    <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteLichSuModal"
                             onclick="setExamHistoryIdToDelete(${data.examHistoryId})">
                         Xóa lịch sử làm bài
                     </button>
@@ -304,29 +291,27 @@ referrerpolicy="no-referrer" />
             }
         });
 
-        // C. Cập nhật điểm số (SCORE UPDATE)
         connection.on("StudentScoreUpdated", (data) => {
             console.log("Score Updated:", data);
             const row = getOrCreateRow(data.studentId, data.studentName, null);
 
-            // Cập nhật Điểm
             if (data.score !== undefined && data.score !== null) {
                 row.querySelector(".score").innerText = data.score;
             }
+            else{
+                row.querySelector(".score").innerText = 'Chưa chấm';
+            }
 
-            // Cập nhật Thời gian làm bài
             if (data.duration) {
                 row.querySelector(".duration").innerText = formatDuration(data.duration);
             }
 
-            // Đảm bảo nút bấm hiện ra nếu chưa hiện (phòng trường hợp event Submit đến sau event Score)
             if (data.examHistoryId) {
                 const actionCell = row.querySelector(".action");
-                // Chỉ cập nhật nếu đang chưa có nút (đang hiển thị text text-primary)
                 if (actionCell.querySelector("i.text-primary")) {
                     actionCell.innerHTML = `
-                        <a href="/Teacher/Exam_History_Detail/${data.examHistoryId}" class="btn btn-outline-primary">Chi tiết làm bài</a>
-                        <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteLichSuModal"
+                        <a href="/Teacher/Exam_History_Detail/${data.examHistoryId}" class="btn btn-outline-primary btn-sm">Chi tiết làm bài</a>
+                        <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteLichSuModal"
                                 onclick="setExamHistoryIdToDelete(${data.examHistoryId})">
                             Xóa lịch sử làm bài
                         </button>
@@ -340,7 +325,6 @@ referrerpolicy="no-referrer" />
             try {
                 await connection.start();
                 console.log("SignalR Connected.");
-                // Giáo viên join vào group để nghe sự kiện
                 if (EXAM_ID && CLASS_ID) {
                     await connection.invoke("JoinMonitor", EXAM_ID.toString(), CLASS_ID.toString());
                 } else {
@@ -355,4 +339,4 @@ referrerpolicy="no-referrer" />
         start();
 
     </script>
-  } 
+}

@@ -350,10 +350,20 @@ namespace ITExam.Controllers
 
             if (historyIds.Count > 0)
             {
-                //RemoveRange
                 await _context.StudentAnswers
                     .AsNoTracking()
                     .Where(sa => historyIds.Contains(sa.ExamHistoryId))
+                    .ExecuteDeleteAsync();
+
+                await _context.EssayGradingDetails
+                    .AsNoTracking()
+                    .Where(d => _context.EssayGradingResults
+                        .Any(r => r.Id == d.GradingResultId && historyIds.Contains(r.ExamHistoryId)))
+                    .ExecuteDeleteAsync();
+
+                await _context.EssayGradingResults
+                    .AsNoTracking()
+                    .Where(e => historyIds.Contains(e.ExamHistoryId))
                     .ExecuteDeleteAsync();
 
                 await _context.ExamHistories
@@ -925,6 +935,17 @@ namespace ITExam.Controllers
                 await _context.StudentAnswers
                     .AsNoTracking()
                     .Where(sa => historyIds.Contains(sa.ExamHistoryId))
+                    .ExecuteDeleteAsync();
+
+                await _context.EssayGradingDetails
+                    .AsNoTracking()
+                    .Where(d => _context.EssayGradingResults
+                        .Any(r => r.Id == d.GradingResultId && historyIds.Contains(r.ExamHistoryId)))
+                    .ExecuteDeleteAsync();
+
+                await _context.EssayGradingResults
+                    .AsNoTracking()
+                    .Where(e => historyIds.Contains(e.ExamHistoryId))
                     .ExecuteDeleteAsync();
 
                 await _context.ExamHistories
