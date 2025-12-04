@@ -282,3 +282,6 @@
         border-radius: 5px;
     }
 }
+.ck-powered-by {
+    display: none !important;
+}
