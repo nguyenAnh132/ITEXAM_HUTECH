@@ -12,6 +12,7 @@ namespace ITExam.ViewModels.ExamBank
         public int ExamBankId { get; set; }
 
         public string ExamBankName { get; set; }
+        public string SubjectName { get; set; }
 
         public bool IsActive { get; set; }
 

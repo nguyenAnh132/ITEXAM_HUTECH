@@ -1575,15 +1575,32 @@ namespace ITExam.Controllers
                 await _context.SaveChangesAsync();
             }
 
+            var examId = examHistory.ExamId;
+
+            var examBankName = await _context.Exams
+                .AsNoTracking()
+                .Where(e => e.ExamId == examId)
+                .Select(e => new
+                {
+                    e.ExamBank.SubjectName
+                })
+                .FirstOrDefaultAsync();
+
             var promptBuilder = new StringBuilder();
-            promptBuilder.AppendLine("Bạn là hệ thống chấm bài tự luận theo tiêu chí.");
+            promptBuilder.AppendLine($"Hãy đóng vai một giảng viên đại học CHẤM RẤT KHÓ TÍNH, có hơn 10 năm kinh nghiệm đánh giá bài thi tự luận.");
+            promptBuilder.AppendLine($"Môn học: {examBankName}");
+            promptBuilder.AppendLine("Bạn phải chấm điểm với chuẩn mực học thuật cao, tuyệt đối không dễ dãi. Luôn yêu cầu:");
+            promptBuilder.AppendLine("- Đúng kiến thức nền tảng");
+            promptBuilder.AppendLine("- Giải thích ngắn gọn, logic chặt chẽ");
+            promptBuilder.AppendLine("- Không lan man, không lập lại, không trả lời chung chung");
+            promptBuilder.AppendLine("- Nếu bài làm hời hợt hoặc thiếu chi tiết, phải trừ điểm");
             promptBuilder.AppendLine("");
 
             foreach (var ans in essayAnswers)
             {
                 promptBuilder.AppendLine($"Câu hỏi ID: {ans.QuestionId}");
                 promptBuilder.AppendLine($"Nội dung câu hỏi: {ans.QuestionContent}");
-                promptBuilder.AppendLine($"Điểm tối đa: {ans.MaxScore}");
+                promptBuilder.AppendLine($"Điểm tối đa cho câu hỏi với ID {ans.QuestionId} là: {ans.MaxScore}");
 
                 if(ans.EssayCriteria != null)
                 {
@@ -1600,7 +1617,7 @@ namespace ITExam.Controllers
             }
 
             if (!string.IsNullOrEmpty(examHistory.UploadedFileId))
-                promptBuilder.AppendLine($"File bổ sung của sinh viên: {examHistory.UploadedFileId}");
+                promptBuilder.AppendLine($"Sinh viên có nộp kèm file. Hãy kiểm tra rất kỹ vì thông tin bài làm có thể nằm trong file: {examHistory.UploadedFileId}");
 
             string prompt = promptBuilder.ToString();
 
@@ -1732,7 +1749,7 @@ namespace ITExam.Controllers
             examHistory.HangfireJobId = jobId;
             await _context.SaveChangesAsync();
 
-            var redirectUrl = Url.Action("ExamResult_TL", "Student", new { maDe = model.MaDe, maLop = model.MaLop });
+            var redirectUrl = Url.Action("ExamResult_TL", "Student", new { maDe = model.MaDe, maLop = model.MaLop});
             return Ok(new { success = true, redirectUrl });
         }
 

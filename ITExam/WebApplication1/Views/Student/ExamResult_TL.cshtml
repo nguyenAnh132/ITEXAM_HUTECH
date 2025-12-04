@@ -22,8 +22,7 @@
          <div class="score-display">Chưa có kết quả thi</div> 
 
          <div class="info text-start mt-4"> 
-             <p class="fs-5"><i class="fa-regular fa-calendar-days"></i><strong>Ngày làm bài:</strong> 03/03/2025</p> 
-             <p class="fs-5"><i class="fa-solid fa-stopwatch"></i><strong>Thời gian làm bài:</strong> 00:26:00</p> 
+             <p class="fs-5"><i class="fa-regular fa-calendar-days"></i><strong>Ngày làm bài:</strong> @DateTime.Now.ToString("dd/MM/yyyy HH:mm")</p> 
          </div> 
 
         <a asp-action="ClassDetail" asp-route-id="@ViewBag.MaLop">

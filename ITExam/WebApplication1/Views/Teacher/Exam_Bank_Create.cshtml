@@ -67,20 +67,22 @@
                                                   <option selected value="Trắc nghiệm">Trắc nghiệm</option>  
                                                   <option value="Tự luận">Tự luận</option>  
                                               </select>  
-                                          </div> 
+                                          </div>
                                          <div class="mb-3 col-12"> 
-                                             <label for="MaMonHoc" class="form-label">Môn học</label> 
-                                             <select asp-for="SubjectId" class="form-select"> 
-                                                 @foreach (var subject in (List<CreateExamBankVM>)ViewBag.Subjects) 
-                                                 { 
-                                                     <option value="@subject.SubjectId">@subject.SubjectCode - @subject.SubjectName</option> 
-                                                 } 
-                                             </select> 
-                                             <span class="text-danger" asp-validation-for="SubjectId"></span> 
+                                             <label for="MaMonHoc" class="form-label">Môn học</label>
+                                            <select asp-for="SubjectId" class="form-select" id="subjectSelect">
+                                                @foreach (var subject in (List<CreateExamBankVM>)ViewBag.Subjects)
+                                                {
+                                                    <option value="@subject.SubjectId"
+                                                            data-subjectname="@subject.SubjectName">
+                                                        @subject.SubjectCode - @subject.SubjectName
+                                                    </option>
+                                                }
+                                            </select>
+                                            <span class="text-danger" asp-validation-for="SubjectId"></span> 
+                                            <input type="hidden" id="SubjectName" name="SubjectName" />
                                          </div> 
                                       </div> 
-                                    
-
 
                                       <div class="my-3 d-flex justify-content-end">  
                                           <button data-bs-toggle="modal"  
@@ -99,4 +101,22 @@
          </div> 
      </div> 
  </div> 
+
+ @section Script{
+    <script>
+        const ddl = document.getElementById("subjectSelect");
+        const hdName = document.getElementById("SubjectName");
+
+        ddl.addEventListener("change", function () {
+            const selected = this.options[this.selectedIndex];
+            const name = selected.dataset.subjectname;
+            hdName.value = name;
+        });
+        window.addEventListener("DOMContentLoaded", () => {
+            const selected = ddl.options[ddl.selectedIndex];
+            hdName.value = selected.dataset.subjectname;
+        });
+    </script>
+
+ }
 

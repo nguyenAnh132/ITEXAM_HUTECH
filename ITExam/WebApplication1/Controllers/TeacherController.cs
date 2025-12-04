@@ -1057,18 +1057,34 @@ namespace ITExam.Controllers
         public async Task<IActionResult> Delete_History_Exam(int id)
         {
             var history = await _context.ExamHistories
-                .Include(l => l.StudentAnswers)
-                .Include(l => l.User) 
-                .FirstOrDefaultAsync(l => l.ExamHistoryId == id);
+                .FindAsync(id);
 
             if (history == null)
             {
                 return NotFound("Không tìm thấy lịch sử làm bài.");
             }
 
+            var gadingEssayExamStatus = await _context.EssayGradingResults
+                .AsNoTracking()
+                .Where(g => g.ExamHistoryId == history.ExamHistoryId)
+                .Select(g => g.Status)
+                .FirstOrDefaultAsync();
+
             int examId = history.ExamId;
             int classId = history.ClassId;
-            string studentId = history.User.Username;
+
+            if (gadingEssayExamStatus != "Success" && gadingEssayExamStatus !=null)
+            {
+                TempData["SuccessMessage"] = "AI đang chấm, chưa thể xóa bài làm của sinh viên";
+                return RedirectToAction("List_Student_Do_Test", new { examId = examId, classId = classId });
+            }
+
+            var studentId = await _context.Users
+                .AsNoTracking()
+                .Where(st => st.UserId == history.UserId)
+                .Select(s => s.Username)
+                .FirstOrDefaultAsync();
+
             var fileUrlToDelete = history.UploadedFileId;
 
             if (!string.IsNullOrEmpty(fileUrlToDelete))
@@ -1098,9 +1114,17 @@ namespace ITExam.Controllers
                 }
             }
 
-            if (history.StudentAnswers != null && history.StudentAnswers.Any())
+            var studentAnswerIds = await _context.StudentAnswers
+                .AsNoTracking()
+                .Where(l => l.ExamHistoryId == id)
+                .Select(a => a.StudentAnswerId)
+                .ToListAsync();
+
+            if (studentAnswerIds != null && studentAnswerIds.Any())
             {
-                _context.StudentAnswers.RemoveRange(history.StudentAnswers);
+                await _context.StudentAnswers
+                    .Where(a => studentAnswerIds.Contains(a.StudentAnswerId))
+                    .ExecuteDeleteAsync();
             }
 
             var essayGadingResult = await _context.EssayGradingResults
@@ -1147,10 +1171,9 @@ namespace ITExam.Controllers
             foreach (var key in redisKeysToDelete)
             {
                 await _redisService.DeleteKeyAsync(key);
-                // Lưu ý: Đảm bảo IRedisService có hàm DeleteKeyAsync hoặc RemoveAsync tương ứng
             }
 
-            TempData["SuccessMessage"] = "Đã xóa sạch lịch sử, cache và logs của sinh viên!";
+            TempData["SuccessMessage"] = "Đã xóa lịch sử làm bài của sinh viên!";
             return RedirectToAction("List_Student_Do_Test", new { examId = examId, classId = classId });
         }
 
@@ -1630,6 +1653,7 @@ namespace ITExam.Controllers
                 CreatedDate = DateOnly.FromDateTime(DateTime.Now).ToDateTime(TimeOnly.MinValue),
                 Status = model.Status,
                 SubjectId = model.SubjectId,
+                SubjectName = model.SubjectName,
                 ExamType = model.ExamType,
                 UserId = userId
             };
@@ -1701,6 +1725,7 @@ namespace ITExam.Controllers
             var viewModel = new CreateQuestionVM
             {
                 ExamBankId = id,
+                SubjectName = subject.Name,
                 ExamBankName = examBank.ExamBankName,
                 IsActive = examBank.Status,
                 QuestionList = questions,
@@ -2213,6 +2238,7 @@ namespace ITExam.Controllers
             var viewModel = new CreateQuestionVM
             {
                 ExamBankId = id,
+                SubjectName = subject.Name,
                 ExamBankName = examBank.ExamBankName,
                 IsActive = examBank.Status,
                 QuestionList = questions,

@@ -6,7 +6,6 @@
 }
 @section Style {
     <style>
-        /* Tạo nền xám nhẹ cho toàn trang để nổi bật các Card */
         body {
             background-color: #fff;
         }
@@ -31,8 +30,6 @@
             transition: transform 0.2s;
             overflow: hidden;
         }
-
-        /* Vùng hiển thị bài làm sinh viên giả lập trang giấy */
         .student-answer-box {
             background-color: #fff;
             border: 1px solid #e9ecef;
@@ -43,27 +40,24 @@
             line-height: 1.6;
         }
 
-        /* Hiệu ứng focus cho ô nhập điểm */
         .total-score-input:focus {
             box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25);
             border-color: #dc3545;
         }
 
-        /* Sticky panel cho cột chấm điểm trên màn hình lớn */
         @@media (min-width: 992px) {
             .grading-panel
 
         {
             position: -webkit-sticky;
             position: sticky;
-            top: 20px; /* Cách mép trên 20px */
+            top: 20px;
             max-height: 90vh;
             overflow-y: auto;
         }
 
         }
 
-        /* Responsive cho mobile */
         @@media (max-width: 991.98px) {
             .grading-panel
 
@@ -277,27 +271,67 @@
 
         <div class="fixed-bottom bg-white border-top shadow-lg p-3">
             <div class="container-xl d-flex justify-content-between align-items-center">
-                <div class="text-muted d-none d-md-block">
+
+                <!-- Left hint -->
+                <div class="text-muted d-none d-md-block" style="width: 33%;">
                     <small><i class="fa-solid fa-keyboard me-1"></i> Bạn có thể nhập điểm nhanh bằng phím Tab</small>
                 </div>
-                <div>
-                    <a asp-action="Grading_The_Exam" asp-route-maDe="@Model.ExamId" asp-route-maLop="@Model.ClassId" class="btn btn-outline-secondary me-2 px-4 fw-bold">
+
+                <!-- Center total score -->
+                <div id="total-score-display"
+                     class="fw-bold text-danger fs-5 text-center"
+                     style="width: 33%;">
+                    Tổng điểm: 0 / 0
+                </div>
+
+                <!-- Right buttons -->
+                <div class="text-end" style="width: 33%;">
+                    <a asp-action="Grading_The_Exam"
+                       asp-route-maDe="@Model.ExamId"
+                       asp-route-maLop="@Model.ClassId"
+                       class="btn btn-outline-secondary me-2 px-4 fw-bold">
                         <i class="fa-solid fa-arrow-left me-1"></i> Quay lại
                     </a>
+
                     <button type="submit" class="btn btn-primary px-4 fw-bold shadow-sm">
                         <i class="fa-solid fa-floppy-disk me-1"></i> Lưu kết quả
                     </button>
                 </div>
+
             </div>
         </div>
+
     </form>
 
     <div style="height: 100px;"></div>
 </div>
 
 @section Script {
+
     <script>
         document.addEventListener("DOMContentLoaded", function() {
+            updateOverallTotal();
+            document.querySelectorAll('.total-score-input').forEach(inp => {
+                inp.addEventListener('input', updateOverallTotal);
+            });
+
+            function updateOverallTotal() {
+                let total = 0;
+                let maxTotal = 0;
+
+                document.querySelectorAll('.total-score-input').forEach(inp => {
+                    const val = parseFloat(inp.value);
+                    const max = parseFloat(inp.getAttribute('max'));
+
+                    if (!isNaN(val)) total += val;
+                    if (!isNaN(max)) maxTotal += max;
+                });
+
+                total = Math.round(total * 100) / 100;
+
+                const box = document.getElementById('total-score-display');
+                box.textContent = `Tổng điểm: ${total} / ${maxTotal}`;
+            }
             const criteriaInputs = document.querySelectorAll('.criteria-input');
 
             criteriaInputs.forEach(input => {
@@ -365,23 +399,35 @@
             });
         });
 
-                function applyAiScore(index, score) {
+        function updateOverallTotal() {
+                let total = 0;
+                let maxTotal = 0;
+
+                document.querySelectorAll('.total-score-input').forEach(inp => {
+                    const val = parseFloat(inp.value);
+                    const max = parseFloat(inp.getAttribute('max'));
+
+                    if (!isNaN(val)) total += val;
+                    if (!isNaN(max)) maxTotal += max;
+                });
+
+                total = Math.round(total * 100) / 100;
+
+                const box = document.getElementById('total-score-display');
+                box.textContent = `Tổng điểm: ${total} / ${maxTotal}`;
+            }
+
+        function applyAiScore(index, score) {
             const totalInput = document.getElementById(`total-score-${index}`);
+
             if (totalInput) {
                 totalInput.value = score;
-
-                // Tạo hiệu ứng highlight để báo hiệu đã nhận điểm
-                totalInput.style.backgroundColor = "#e8f5e9"; // Xanh nhạt
-                totalInput.style.transition = "background-color 0.5s";
-
-                setTimeout(() => {
-                     totalInput.style.backgroundColor = "#fff";
-                }, 800);
-
-                // Reset các ô tiêu chí con về 0 (hoặc logic khác tùy bạn) vì ta đang nhập điểm tổng
-                // Nếu muốn giữ logic tính tổng từ tiêu chí thì không cần dòng alert này
-                // alert("Đã áp dụng điểm đề xuất của AI!");
+                totalInput.style.backgroundColor = "#e8f5e9";
+                totalInput.style.transition = "background-color 0.3s";
+                setTimeout(() => totalInput.style.backgroundColor = "#fff", 700);
             }
+            updateOverallTotal();
         }
+
     </script>
 }

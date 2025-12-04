@@ -23,6 +23,9 @@ namespace ITExam.Models
         [Range(1, int.MaxValue, ErrorMessage = "Mã môn học phải là số dương")]
         public int SubjectId { get; set; }
 
+        [StringLength(300, ErrorMessage = "Tên môn học không được vượt quá 300 ký tự")]
+        public string SubjectName { get; set; }
+
         [Required(ErrorMessage = "Loại đề là bắt buộc")]
         [StringLength(50, ErrorMessage = "Loại đề không được vượt quá 50 ký tự")]
         public string ExamType { get; set; }
