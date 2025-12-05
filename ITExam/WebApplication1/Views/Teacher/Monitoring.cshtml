@@ -61,7 +61,7 @@
             <aside id="col-left" class="col-12 col-lg-3">
                 <div class="h-viewport">
                     <div class="d-flex align-items-center mb-2">
-                        <h6 class="mb-0"><i class="fas fa-user-check text-success me-1"></i> Danh sách thí sinh </h6>
+                        <h6 class="mb-0"><i class="fas fa-user-check log-success me-1"></i> Danh sách thí sinh </h6>
                         <input id="rosterSearch" type="search" class="form-control form-control-sm ms-auto" placeholder="Tìm tên/mã…">
 
                         <div class="dropdown ms-2">
@@ -130,7 +130,7 @@
                 <!-- Room feed -->
                 <div id="roomFeedPanel" class="card flex-panel">
                     <div class="card-header d-flex align-items-center">
-                        <span class="fw-semibold"><i class="fas fa-globe text-secondary me-2"></i>Hoạt động phòng thi</span>
+                        <span class="fw-semibold"><i class="fas fa-globe log-secondary me-2"></i>Hoạt động phòng thi</span>
                     </div>
                     <div id="generalActions" class="card-body scroll-pane"><!-- JS append <p> --></div>
                 </div>
@@ -139,7 +139,7 @@
                 <div id="studentFeedPanel" class="card flex-panel d-none mt-2">
                     <div class="card-header d-flex align-items-center">
                         <button id="btnBackToRoomFeed" class="btn btn-outline-secondary btn-sm me-2"><i class="fas fa-arrow-left me-1"></i>Tổng quát</button>
-                        <span class="fw-semibold"><i class="fas fa-user text-primary me-2"></i><span id="sf-title">Nhật ký của …</span></span>
+                        <span class="fw-semibold"><i class="fas fa-user log-primary me-2"></i><span id="sf-title">Nhật ký của …</span></span>
                     </div>
                     <div class="card-body scroll-pane">
                         <div id="personalLogContent" class="timeline"></div>
@@ -152,7 +152,7 @@
                 <!-- Panel Hướng dẫn (mặc định hiển thị) -->
                 <div id="guidePanel" class="card shadow-sm bg-light p-3">
                     <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="text-primary mb-0">
+                        <h5 class="log-primary mb-0">
                             <i class="fas fa-circle-question me-2"></i>Hướng dẫn giám sát
                         </h5>
                         <!--
@@ -166,14 +166,14 @@
                         <div class="small">
                             <div class="mb-2"><span class="circle-local-green me-2"></span><b>Online</b>: Thí sinh đang kết nối & tập trung vào tab làm bài.</div>
                             <div class="mb-2"><span class="circle-local-red me-2"></span><b>Disconnected</b>: Thí sinh đã mất kết nối / rời phiên.</div>
-                            <div class="mb-2"><i class="fas fa-exclamation-triangle me-2 text-warning"></i><b>Off tab</b>: Thí sinh chuyển khỏi tab làm bài.</div>
-                            <div class="mb-2"><i class="fas fa-check-circle me-2 text-success"></i><b>Submitted</b>: Thí sinh đã nộp bài.</div>
+                            <div class="mb-2"><i class="fas fa-exclamation-triangle me-2 log-warning"></i><b>Off tab</b>: Thí sinh chuyển khỏi tab làm bài.</div>
+                            <div class="mb-2"><i class="fas fa-check-circle me-2 log-success"></i><b>Submitted</b>: Thí sinh đã nộp bài.</div>
                             <hr class="my-3" />
-                            <div class="mb-2"><i class="fas fa-globe me-2 text-secondary"></i><b>Tổng quát</b>: Dòng hoạt động của cả phòng thi.</div>
-                            <div class="mb-2"><i class="fas fa-user me-2 text-primary"></i><b>Cá nhân</b>: Nhấn tên thí sinh ở cột trái để xem nhật ký chi tiết.</div>
+                            <div class="mb-2"><i class="fas fa-globe me-2 log-secondary"></i><b>Tổng quát</b>: Dòng hoạt động của cả phòng thi.</div>
+                            <div class="mb-2"><i class="fas fa-user me-2 log-primary"></i><b>Cá nhân</b>: Nhấn tên thí sinh ở cột trái để xem nhật ký chi tiết.</div>
                             <div class="mb-2"><i class="fas fa-filter me-2 text-info"></i><b>Bộ lọc</b>: Lọc theo loại sự kiện: Answer / SwitchTab / Resize / Disconnect / Submit.</div>
                             <div class="mb-2"><i class="fas fa-shield-alt me-2 text-dark"></i><b>Anti-Cheat</b>: Cấu hình hạn chế gian lận gửi tới client sinh viên.</div>
-                            <div class="mb-2"><i class="fas fa-check me-2 text-success"></i><b>Hoàn tất</b>: Kết thúc giám sát & dọn dẹp dữ liệu.</div>
+                            <div class="mb-2"><i class="fas fa-check me-2 log-success"></i><b>Hoàn tất</b>: Kết thúc giám sát & dọn dẹp dữ liệu.</div>
                         </div>
                     </div>
                 </div>
@@ -230,7 +230,7 @@
                     </div>
 
                     <div class="card-header d-flex align-items-center">
-                        <span class="fw-semibold"><i class="fas fa-globe text-secondary me-2"></i>Hoạt động phòng thi</span>
+                        <span class="fw-semibold"><i class="fas fa-globe log-secondary me-2"></i>Hoạt động phòng thi</span>
                     </div>
                     <div class="card-body scroll-pane">
                         <!-- Sẽ DI CHUYỂN #generalActions vào đây khi vào chế độ 2 cột -->
@@ -241,7 +241,7 @@
                 <!-- Panel: Log cá nhân ở chế độ 3 cột khi chọn sinh viên -->
                 <div id="rightPersonalLogPanel" class="card flex-panel d-none mt-3">
                     <div class="card-header d-flex align-items-center justify-content-between">
-                        <span class="fw-semibold"><i class="fas fa-user text-primary me-2"></i><span id="right-sf-title">Nhật ký của …</span></span>
+                        <span class="fw-semibold"><i class="fas fa-user log-primary me-2"></i><span id="right-sf-title">Nhật ký của …</span></span>
                         <button id="btnBackToClassMode" class="btn btn-outline-secondary btn-sm"><i class="fas fa-arrow-left me-1"></i>Quay lại theo dõi lớp</button>
                     </div>
                     <div class="card-body scroll-pane">
@@ -287,7 +287,7 @@
                 <div class="modal-body">
                     <!-- Thanh tóm tắt + Chọn tất cả -->
                     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-2">
+                        <span class="badge bg-primary-subtle log-primary border border-primary-subtle rounded-pill px-3 py-2">
                             <i class="fas fa-list-check me-1"></i>
                             <span id="ac-enabled-count">0</span> / 4 tính năng đang bật
                         </span>
@@ -302,7 +302,7 @@
                         <div class="col-md-6">
                             <div class="anti-card p-3 h-100">
                                 <div class="d-flex align-items-start gap-3">
-                                    <div class="anti-ico bg-primary-subtle text-primary"><i class="fas fa-code"></i></div>
+                                    <div class="anti-ico bg-primary-subtle log-primary"><i class="fas fa-code"></i></div>
                                     <div class="flex-fill">
                                         <div class="d-flex justify-content-between align-items-center">
                                             <label for="blockDevTools" class="fw-semibold mb-1">Chặn Dev Tools (F12, Ctrl+Shift+I)</label>
@@ -336,7 +336,7 @@
                         <div class="col-md-6">
                             <div class="anti-card p-3 h-100">
                                 <div class="d-flex align-items-start gap-3">
-                                    <div class="anti-ico bg-warning-subtle text-warning"><i class="fas fa-i-cursor"></i></div>
+                                    <div class="anti-ico bg-warning-subtle log-warning"><i class="fas fa-i-cursor"></i></div>
                                     <div class="flex-fill">
                                         <div class="d-flex justify-content-between align-items-center">
                                             <label for="blockTextSelection" class="fw-semibold mb-1">Chặn bôi đen văn bản</label>
@@ -353,7 +353,7 @@
                         <div class="col-md-6">
                             <div class="anti-card p-3 h-100">
                                 <div class="d-flex align-items-start gap-3">
-                                    <div class="anti-ico bg-danger-subtle text-danger"><i class="fas fa-mouse-pointer"></i></div>
+                                    <div class="anti-ico bg-danger-subtle log-danger"><i class="fas fa-mouse-pointer"></i></div>
                                     <div class="flex-fill">
                                         <div class="d-flex justify-content-between align-items-center">
                                             <label for="blockRightClick" class="fw-semibold mb-1">Chặn chuột phải</label>
@@ -619,10 +619,10 @@
                      pill.className = 'ms-2 badge rounded-pill .bg-secondary.bg-gradient text-dark';
               pill.textContent = 'Đang chấm...';
             } else if (typeof score === 'number' && !Number.isNaN(score)) {
-              pill.className = 'ms-2 badge rounded-pill bg-light text-primary border';
+              pill.className = 'ms-2 badge rounded-pill bg-light log-primary border';
               pill.textContent = `Điểm: ${score.toFixed(2)}/10`;
             } else {
-              pill.className = 'ms-2 badge rounded-pill bg-secondary-subtle text-secondary';
+              pill.className = 'ms-2 badge rounded-pill bg-secondary-subtle log-secondary';
               pill.textContent = 'Điểm: —';
             }
           }
@@ -710,15 +710,15 @@
           }
 
           // ====== Logs render ======
-          function addGeneralLog(message, className="", type="info") {
+        function addGeneralLog(message, className="", type="info") {
             const p = document.createElement('p');
             p.className = 'mb-2';
             p.dataset.type = type;
-            p.innerHTML = `<span class="${className}"><strong>[${formatTime()}]</strong> ${message}</span>`;
+            p.innerHTML = `<span class="${className}"><strong class="log-time me-1">[${formatTime()}]</strong>${message}</span>`;
             generalActions.appendChild(p);
             applyFilterTo('#generalActions');
             generalActions.scrollTop = generalActions.scrollHeight;
-          }
+        }
           function addPersonalLog(studentId, message, className="", type="info") {
             if (!studentActions.has(studentId)) studentActions.set(studentId, []);
             const logItem = { timestamp:new Date(), timeString:`[${formatTime()}]`, message, className, type };
@@ -738,9 +738,9 @@
             items.forEach(log => {
               const it = document.createElement('div');
               it.className = 'timeline-item';
-              it.innerHTML = `<div class="timeline-content ${log.className}" data-type="${log.type}">
-                <strong>${log.timeString}</strong> ${log.message}
-              </div>`;
+                it.innerHTML = `<div class="timeline-content ${log.className}" data-type="${log.type}">
+                    <strong class="log-time me-2">${log.timeString}</strong>${log.message}
+                </div>`;
               box.appendChild(it);
             });
             personalLogContent.appendChild(box);
@@ -844,24 +844,24 @@
               const prefix = prefixMatch ? prefixMatch[1] : '';
               const raw = logText.replace(/^\[\w+\]/,'').replace(/\[\d{2}:\d{2}:\d{2}\]\s*/,'').trim();
 
-              let className = "text-secondary", isFraud = false, type = "info";
+              let className = "log-secondary", isFraud = false, type = "info";
               switch (prefix) {
-                case "JOIN": className="text-success"; type="join"; break;
-                case "ANSWER": className="text-primary"; type="answer"; break;
+                case "JOIN": className="log-success"; type="join"; break;
+                case "ANSWER": className="log-primary"; type="answer"; break;
                 case "TABOUT": {
                   const isResize = /thay đổi kích thước cửa sổ/i.test(raw);
-                  if (isResize) { className="text-warning"; type="resize"; resize++; isFraud=true; }
-                  else { className="text-warning"; type="switchtab"; tabOut++; isFraud=true; }
+                  if (isResize) { className="log-warning"; type="resize"; resize++; isFraud=true; }
+                  else { className="log-warning"; type="switchtab"; tabOut++; isFraud=true; }
                   break;
                 }
-                case "TABIN": className="text-success"; type="switchtab"; break;
+                case "TABIN": className="log-success"; type="switchtab"; break;
                 case "DEVICE":
                 case "IP":
-                case "UA": className="text-danger"; type="device"; isFraud=true; break;
-                case "DISCONNECT": className="text-danger"; type="disconnect"; isFraud=true; disc++; break;
-                case "LEFT": className="text-secondary"; type="left"; disc++; break;
-                case "SUBMIT": className="text-success"; type="submit"; break;
-                default: className="text-secondary"; type="info"; break;
+                case "UA": className="log-danger"; type="device"; isFraud=true; break;
+                case "DISCONNECT": className="log-danger"; type="disconnect"; isFraud=true; disc++; break;
+                case "LEFT": className="log-secondary"; type="left"; disc++; break;
+                case "SUBMIT": className="log-success"; type="submit"; break;
+                default: className="log-secondary"; type="info"; break;
               }
 
               const logItem = { timestamp:new Date(), timeString:timeStr, message:raw, className, type };
@@ -926,7 +926,7 @@
               panel.className = 'card flex-panel mt-3';
               panel.innerHTML = `
                 <div class="card-header d-flex align-items-center">
-                  <span class="fw-semibold"><i class="fas fa-globe text-secondary me-2"></i>Hoạt động phòng thi</span>
+                  <span class="fw-semibold"><i class="fas fa-globe log-secondary me-2"></i>Hoạt động phòng thi</span>
                 </div>
                 <div class="card-body scroll-pane"><div id="right-generalActions-slot"></div></div>
               `;
@@ -1086,7 +1086,7 @@
             try {
               await connection.invoke("SendAntiCheatConfig", EXAM_ID, CLASS_ID, config);
               showToast('Đã áp dụng cấu hình chống gian lận!', 'success');
-              addGeneralLog('Đã kích hoạt các tính năng chống gian lận cho phòng thi', 'text-primary', 'info');
+              addGeneralLog('Đã kích hoạt các tính năng chống gian lận cho phòng thi', 'log-primary', 'info');
               const modal = bootstrap.Modal.getInstance(document.getElementById('antiCheatModal'));
               modal?.hide();
             } catch (err) {
@@ -1121,7 +1121,7 @@
               checkAllAntiCheatModal();
               await connection.invoke("SendAntiCheatConfig", EXAM_ID, CLASS_ID, autoConfig);
               showToast('Đã tự động áp dụng cấu hình chống gian lận!', 'success');
-              addGeneralLog('Đã tự động bật các tính năng chống gian lận khi vào trang', 'text-primary', 'info');
+              addGeneralLog('Đã tự động bật các tính năng chống gian lận khi vào trang', 'log-primary', 'info');
             } catch (err) {
               console.error("SignalR start error", err);
               setTimeout(startConnection, 3000);
@@ -1136,21 +1136,21 @@
             st.isConnected = true; st.isActive = !!(data.isActive ?? data.IsActive); st.hasSubmitted = false;
             students.set(id, st);
 
-            addGeneralLog(`${name} (${id}) đã tham gia bài thi`, 'text-primary', 'join');
+            addGeneralLog(`${name} (${id}) đã tham gia bài thi`, 'log-primary', 'join');
             updateStudentCardBorder(id,'connected');
             setStatusChip(id);
             recomputeStats();
 
-            if (selectedStudentId === id) addPersonalLog(id, `${name} đã tham gia bài thi`, 'text-success', 'join');
+            if (selectedStudentId === id) addPersonalLog(id, `${name} đã tham gia bài thi`, 'log-success', 'join');
           });
 
           connection.on("StudentSelectedAnswer", (data) => {
             const id = data.studentId || data.StudentId;
             const name = data.studentName || data.StudentName || id;
             const q = (data.questionContent || data.QuestionContent || '');
-            addGeneralLog(`${name} đã tương tác câu hỏi "${q.slice(0,50)}${q.length>50?'...':''}"`, 'text-primary', 'answer');
+            addGeneralLog(`${name} đã tương tác câu hỏi "${q.slice(0,50)}${q.length>50?'...':''}"`, 'log-primary', 'answer');
             if (selectedStudentId === id) {
-              addPersonalLog(id, `${name} - Câu hỏi "${q.slice(0,50)}${q.length>50?'...':''}" --> "${data.answerContent || data.AnswerContent || ''}"`, 'text-primary', 'answer');
+              addPersonalLog(id, `${name} - Câu hỏi "${q.slice(0,50)}${q.length>50?'...':''}" --> "${data.answerContent || data.AnswerContent || ''}"`, 'log-primary', 'answer');
               const pd = progressData.get(id) || {};
               pd.answeredCount = (pd.answeredCount || 0) + 1;
               progressData.set(id, pd);
@@ -1185,7 +1185,7 @@
 
             const type = 'switchtab';
             const msg = st.isActive ? `${name} đã quay lại tab làm bài` : `${name} đã chuyển khỏi tab làm bài (lần thứ ${st.tabLeaveCount})`;
-            addGeneralLog(msg, st.isActive ? 'text-success' : 'text-warning', type);
+            addGeneralLog(msg, st.isActive ? 'log-success' : 'log-warning', type);
 
             if (!st.isActive) {
               const c = ensureCounters(id);
@@ -1193,7 +1193,7 @@
               suspiciousCounters.set(id, c);
             }
             if (selectedStudentId === id) {
-              addPersonalLog(id, st.isActive ? `${name} quay lại tab làm bài` : `${name} chuyển khỏi tab làm bài (lần thứ ${st.tabLeaveCount})`, st.isActive ? 'text-success' : 'text-warning', type);
+              addPersonalLog(id, st.isActive ? `${name} quay lại tab làm bài` : `${name} chuyển khỏi tab làm bài (lần thứ ${st.tabLeaveCount})`, st.isActive ? 'log-success' : 'log-warning', type);
               updateRightPaneSuspicious(id);
             }
             recomputeStats();
@@ -1203,9 +1203,9 @@
             const id = data.studentId || data.StudentId;
             const name = data.studentName || data.StudentName || id;
             const msg = `${name} đã thay đổi kích thước cửa sổ từ ${data.initialWidth}x${data.initialHeight} thành ${data.currentWidth}x${data.currentHeight}`;
-            addGeneralLog(msg, 'text-warning', 'resize');
+            addGeneralLog(msg, 'log-warning', 'resize');
             const c = ensureCounters(id); c.resize += 1; suspiciousCounters.set(id,c);
-            if (selectedStudentId === id) { addPersonalLog(id, msg, 'text-warning', 'resize'); updateRightPaneSuspicious(id); }
+            if (selectedStudentId === id) { addPersonalLog(id, msg, 'log-warning', 'resize'); updateRightPaneSuspicious(id); }
           });
 
           connection.on("StudentClientInfoUpdated", (data) => {
@@ -1257,7 +1257,7 @@
           students.set(id, st);
 
           // === Thêm log chung ===
-          addGeneralLog(`${name} ngắt kết nối`, 'text-danger', 'disconnect');
+          addGeneralLog(`${name} ngắt kết nối`, 'log-danger', 'disconnect');
 
           // === Cập nhật bộ đếm nghi ngờ ===
           const c = ensureCounters(id);
@@ -1272,7 +1272,7 @@
           // === Nếu đang xem sinh viên này thì cập nhật pane phải ===
           if (selectedStudentId === id) {
             // Thêm log chi tiết ngay trong khu vực log của sinh viên
-            addPersonalLog(id, `${name} ngắt kết nối`, 'text-danger', 'disconnect')
+            addPersonalLog(id, `${name} ngắt kết nối`, 'log-danger', 'disconnect')
 
             // Cập nhật thống kê nghi ngờ trong pane phải
             updateRightPaneSuspicious(id);
@@ -1287,7 +1287,7 @@
             const st = students.get(id) || {};
             st.hasSubmitted = true; st.isConnected = false; st.isActive = false;
             students.set(id, st);
-            addGeneralLog(`${name} đã nộp bài thi. Số lần chuyển tab: ${tabCount}`, 'text-success', 'submit');
+            addGeneralLog(`${name} đã nộp bài thi. Số lần chuyển tab: ${tabCount}`, 'log-success', 'submit');
 
             // Hiển thị "Đang chấm..." ngay cạnh chip
             setScorePill(id, {pending:true});
@@ -1295,7 +1295,7 @@
             setStatusChip(id);
             recomputeStats();
             if (selectedStudentId === id) {
-              addPersonalLog(id, `${name} đã nộp bài thi. Số lần chuyển tab: ${tabCount}`, 'text-success', 'submit');
+              addPersonalLog(id, `${name} đã nộp bài thi. Số lần chuyển tab: ${tabCount}`, 'log-success', 'submit');
               updateRightPaneOverview(id);
             }
           });
@@ -1306,7 +1306,7 @@
             const st = students.get(id) || {};
             st.isConnected = false; st.isActive = false;
             students.set(id, st);
-            addGeneralLog(`${name} đã rời phòng thi`, 'text-secondary', 'left');
+            addGeneralLog(`${name} đã rời phòng thi`, 'log-secondary', 'left');
             setStatusChip(id);
             recomputeStats();
             const c = ensureCounters(id); c.disconnect += 1; suspiciousCounters.set(id,c);
@@ -1321,25 +1321,25 @@
             const prefix = prefixMatch ? prefixMatch[1] : 'INFO';
             const message = full.replace(/^\[\w+\]/,'').replace(/\[\d{2}:\d{2}:\d{2}\]\s*/,'').trim();
 
-            let className='text-primary', type='info';
+            let className='log-primary', type='info';
             switch (prefix) {
-              case 'ANSWER': className='text-primary'; type='answer'; break;
-              case 'TABIN': className='text-success'; type='switchtab'; break;
+              case 'ANSWER': className='log-primary'; type='answer'; break;
+              case 'TABIN': className='log-success'; type='switchtab'; break;
               case 'TABOUT': {
                 const isResize = /thay đổi kích thước cửa sổ/i.test(message);
-                className='text-warning'; type = isResize ? 'resize' : 'switchtab';
+                className='log-warning'; type = isResize ? 'resize' : 'switchtab';
                 if (isResize) { const c=ensureCounters(id); c.resize +=1; suspiciousCounters.set(id,c); }
                 else { const c=ensureCounters(id); c.tabOut +=1; suspiciousCounters.set(id,c); }
                 break;
               }
-              case 'DISCONNECT': className='text-danger'; type='disconnect'; { const c=ensureCounters(id); c.disconnect +=1; suspiciousCounters.set(id,c);} break;
-              case 'LEFT': className='text-secondary'; type='left'; { const c=ensureCounters(id); c.disconnect +=1; suspiciousCounters.set(id,c);} break;
-              case 'SUBMIT': className='text-success'; type='submit'; break;
-              case 'JOIN': className='text-success'; type='join'; break;
+              case 'DISCONNECT': className='log-danger'; type='disconnect'; { const c=ensureCounters(id); c.disconnect +=1; suspiciousCounters.set(id,c);} break;
+              case 'LEFT': className='log-secondary'; type='left'; { const c=ensureCounters(id); c.disconnect +=1; suspiciousCounters.set(id,c);} break;
+              case 'SUBMIT': className='log-success'; type='submit'; break;
+              case 'JOIN': className='log-success'; type='join'; break;
               case 'IP':
               case 'UA':
-              case 'DEVICE': className='text-danger'; type='device'; break;
-              default: className='text-primary'; type='info'; break;
+              case 'DEVICE': className='log-danger'; type='device'; break;
+              default: className='log-primary'; type='info'; break;
             }
 
             addGeneralLog(message, className, type);
@@ -1360,7 +1360,7 @@
             setScorePill(id, {score});
             setStatusChip(id); // để đồng bộ border/chip nếu cần
 
-            addGeneralLog(`Hệ thống đã chấm xong: ${name} (${id}) – Điểm ${isNaN(score)?'—':score.toFixed(2)}/10`, 'text-success', 'submit');
+            addGeneralLog(`Hệ thống đã chấm xong: ${name} (${id}) – Điểm ${isNaN(score)?'—':score.toFixed(2)}/10`, 'log-success', 'submit');
           });
 
           // ====== Init ======

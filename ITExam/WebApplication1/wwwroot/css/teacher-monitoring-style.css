@@ -689,3 +689,50 @@ img[style*="aspect-ratio"] {
     aspect-ratio: auto !important;
     width: 100% !important;
 }
+
+
+/* --- CUSTOM LOG COLORS (BLUE/WHITE THEME) --- */
+
+/* Thời gian: Màu xám xanh (Slate), chìm xuống nền trắng */
+.log-time {
+    color: #64748b;
+    font-weight: 500;
+    font-size: 0.9em;
+}
+
+/* Nội dung chung: Màu đen ánh xanh (Dark Blue Grey) cho dễ đọc */
+.timeline-content, .card-body p span {
+    color: #334155;
+}
+
+/* JOIN / SUBMIT (Tích cực): Dùng màu Teal (Xanh mòng két) thay vì Green chói */
+.log-success {
+    color: #019166 !important; /* Teal đậm */
+}
+
+/* ANSWER (Hoạt động chính): Dùng màu Indigo/Royal Blue (Xanh hoàng gia) */
+.log-primary {
+    color: #2563eb !important; /* Royal Blue */
+}
+
+/* WARNING (Tab/Resize): Dùng màu Cam đất (Burnt Orange) thay vì Vàng chói */
+.log-warning {
+    color: #d97706 !important; /* Amber */
+}
+
+/* DANGER (Disconnect/Cheat): Dùng màu Đỏ hồng (Rose/Berry) cho đỡ gắt nhưng vẫn báo động */
+.log-danger {
+    color: #e11d48 !important; /* Rose Red */
+}
+
+/* LEFT / INFO (Phụ): Màu xám xanh nhạt hơn */
+.log-secondary {
+    color: #94a3b8 !important; /* Slate Light */
+}
+
+/* Tinh chỉnh lại timeline item để thoáng hơn */
+.timeline-item {
+    border-left: 2px solid #e2e8f0; /* Đường kẻ timeline màu xám nhạt */
+    padding-left: 12px;
+    margin-bottom: 8px;
+}
