@@ -64,6 +64,12 @@
     @{
         var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
         var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+
+        var classActions = new[] { "Class", "ClassDetail", "List_Student_Do_Test", "Exam_History_Detail", "Monitoring", "Grading_The_Exam", "Grading_The_Exam_Of_Student" };
+
+        var examActions = new[] { "Exam","Exam_Create","Exam_Create_Matrix"};
+
+        var bankActions = new[] { "ExamBank","Exam_Bank_Detail","Exam_Bank_Create","Exam_Bank_Add_Question_MultipleChoice","Exam_Bank_Add_Question_Essay" };
     }
     <div class="container-fluid p-0">
         <nav class="navbar navbar-expand-lg bg-white navbar-light py-3 py-lg-0 px-lg-5">
@@ -81,17 +87,17 @@
                     </a>
 
                     <a asp-controller="Teacher" asp-action="Class"
-                       class="nav-item nav-link @(currentController == "Teacher" && currentAction == "Class" ? "active" : "")">
+                       class="nav-item nav-link @(currentController == "Teacher" && classActions.Contains(currentAction) ? "active" : "")">
                         Lớp học đã tạo
                     </a>
 
                     <a asp-controller="Teacher" asp-action="Exam"
-                       class="nav-item nav-link @(currentController == "Teacher" && currentAction == "Exam" ? "active" : "")">
+                       class="nav-item nav-link @(currentController == "Teacher" && examActions.Contains(currentAction)  ? "active" : "")">
                         Quản lý đề thi
                     </a>
 
                     <a asp-controller="Teacher" asp-action="ExamBank"
-                       class="nav-item nav-link @(currentController == "Teacher" && currentAction == "ExamBank" ? "active" : "")">
+                       class="nav-item nav-link @(currentController == "Teacher" && bankActions.Contains(currentAction)  ? "active" : "")">
                         Ngân hàng đề
                     </a>
                 </div>
