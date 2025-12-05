@@ -1,4 +1,5 @@
-﻿@model ITExam.Models.Exam
+﻿@using ITExam.ViewModels.Exam
+@model ITExam.Models.Exam
 @{
     Layout = "_TeacherLayout";
     <!-- Nhap title -->
@@ -58,7 +59,7 @@
                                         <!-- Ngân hàng đề của tôi -->
                                         <optgroup label="Ngân hàng đề của tôi">
                                             @{
-                                                var nganHangDeListCuaToi = ViewData["NganHangDeListCuaToi"] as List<ITExam.ViewModels.Exam.NewVM.CreateNewExamVM>;
+                                                var nganHangDeListCuaToi = ViewData["NganHangDeListCuaToi"] as List<CreateNewExamVM>;
                                                 if (nganHangDeListCuaToi != null)
                                                 {
                                                     foreach (var nganHangDe in nganHangDeListCuaToi)
@@ -72,7 +73,7 @@
                                         <!-- Ngân hàng đề công khai -->
                                         <optgroup label="Ngân hàng đề công khai">
                                             @{
-                                                var nganHangDeListCongKhai = ViewData["NganHangDeListCongKhai"] as List<ITExam.ViewModels.Exam.NewVM.CreateNewExamVM>;
+                                                var nganHangDeListCongKhai = ViewData["NganHangDeListCongKhai"] as List<CreateNewExamVM>;
                                                 if (nganHangDeListCongKhai != null)
                                                 {
                                                     foreach (var nganHangDe in nganHangDeListCongKhai)

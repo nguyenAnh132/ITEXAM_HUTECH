@@ -151,7 +151,7 @@
                     <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">
                         <i class="fa-solid fa-xmark me-1"></i> Hủy
                     </button>
-                    <form action="ExamResult_TN" method="post">
+                    <form action="ExamResult_TN" method="post" id="autoSubmitForm">
                         <input type="hidden" name="maDe" value="@Model.ExamId" />
                         <input type="hidden" name="maLop" value="@Model.ClassId" />
                         <button type="submit" class="btn btn-danger fw-bold px-4">
@@ -216,8 +216,10 @@
 
             if (timeLeft < 0) {
                 clearInterval(timerInterval);
-                window.location.href = "/Student/ExamResult_TN/@Model.ExamId/@Model.ClassId";
+                hasSubmitted = true;
+                document.getElementById("autoSubmitForm").submit();
             }
+
         }
 
         timerInterval = setInterval(updateTimer, 1000);

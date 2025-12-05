@@ -681,12 +681,48 @@ namespace ITExam.Controllers
                 {
                     _logger.LogWarning(ex, "LỖI (ExamResult_TL POST): Không thể xóa key Redis {Key}.", key);
                 }
+
+                int tabLeaveCount = 0;
+                var tabCountStr = await _redisService.GetStringAsync($"ITExam_tabcount:{examId}:{classId}:{user.Username}");
+                Console.WriteLine($"ITExam_tabcount:{examId}:{classId}:{user.Username}-{tabCountStr}");
+                if (!string.IsNullOrEmpty(tabCountStr) && int.TryParse(tabCountStr, out int parsedCount))
+                {
+                    tabLeaveCount = parsedCount;
+                }
+
+                await _hubContext.Clients
+                .Group($"exam:{examId}:class:{classId}")
+                .SendAsync("StudentSubmittedExam", new
+                {
+                    ExamId = examId.ToString(),
+                    StudentId = user.Username,
+                    StudentName = user.FullName ?? "",
+                    TabLeaveCount = tabLeaveCount,
+                    SubmittedAt = DateTime.UtcNow,
+                    ExamHistoryId = examHistory.ExamHistoryId
+                });
+
+                await _redisService.AddLogAsync($"ITExam_logs:{examId}:{classId}:{user.Username}",
+                    $"[SUBMIT] [{DateTime.Now:HH:mm:ss}] {user.FullName} đã nộp bài thi. Số lần chuyển tab {tabLeaveCount}");
+
+                await _hubContext.Clients
+                 .Group($"exam:{examId}:class:{classId}")
+                 .SendAsync("StudentScoreUpdated", new
+                 {
+                     ExamId = examId.ToString(),
+                     ClassId = classId.ToString(),
+                     StudentId = user.Username,
+                     StudentName = user.FullName ?? "",
+                     Duration = (int)(DateTime.Now - examHistory.StartTime).TotalSeconds,
+                     ExamHistoryId = examHistory.ExamHistoryId
+                 });
             }
 
         }
 
 
         // Đề thi: Vào thi
+        [NoCache]
         public async Task<IActionResult> TakeTheExam_TN(int maDe, int maLop)
         {
             //check_user
@@ -846,6 +882,12 @@ namespace ITExam.Controllers
                 ? new Dictionary<int, string>()
                 : JsonSerializer.Deserialize<Dictionary<int, string>>(essayCacheData);
 
+            if (cacheData == null && essayCacheData == null && examHistory.SubmitTime.HasValue)
+            {
+                TempData["Error"] = "Bạn đã nộp bài!";
+                return RedirectToAction("Class");
+            }
+
             int thoiGianLamBai = exam.Duration * 60;
             int thoiGianDaTroiQua = (int)(DateTime.Now - examHistory.StartTime).TotalSeconds;
             int thoiGianConLai = thoiGianLamBai - thoiGianDaTroiQua;
@@ -989,7 +1031,7 @@ namespace ITExam.Controllers
                 examHistory.EndTime = examHistory.StartTime.AddMinutes(exam.Duration);
                 var autoSubmitId = BackgroundJob.Schedule(
                     () => AutoSubmitEssayExam(examHistory.ExamHistoryId),
-                    TimeSpan.FromMinutes(exam.Duration)
+                    TimeSpan.FromMinutes(exam.Duration + 1)
                 );
 
                 examHistory.HangfireJobId = autoSubmitId;
@@ -1248,6 +1290,10 @@ namespace ITExam.Controllers
             var examHistory = await _context.ExamHistories
                 .FirstOrDefaultAsync(ls => ls.UserId == user.UserId && ls.ExamId == maDe);
             if (examHistory == null) return NotFound();
+            if (examHistory.SubmitTime.HasValue)
+            {
+                return BadRequest("Bạn đã nộp bài rồi, không thể nộp lại.");
+            }
 
             if (!string.IsNullOrEmpty(examHistory.HangfireJobId))
             {
@@ -1693,6 +1739,8 @@ namespace ITExam.Controllers
             if (!examHistory.SubmitTime.HasValue)
             {
                 examHistory.SubmitTime = DateTime.Now;
+                await _context.SaveChangesAsync();
+
                 examHistory.Duration = (int)(DateTime.Now - examHistory.StartTime).TotalSeconds;
                 examHistory.UploadedFileId = model.UploadedFileId;
 
@@ -1744,7 +1792,7 @@ namespace ITExam.Controllers
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, ">LỖI (ExamResult_TL POST): Không thể xóa key Redis {Key}.", key);
+                    _logger.LogWarning(ex, "LỖI (ExamResult_TL POST): Không thể xóa key Redis {Key}.", key);
                 }
             }
 

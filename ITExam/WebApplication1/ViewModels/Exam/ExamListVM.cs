@@ -1,4 +1,4 @@
-﻿namespace ITExam.ViewModels.Exam.NewVM
+﻿namespace ITExam.ViewModels.Exam
 {
     public class ExamListVM
     {

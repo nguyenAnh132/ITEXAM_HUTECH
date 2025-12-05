@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace ITExam.ViewModels.Exam.NewVM
+namespace ITExam.ViewModels.Exam
 {
     public class CreateNewExamVM
     {

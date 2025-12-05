@@ -1,4 +1,4 @@
-﻿namespace ITExam.ViewModels.Class.NewVM
+﻿namespace ITExam.ViewModels.Class
 {
     public class EditClassVM
     {
