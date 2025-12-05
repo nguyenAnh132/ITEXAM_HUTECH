@@ -9,6 +9,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Google.Apis.Auth" Version="1.72.0" />
+    <PackageReference Include="Google.Apis.Drive.v3" Version="1.72.0.3944" />
     <PackageReference Include="Hangfire" Version="1.8.18" />
     <PackageReference Include="Hangfire.AspNetCore" Version="1.8.18" />
     <PackageReference Include="Hangfire.SqlServer" Version="1.8.18" />
@@ -26,7 +28,13 @@
     <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="8.0.15" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.21.0" />
     <PackageReference Include="NETCore.MailKit" Version="2.1.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageReference Include="NPOI" Version="2.7.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="ViewModels\ExamBank\NewVM\" />
+    <Folder Include="wwwroot\uploads\" />
   </ItemGroup>
 
 </Project>

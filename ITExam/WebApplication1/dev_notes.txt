@@ -1,0 +1,100 @@
+﻿Ngày:
+	- Ai làm:
+		File nào - Mô tả
+		File nào - Mô tả
+
+==================================================================================
+
+ConnectionStrings:
+	"SQL": "Server=DESKTOP-V590II5\SQLEXPRESS;Database=ITExamHUTECHDB;Trusted_Connection=True;TrustServerCertificate=True;",  (phat)
+	"SQL": "Server=LAPTOP-KS8584NG;Database=ITExamHUTECHDB;Trusted_Connection=True;TrustServerCertificate=True;", (phuong)
+	"SQL": "Server=LAPTOP-IK5KGOHA\\SQLEXPRESS01;Database=ITExamHUTECHDB;Trusted_Connection=True;TrustServerCertificate=True;", (A pho)
+
+==================================================================================
+
+var accessToken = Request.Cookies["access_token"];
+            var userId = await _context.Users
+                .AsNoTracking()
+                .Where(u => u.AccessToken == accessToken)
+                .Select(u => u.UserId)
+                .FirstOrDefaultAsync();
+            if (userId == 0)
+                return RedirectToAction("Logout", "Auth");
+
+==================================================================================
+
+18/11/2025:
+	- phat:
+		TeacherController - Thêm chức năng upload file tạo ngân hàng đề cho giảng viên
+
+==================================================================================
+
+19/11/2025:
+	- phat:
+		TeacherController - cập nhật xóa lịch sử, xóa đề thi trong lớp học, xóa lớp học thì xóa luôn file trên drive
+
+==================================================================================
+20/11/2025:
+	-Phuong:
+		TeacherController:
+			List_Student_Do_Test: Tối ưu truy vấn lấy dữ liệu
+			Exam: Thêm cờ IsUsedInClass để đánh dấu đề thi trong lớp học
+			ClassExam: Thêm cờ IsDoingExam để đánh dấu có tồn tại ít nhất một lịch sử có submitTime = null (chưa nộp bài)
+			Edit_Exam_Date và Delete_Exam: thêm double check nếu UI chưa kịp cập nhật.
+			Thay đổi: XoaDeThi -> DeleteExamOg (Xóa đề thi gốc, thêm doublecheck nếu UI chưa kịp cập nhật)
+		StudentController:
+			Thêm ConcurrentDictionary vào bộ nhớ code dùng chung để lấy dữ liệu điểm thi nhanh chóng.
+		ExamMonitorHub: 
+			Thay Dictionary thành Cache memory (Thêm thời gian trượt để xóa bộ nhớ chống memory leak)
+		View:
+			List_Student_Do_Test: kiểm tra is submit có bằng datetime.minvalue không (nếu có nghĩa là thí sinh đang thi => disable các nút) 
+			Exam: Kiểm tra cò IsUsedInClass (true = > thông báo, false thì gọi modal xóa)
+			ClassDetail: Kiểm tra cờ IsDoingExam (nếu là true thì gọi modal thông báo, không cho xóa sửa) nếu false thì cho phép xóa sửa, thêm modal xác nhận xóa bằng nhập tên.
+
+==================================================================================
+
+21/11/2025:
+	- Phuong:
+		View:
+			Teacher/ClassDetail: Thêm ràng buộc, tính thời gian, hiển thị khoảng thời gian mở đề trong modal chỉnh sửa đề thi trong lớp học và modal thêm đề thi vào lớp học
+
+==================================================================================
+
+23/11/2025:
+	- Phuong:
+		+Controller:
+			UploadController:
+				Sửa upload ảnh vào web server.
+		+View:
+			Student/TakeTheExam_TL: Sửa hiển thị html raw
+			Teacher/Grading_The_Exam_Of_Student: Thêm đoạn css xử lý nếu câu hỏi tự luận chứa ảnh.
+		+Service:
+			Thêm FileCleanUpService để dọn dẹp ảnh dư thừa trên web server.
+
+==================================================================================
+
+29/11/2025:
+	- Phuong:
+		+Controller:
+			ApiQuestion, Auth, Teacher => khai báo và sử dụng _routingApi.
+		+Services:
+			GeminiService, RoutingAPI => thay các url quan trọng, lấy dữ liệu trong secrets.json.
+		+Program.cs:
+			Đăng ký RoutingAPI.
+		+View:
+			Teacher: Chỉnh sửa css, class bootstrap cho responsive.
+
+
+7. Nửa ngày test
+
+
+
+//===============================================================================================================================================
+Đăng: Ngày giờ, Góp ý, Test Responsive (test kỹ) - File mô tả 
+
+Phát, Phương: Sửa lỗi responsive, tối ưu giao diện
+
+Tòng: Test toanf bộ hệ thống + Viết modal hướng dẫn ở trong ma trận đề thi, Sửa ma trận đề khi xóa câu hỏi ngân hàng đề,lỗi xóa lớp học.
+
+Tú Anh: Chấm thi tự luận bằng AI, tạo mô tả chấm bằng AI, viết lại nộp bài thi tự động khi sinh viên out bài thi trắc nghiệm, tự luận, Caching
+

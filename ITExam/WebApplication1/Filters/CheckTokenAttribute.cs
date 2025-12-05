@@ -4,6 +4,7 @@ using ITExam.Models;
 using System.Net.Http;
 using System.Text.Json;
 using ITExam.Services;
+using Microsoft.Extensions.Options;
 
 namespace ITExam.Filters
 {
@@ -11,8 +12,15 @@ namespace ITExam.Filters
     {
         public override void OnActionExecuting(ActionExecutingContext context)
         {
+            var services = context.HttpContext.RequestServices;
             var httpClientFactory = context.HttpContext.RequestServices.GetService<IHttpClientFactory>();
             var _context = context.HttpContext.RequestServices.GetService<ITExamDbContext>();
+            var routingOptions = services.GetService<IOptions<RoutingAPI>>();
+            var routingConfig = routingOptions?.Value;
+            if (routingConfig == null)
+            {
+                throw new Exception("RoutingAPI configuration is missing.");
+            }
 
             var access_token = context.HttpContext.Request.Cookies["access_token"];
 
@@ -37,7 +45,7 @@ namespace ITExam.Filters
                 { "platform_auth", "itexam" }
             };
 
-            var request = new HttpRequestMessage(HttpMethod.Post, RoutingAPI.CheckTokenUrl)
+            var request = new HttpRequestMessage(HttpMethod.Post, routingConfig.CheckTokenUrl)
             {
                 Content = new FormUrlEncodedContent(formData)
             };

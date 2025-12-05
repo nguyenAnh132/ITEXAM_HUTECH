@@ -32,3 +32,120 @@ input {
 .btn_action {
     width: 120px;
 }
+
+.upload-container {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+/* Ẩn input file gốc đi */
+.file-input {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    opacity: 0;
+    cursor: pointer;
+    z-index: 2;
+}
+
+.upload-label {
+    display: block;
+    padding: 40px 20px;
+    background-color: #f8f9fa;
+    border: 2px dashed #dee2e6;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.upload-container:hover .upload-label,
+.file-input:focus + .upload-label {
+    border-color: #0d6efd;
+    background-color: #e9ecef;
+}
+
+.upload-container:hover .icon-upload i {
+    transform: scale(1.1);
+    opacity: 1;
+    transition: transform 0.3s;
+}
+
+.hover-elevate {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+    .hover-elevate:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 .5rem 1rem rgba(0,0,0,.15) !important;
+    }
+
+.criteria-wrapper {
+    border: 1px solid #e9eef5;
+}
+
+.criteria-item {
+    background: #f7f9fc;
+    border: 1px solid #e4e8f0;
+    border-radius: 8px;
+    padding: 12px;
+}
+
+    .criteria-item textarea {
+        height: 40px;
+        resize: none;
+    }
+
+    .criteria-item .percent-input {
+        width: 80px;
+    }
+
+.btn-delete-criteria {
+    width: 38px;
+    height: 38px;
+    border-radius: 6px;
+}
+
+@media (max-width: 576px) {
+
+    .criteria-item .row {
+        flex-direction: column;
+    }
+
+    .criteria-item .col-8,
+    .criteria-item .col-2,
+    .criteria-item .col-3 {
+        width: 100% !important;
+        max-width: 100%;
+    }
+
+    .criteria-item .percent-input {
+        margin-top: 10px;
+        max-width: 120px;
+    }
+
+    .btn-delete-criteria {
+        margin-top: 10px;
+        margin-left: auto;
+        display: block;
+    }
+}
+
+@media (min-width: 768px) {
+    .criteria-item .col-8 {
+        padding-right: 10px;
+    }
+
+    .criteria-item .percent-input {
+        max-width: 90px;
+    }
+
+    .btn-delete-criteria {
+        margin-left: auto;
+    }
+}
+
+.ck-powered-by {
+    display: none !important;
+}

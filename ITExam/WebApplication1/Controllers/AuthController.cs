@@ -1,13 +1,14 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using ITExam.ExternalModels.Auth;
-using ITExam.ViewModels;
+﻿using ITExam.ExternalModels.Auth;
 using ITExam.ExternalModels.Auth.ITExam.ExternalModels.Auth;
-using System.Text.Json;
-using ITExam.Models;
-using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using ITExam.Filters;
-using ITExam.ViewModels.Class;
+using ITExam.Models;
 using ITExam.Services;
+using ITExam.ViewModels;
+using ITExam.ViewModels.Class;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
+using Microsoft.Extensions.Options;
+using System.Text.Json;
 
 
 namespace ITExam.Controllers
@@ -16,10 +17,12 @@ namespace ITExam.Controllers
     {
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ITExamDbContext _context;
-        public AuthController(IHttpClientFactory httpClientFactory, ITExamDbContext context)
+        private readonly RoutingAPI _routingApi;
+        public AuthController(IHttpClientFactory httpClientFactory, ITExamDbContext context, IOptions<RoutingAPI> routingOptions)
         {
             _httpClientFactory = httpClientFactory;
             _context = context;
+            _routingApi = routingOptions.Value;
         }
 
         [HttpGet]
@@ -40,7 +43,7 @@ namespace ITExam.Controllers
                 { "password", model.Password },
                 { "platform_auth", "itexam" }
             };
-            var request = new HttpRequestMessage(HttpMethod.Post, RoutingAPI.Login)
+            var request = new HttpRequestMessage(HttpMethod.Post, _routingApi.Login)
             {
                 Content = new FormUrlEncodedContent(formData)
             };
@@ -59,7 +62,7 @@ namespace ITExam.Controllers
                 PropertyNameCaseInsensitive = true
             });
 
-            var userInfo = apiResponse.data.user_info;
+            var userInfo = apiResponse!.data.user_info;
             var token = apiResponse.data.token.access_token;
 
             var user = _context.Users.SingleOrDefault(u => u.Username == userInfo.username);
@@ -125,7 +128,7 @@ namespace ITExam.Controllers
                 { "platform_auth", "itexam" }
             };
 
-            var request = new HttpRequestMessage(HttpMethod.Post, RoutingAPI.CheckTokenUrl)
+            var request = new HttpRequestMessage(HttpMethod.Post, _routingApi.CheckTokenUrl)
             {
                 Content = new FormUrlEncodedContent(formData)
             };
@@ -196,7 +199,7 @@ namespace ITExam.Controllers
                 { "platform_auth", "itexam" }
             };
 
-            var request = new HttpRequestMessage(HttpMethod.Post, RoutingAPI.CheckTokenUrl)
+            var request = new HttpRequestMessage(HttpMethod.Post, _routingApi.CheckTokenUrl)
             {
                 Content = new FormUrlEncodedContent(formData)
             };

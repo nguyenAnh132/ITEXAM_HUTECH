@@ -71,7 +71,7 @@
                                             </div>
                                             <div class="col-12 col-md-6 mb-1">
                                                 <i class="fa-solid fa-clock mr-2 me-1"></i>
-                                                Ngày tạo: @cl.CreatedDate.ToString("dd-MM-yyyy")
+                                                Ngày tạo: @cl.CreatedDate.ToString("dd/MM/yyyy")
                                             </div>
                                         </div>
                                     </div>
@@ -120,19 +120,32 @@
     <div class="modal fade" id="deleteClassModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-danger">
-                <div class="modal-header bg-danger text-white">
+                <div class="modal-header bg-danger">
                     <h5 class="modal-title text-white">Xác nhận xóa lớp học</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Đóng"></button>
                 </div>
                 <div class="modal-body">
-                    <p>Bạn có chắc chắn muốn xóa lớp học <strong id="tenLopXoa"></strong> không?</p>
-                    <p class="text-danger">⚠️ Tất cả thông tin trong lớp học sẽ bị xóa vĩnh viễn!</p>
+                    <p>Bạn có chắc chắn muốn xóa lớp học <strong id="tenLopXoa" class="text-danger"></strong> không?</p>
+                    <div class="alert alert-warning d-flex align-items-center" role="alert">
+                        <div>
+                            Hành động này <strong>không thể hoàn tác</strong>. Tất cả dữ liệu sinh viên và bài thi trong lớp sẽ bị xóa vĩnh viễn.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="inputConfirmName" class="form-label .class-name-to-confirm text-muted">
+                            Vui lòng nhập chính xác tên lớp <b><span id="targetNameDisplay"></span></b> để xác nhận:
+                        </label>
+                        <input type="text" class="form-control border-danger" id="inputConfirmName" placeholder="Nhập tên lớp vào đây..." autocomplete="off">
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <form method="post" id="formXoaLop" asp-controller="Teacher" asp-action="DeleteClass">
                         <input type="hidden" name="maLopHoc" id="maLopHocXoa" />
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                        <button type="submit" class="btn btn-danger">Xác nhận xóa</button>
+                        <button type="button" class="btn btn-secondary" style="background-color: #6c757d !important; border-color: #6c757d !important; color: white !important;" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-danger" id="btnConfirmDelete" disabled>
+                            Xác nhận xóa
+                        </button>
                     </form>
                 </div>
             </div>
@@ -153,7 +166,7 @@
                         THÊM LỚP HỌC
                     </h1>
                     <button type="button"
-                            class="btn-close bg-white"
+                            class="btn-close btn-close-white"
                             data-bs-dismiss="modal"
                             aria-label="Close"></button>
                 </div>
@@ -192,12 +205,12 @@
          aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
+                <div class="modal-header bg-primary">
                     <h1 class="modal-title fs-5 text-white" id="staticBackdropLabel">
                         SỬA THÔNG TIN LỚP HỌC
                     </h1>
                     <button type="button"
-                            class="btn-close bg-white"
+                            class="btn-close btn-close-white"
                             data-bs-dismiss="modal"
                             aria-label="Close"></button>
                 </div>
@@ -304,37 +317,66 @@
 }
 @section Script
 {
+    <script src="~/js/notification.js"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            let editForm = document.querySelector("#editClassForm");
-            let confirmEditModal = new bootstrap.Modal(document.getElementById("confirmEditModal"));
-            let editClassModal = new bootstrap.Modal(document.getElementById("staticBackdrop-edit-class"));
-            let confirmButton = document.getElementById("confirmSaveChanges");
-            document.querySelectorAll(".edit-class-btn").forEach(button => {
-                button.addEventListener("click", function () {
-                    let classId = this.getAttribute("data-id");
-                    let className = this.getAttribute("data-ten");
-                    let classDescription = this.getAttribute("data-mota");
-                    document.querySelector("#editClassId").value = classId;
-                    document.querySelector("#editClassName").value = className;
-                    document.querySelector("#editDescription").value = classDescription;
+            // Lấy các element cần thiết
+            const modalElement = document.getElementById('deleteClassModal');
+            const inputConfirm = document.getElementById("inputConfirmName");
+            const btnDelete = document.getElementById("btnConfirmDelete");
+
+            // Khởi tạo Modal Instance
+            const myModal = new bootstrap.Modal(modalElement, {
+                backdrop: 'static', // Không cho click ra ngoài để đóng (tùy chọn)
+                keyboard: false     // Không cho bấm ESC (tùy chọn)
+            });
+
+            // Xử lý sự kiện click nút thùng rác
+            document.querySelectorAll(".btn-xoa-lop").forEach(button => {
+                button.addEventListener("click", function (e) {
+                    e.preventDefault(); // Ngăn chặn hành vi mặc định
+
+                    let tenLop = this.getAttribute("data-tenlop");
+                    let maLop = this.getAttribute("data-malop");
+
+                    // Reset dữ liệu trong Modal
+                    document.getElementById("tenLopXoa").textContent = tenLop;
+                    document.getElementById("targetNameDisplay").textContent = tenLop;
+                    document.getElementById("maLopHocXoa").value = maLop;
+
+                    inputConfirm.value = "";
+                    btnDelete.disabled = true;
+                    btnDelete.classList.add("opacity-50");
+
+                    // Gán sự kiện kiểm tra input
+                    inputConfirm.oninput = function() {
+                        if (this.value.trim() === tenLop) {
+                            btnDelete.disabled = false;
+                            btnDelete.classList.remove("opacity-50");
+                        } else {
+                            btnDelete.disabled = true;
+                            btnDelete.classList.add("opacity-50");
+                        }
+                    };
+
+                    // Hiển thị Modal
+                    myModal.show();
                 });
             });
-            editForm.addEventListener("submit", function (event) {
-                event.preventDefault();
-                editClassModal.hide();
-                let tenLopHoc = document.querySelector("#editClassName").value;
-                let moTa = document.querySelector("#editDescription").value;
-                document.getElementById("confirmClassName").textContent = tenLopHoc;
-                document.getElementById("confirmDescription").textContent = moTa;
 
-                setTimeout(() => {
-                    confirmEditModal.show();
-                }, 50);
-            });
+            // --- FIX LỖI KẸT MÀN HÌNH (BACKDROP) ---
+            modalElement.addEventListener('hidden.bs.modal', function () {
+                // 1. Xóa lớp đệm đen (backdrop) nếu còn sót lại
+                const backdrops = document.querySelectorAll('.modal-backdrop');
+                backdrops.forEach(backdrop => backdrop.remove());
 
-            confirmButton.addEventListener("click", function () {
-                editForm.submit();
+                // 2. Trả lại khả năng cuộn trang cho body
+                document.body.classList.remove('modal-open');
+                document.body.style.overflow = 'auto';
+                document.body.style.paddingRight = '0px';
+
+                // 3. Reset input để lần sau mở lên sạch sẽ
+                inputConfirm.value = "";
             });
         });
     </script>
@@ -412,22 +454,6 @@
                 modal.show();
             });
         });
-        document.addEventListener("DOMContentLoaded", function () {
-                const message = @Html.Raw(Json.Serialize(TempData["SuccessMessage"]));
-                if (message) {
-                    Toastify({
-                        text: message,
-                        duration: 4000,
-                        close: true,
-                        gravity: "bottom",
-                        position: "right",
-                        stopOnFocus: true,
-                        style: {
-                            background: "#28a745"
-                        }
-                    }).showToast();
-                }
-            });
     </script>
     <!-- Tìm kiếm lớp học -->
     <script>

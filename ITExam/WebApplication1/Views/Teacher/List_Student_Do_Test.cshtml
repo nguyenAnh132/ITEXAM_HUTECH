@@ -104,15 +104,20 @@ referrerpolicy="no-referrer" />
                                                 <td>Chưa chấm</td>
                                             }
 
-                                             <td> 
-                                                 <a asp-controller="Teacher" asp-action="Exam_History_Detail" asp-route-id="@sv.ExamHistoryId" class="btn btn-outline-primary">Chi tiết làm bài</a> 
-                                                 <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteLichSuModal" 
-                                                         onclick="setExamHistoryIdToDelete(@sv.ExamHistoryId)"> 
-                                                     Xóa lịch sử làm bài 
-                                                 </button> 
-
-
-                                             </td> 
+                                             <td>
+                                                @if (sv.SubmitTime != DateTime.MinValue)
+                                                {
+                                                    <a asp-controller="Teacher" asp-action="Exam_History_Detail" asp-route-id="@sv.ExamHistoryId" class="btn btn-sm btn-outline-primary">Chi tiết làm bài</a>
+                                                    <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteLichSuModal"
+                                                            onclick="setExamHistoryIdToDelete(@sv.ExamHistoryId)">
+                                                        Xóa lịch sử làm bài
+                                                    </button>
+                                                }
+                                                else
+                                                {
+                                                    <div class="text-primary"><b>Đang làm bài...</b></div>
+                                                }
+                                            </td> 
                                          </tr> 
                                      } 
                                  } 
@@ -135,17 +140,17 @@ referrerpolicy="no-referrer" />
      <div class="modal-dialog modal-dialog-centered"> 
          <div class="modal-content"> 
              <form method="post" asp-action="Delete_History_Exam" asp-controller="Teacher"> 
-                 <div class="modal-header bg-danger text-white"> 
-                     <h5 class="modal-title" id="deleteLichSuModalLabel">Xác nhận xóa lịch sử làm bài</h5> 
-                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button> 
+                 <div class="modal-header bg-danger"> 
+                     <h5 class="modal-title text-white" id="deleteLichSuModalLabel">Xác nhận xóa lịch sử làm bài</h5> 
+                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Đóng"></button> 
                  </div> 
                  <div class="modal-body"> 
                      <input type="hidden" name="id" id="ExamHistoryIdToDelete" /> 
                      <p>Bạn có chắc chắn muốn xóa lịch sử làm bài này? Mọi dữ liệu liên quan sẽ bị mất.</p> 
                  </div> 
-                 <div class="modal-footer"> 
-                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button> 
-                     <button type="submit" class="btn btn-danger">Xóa</button> 
+                 <div class="modal-footer">
+                    <button type="button" class="btn" style="background-color: #6c757d !important; border-color: #6c757d !important; color: white !important;" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-danger">Xóa</button> 
                  </div> 
              </form> 
          </div> 
@@ -201,5 +206,137 @@ referrerpolicy="no-referrer" />
              function setExamHistoryIdToDelete(id) { 
                  document.getElementById("ExamHistoryIdToDelete").value = id; 
              } 
-     </script> 
-  } 
+     </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+    <script>
+        const CLASS_ID = "@Model.ClassInfo.ClassId";
+        const EXAM_ID = "@ViewBag.ExamId";
+
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/examMonitorHub")
+            .withAutomaticReconnect()
+            .build();
+
+        function formatDateTime(dateString) {
+            if (!dateString || dateString === "0001-01-01T00:00:00") return "";
+            const date = new Date(dateString);
+            return date.toLocaleString('vi-VN');
+        }
+
+        function formatDuration(seconds) {
+            if (!seconds) return "0 phút 0 giây";
+            const m = Math.floor(seconds / 60);
+            const s = seconds % 60;
+            return `${m} phút ${s} giây`;
+        }
+
+        function getOrCreateRow(studentId, studentName, joinedAt) {
+            const rows = document.querySelectorAll("#table-body tr");
+            let targetRow = null;
+
+            rows.forEach(row => {
+                const mssvCell = row.cells[0];
+                if (mssvCell && mssvCell.innerText.trim() === studentId) {
+                    targetRow = row;
+                }
+            });
+
+            if (!targetRow) {
+                const tbody = document.getElementById("table-body");
+
+                const emptyRow = tbody.querySelector("td[colspan='7']");
+                if (emptyRow) emptyRow.parentElement.remove();
+
+                const newRow = document.createElement("tr");
+                newRow.innerHTML = `
+                    <td>${studentId}</td>
+                    <td>${studentName}</td>
+                    <td>${formatDateTime(joinedAt)}</td>
+                    <td class="submit-time">1/1/0001 12:00:00 AM</td>
+                    <td class="duration">0 phút 0 giây</td>
+                    <td class="score">0</td>
+                    <td class="action">
+                        <i class="text-primary"><b>Đang làm bài thi...</b></i>
+                    </td>
+                `;
+                tbody.appendChild(newRow);
+                return newRow;
+            }
+            return targetRow;
+        }
+
+        // --- SỰ KIỆN SIGNALR ---
+        connection.on("StudentJoined", (data) => {
+            console.log("Student Joined:", data);
+            getOrCreateRow(data.studentId, data.studentName, data.joinedAt);
+        });
+
+        connection.on("StudentSubmittedExam", (data) => {
+            console.log("Student Submitted:", data);
+            const row = getOrCreateRow(data.studentId, data.studentName, null);
+
+            if(data.submittedAt) {
+                row.querySelector(".submit-time").innerText = formatDateTime(data.submittedAt);
+            }
+
+            if (data.examHistoryId) {
+                const actionCell = row.querySelector(".action");
+                actionCell.innerHTML = `
+                    <a href="/Teacher/Exam_History_Detail/${data.examHistoryId}" class="btn btn-sm btn-outline-primary">Chi tiết làm bài</a>
+                    <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteLichSuModal"
+                            onclick="setExamHistoryIdToDelete(${data.examHistoryId})">
+                        Xóa lịch sử làm bài
+                    </button>
+                `;
+            }
+        });
+
+        connection.on("StudentScoreUpdated", (data) => {
+            console.log("Score Updated:", data);
+            const row = getOrCreateRow(data.studentId, data.studentName, null);
+
+            if (data.score !== undefined && data.score !== null) {
+                row.querySelector(".score").innerText = data.score;
+            }
+            else{
+                row.querySelector(".score").innerText = 'Chưa chấm';
+            }
+
+            if (data.duration) {
+                row.querySelector(".duration").innerText = formatDuration(data.duration);
+            }
+
+            if (data.examHistoryId) {
+                const actionCell = row.querySelector(".action");
+                if (actionCell.querySelector("i.text-primary")) {
+                    actionCell.innerHTML = `
+                        <a href="/Teacher/Exam_History_Detail/${data.examHistoryId}" class="btn btn-outline-primary btn-sm">Chi tiết làm bài</a>
+                        <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteLichSuModal"
+                                onclick="setExamHistoryIdToDelete(${data.examHistoryId})">
+                            Xóa lịch sử làm bài
+                        </button>
+                    `;
+                }
+            }
+        });
+
+        // KẾT NỐI VÀ JOIN GROUP GIÁM SÁT
+        async function start() {
+            try {
+                await connection.start();
+                console.log("SignalR Connected.");
+                if (EXAM_ID && CLASS_ID) {
+                    await connection.invoke("JoinMonitor", EXAM_ID.toString(), CLASS_ID.toString());
+                } else {
+                    console.error("Thiếu ExamId hoặc ClassId để join monitor.");
+                }
+            } catch (err) {
+                console.error(err);
+                setTimeout(start, 5000);
+            }
+        };
+
+        start();
+
+    </script>
+}

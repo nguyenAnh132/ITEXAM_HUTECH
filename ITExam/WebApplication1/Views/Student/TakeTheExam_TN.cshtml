@@ -746,13 +746,13 @@
         // Detect Resize
         (function setupAntiResize() {
           // ====== Cấu hình ngưỡng ======
-          const MIN_PX_DELTA = 20; // Tăng lên để tránh nhạy cảm quá
-          const MIN_RATIO_DELTA = 0.05; // 5% thay đổi mới tính
-          const KEYBOARD_MIN_DELTA = 150; // Bàn phím thường chiếm > 150px
-          const URL_BAR_MAX_DELTA = 100; // URL bar thường < 100px
-          const STABILIZE_MS = 500; // Tăng thời gian ổn định
-          const RATE_LIMIT_MS = 2000; // Rate limit 2s
-          const ZOOM_THRESHOLD = 0.05; // 5% thay đổi scale
+          const MIN_PX_DELTA = 20;
+          const MIN_RATIO_DELTA = 0.05;
+          const KEYBOARD_MIN_DELTA = 150; 
+          const URL_BAR_MAX_DELTA = 100; 
+          const STABILIZE_MS = 500; 
+          const RATE_LIMIT_MS = 2000;
+          const ZOOM_THRESHOLD = 0.05;
 
           // Trạng thái ban đầu
           const initial = {
@@ -850,48 +850,35 @@
 
             const mobile = isMobile();
 
-            // ==== 1) PINCH ZOOM ====
-            // Scale thay đổi hoặc visual viewport offset thay đổi (pan after zoom)
             const pinchZoomLikely = hasVV && (
               scaleDelta > ZOOM_THRESHOLD ||
               (scale !== 1 && (vvTopDelta > 5 || vvLeftDelta > 5))
             );
 
-            // ==== 2) KEYBOARD ẢO ====
-            // - Có focus vào input/textarea
-            // - Chiều cao giảm đáng kể (>= 150px)
-            // - Chiều rộng gần như không đổi
-            // - Scale không đổi
             const keyboardLikely = mobile && hasEditorFocus() &&
               (vvHDelta >= KEYBOARD_MIN_DELTA || innerHDelta >= KEYBOARD_MIN_DELTA) &&
               clientWDelta < 20 &&
               scaleDelta < 0.01;
 
-            // ==== 3) URL BAR ẨN/HIỆN ====
-            // Mobile: height thay đổi nhỏ (<100px), width không đổi, không focus input
-            // visualViewport offsetTop thay đổi là dấu hiệu URL bar (iOS)
             const urlBarLikely = mobile && !hasEditorFocus() &&
               clientHDelta > 0 && clientHDelta <= URL_BAR_MAX_DELTA &&
               clientWDelta < 20 &&
               scaleDelta < 0.01 &&
               (vvTopDelta > 0 || innerHDelta <= URL_BAR_MAX_DELTA);
 
-            // ==== 4) DESKTOP RESIZE ====
             const desktopRealResize = !mobile && (
               Math.abs(outerW - last.outerW) >= MIN_PX_DELTA ||
               Math.abs(outerH - last.outerH) >= MIN_PX_DELTA
             );
 
-            // ==== 5) MOBILE REAL RESIZE ====
-            // Orientation change hoặc thay đổi lớn về width/height
+
             const mobileRealResize = mobile && (
               orientationChanged ||
               (clientWDelta >= MIN_PX_DELTA && percentDelta(last.clientW, clientW) >= MIN_RATIO_DELTA) ||
               (clientHDelta >= MIN_PX_DELTA && percentDelta(last.clientH, clientH) >= MIN_RATIO_DELTA &&
-               clientHDelta > URL_BAR_MAX_DELTA) // Phải lớn hơn ngưỡng URL bar
+               clientHDelta > URL_BAR_MAX_DELTA) 
             );
 
-            // ==== QUYẾT ĐỊNH CUỐI ====
             const realResize = !pinchZoomLikely &&
                                !keyboardLikely &&
                                !urlBarLikely &&
@@ -959,8 +946,6 @@
             Object.assign(last, snapshot);
 
             if (!realResize) {
-              // Log để debug (có thể bỏ trong production)
-              // console.log('[Resize] Ignored:', payload.flags);
               return;
             }
 

@@ -41,7 +41,7 @@
                     <div class="navbar-nav mx-auto py-0">
                         <a href="/" class="nav-item nav-link active">Trang chủ</a>
                         <a asp-controller="Auth" asp-action="Login" class="nav-item nav-link">Lớp học</a>
-                        <a href="#" class="nav-item nav-link">Hướng dẫn</a>
+                        <a asp-controller="Home" asp-action="Instruct" class="nav-item nav-link">Hướng dẫn</a>
                     </div>
                     <a asp-controller="Auth" asp-action="Login" class="btn btn-primary py-2 px-4">Đăng nhập</a>
                 </div>
@@ -175,7 +175,7 @@
     <script src="~/js/main.js"></script>
     <script>
         var typing = new Typed(".typing", {
-            strings: ["Vào thi ngay...", "Tạo bài thi ngay...."],
+            strings: ["Vào thi ngay", "Tạo bài thi"],
             typeSpeed: 50,
             backSpeed: 20,
             loop: true

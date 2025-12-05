@@ -1,84 +1,92 @@
-﻿ @using ITExam.ViewModels.ExamBank 
+﻿ @using ITExam.ViewModels.ExamBank
   @model CreateQuestionVM
 
- @{ 
-     Layout = "_TeacherLayout"; 
-     <!-- Nhap title --> 
-     ViewData["Title"] = "Soạn câu hỏi ngân hàng đề"; 
- } 
- @section Style { 
-     <!-- FontAwesome 6.2.0 CSS --> 
-     <link rel="stylesheet" 
-           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css" 
-           integrity="sha512-xh6O/CkQoPOWDdYTDqeRdPCVd1SpvCA9XXcUnZS2FmJNp1coAFzvtCN9BmamE+4aHK8yyUHUSCcJHgXloTyT2A==" 
-           crossorigin="anonymous" 
-           referrerpolicy="no-referrer" /> 
-     <link rel="stylesheet" href="~/css/teacher-exam-add-question-multiplechoice.css" /> 
-  } 
- <div class="container-fluid p-0"> 
-     <div class="pt-3 py-lg-0 px-lg-5 px-3"> 
-         <form id="editExamForm" method="post" asp-action="EditExamBank" asp-controller="Teacher" class="m-1"> 
-             <div class="bg-white p-3 rounded shadow mb-3"> 
-                 <input type="hidden" name="MaNHD" value="@Model.ExamBankId" /> 
+@{
+    Layout = "_TeacherLayout";
+    <!-- Nhap title -->
+    ViewData["Title"] = "Soạn câu hỏi ngân hàng đề";
+}
+@section Style {
+    <!-- FontAwesome 6.2.0 CSS -->
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css"
+          integrity="sha512-xh6O/CkQoPOWDdYTDqeRdPCVd1SpvCA9XXcUnZS2FmJNp1coAFzvtCN9BmamE+4aHK8yyUHUSCcJHgXloTyT2A=="
+          crossorigin="anonymous"
+          referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="~/css/teacher-exam-add-question-multiplechoice.css" />
+  }
+<div class="container-fluid p-0">
+    <div class="pt-3 py-lg-0 px-lg-5 px-3">
+        <div class="row mx-0 justify-content-center pt-2">
+            <div class="col-lg-6">
+                <div class="section-title text-center position-relative mb-4">
+                    <h2 class="display-4">Chi tiết NHĐ</h2>
+                    <h6 class="d-inline-block position-relative text-secondary text-uppercase pb-2">Môn học: @Model.SubjectName </h6>
+                </div>
+            </div>
+        </div>
+        <form id="editExamForm" method="post" asp-action="EditExamBank" asp-controller="Teacher" class="m-1">
+            <div class="bg-white p-3 rounded shadow mb-3">
+                <input type="hidden" name="MaNHD" value="@Model.ExamBankId" />
 
-                 <div class="modal-body row"> 
-                     <div class="mb-2 col-lg-9"> 
-                         <label class="form-label fw-bold">Tên ngân hàng đề</label> 
-                         <input name="TenNHD" class="form-control fs-6" 
-                                id="tenNHDInput" 
-                                value="@Model.ExamBankName" 
-                                data-original="@Model.ExamBankName" /> 
-                     </div> 
-                     <div class="mb-2 col-lg-3"> 
-                         <label class="form-label fw-bold">Trạng thái hiển thị</label> 
-                         <select name="TrangThai" class="form-select fs-6" id="trangThaiSelect" data-original="@Model.IsActive.ToString().ToLower()"> 
-                             <option value="true" selected="@Model.IsActive">Công khai</option> 
-                             <option value="false" selected="@(Model.IsActive == false)">Riêng tư</option> 
-                         </select> 
-                     </div> 
-                 </div> 
+                <div class="modal-body row">
+                    <div class="mb-2 col-lg-9">
+                        <label class="form-label fw-bold">Tên ngân hàng đề</label>
+                        <input name="TenNHD" class="form-control fs-6"
+                               id="tenNHDInput"
+                               value="@Model.ExamBankName"
+                               data-original="@Model.ExamBankName" />
+                    </div>
+                    <div class="mb-2 col-lg-3">
+                        <label class="form-label fw-bold">Trạng thái hiển thị</label>
+                        <select name="TrangThai" class="form-select fs-6" id="trangThaiSelect" data-original="@Model.IsActive.ToString().ToLower()">
+                            <option value="true" selected="@Model.IsActive">Công khai</option>
+                            <option value="false" selected="@(Model.IsActive == false)">Riêng tư</option>
+                        </select>
+                    </div>
+                </div>
 
-                 <div class="modal-footer row p-2"> 
-                     <button type="submit" class="btn btn-primary" id="submitBtn" disabled> 
-                         Cập nhật thông tin 
-                     </button> 
-                 </div> 
-             </div> 
-         </form> 
+                <div class="modal-footer row p-2">
+                    <button type="submit" class="btn btn-primary" id="submitBtn" disabled>
+                        Cập nhật thông tin
+                    </button>
+                </div>
+            </div>
+        </form>
 
-         <div class="border "> 
-             <!-- Nav tabs --> 
-             <ul class="nav nav-tabs pt-3 d-flex justify-content-between px-2" id="myTab" role="tablist"> 
-                 <li class="nav-item border-bottom" role="presentation"> 
-                     <button class="nav-link active" id="create-tab" data-bs-toggle="tab" data-bs-target="#create" type="button" 
-                             role="tab" aria-controls="create" aria-selected="false"> 
-                         Soạn câu hỏi 
-                     </button> 
-                 </li> 
-                 <div> 
-                     <a class="btn btn-danger asp-controller="Teacher" asp-action="ExamBank">Trở về</a> 
-                 </div> 
-             </ul> 
+        <div class="border ">
+            <!-- Nav tabs -->
+            <ul class="nav nav-tabs pt-3 d-flex justify-content-between px-2" id="myTab" role="tablist">
+                <li class="nav-item border-bottom" role="presentation">
+                    <button class="nav-link active" id="create-tab" data-bs-toggle="tab" data-bs-target="#create" type="button"
+                            role="tab" aria-controls="create" aria-selected="false">
+                        Soạn câu hỏi
+                    </button>
+                </li>
+                <div>
+                    <a class="btn btn-danger asp-controller="Teacher" asp-action="ExamBank">Trở về</a>
+                </div>
+            </ul>
 
-         </div> 
+        </div>
 
-         <div class=""> 
-             <!-- Tab panes --> 
-             <div class="tab-content mt-3"> 
-                 <div class="tab-pane active" id="create" role="tabpanel" aria-labelledby="create-tab"> 
-                     <div class="row"> 
-                         <div class="col-12 col-md-4 mb-3 mb-md-0"> 
-                             <div class="bg-white p-3 rounded" style=" 
-                                box-shadow: rgba(50, 50, 93, 0.25) 0px 6px 12px -2px, 
-                                  rgba(0, 0, 0, 0.3) 0px 3px 7px -3px; 
-                              "> 
-                                 <div class="d-xl-flex justify-content-between align-items-center"> 
-                                     <h3 class="fs-5 mb-sm-0 fw-semibold">Danh mục câu hỏi</h3> 
-                                     <a class="btn btn-primary" 
-                                        asp-controller="Teacher" 
-                                        asp-action="Exam_Bank_Add_Question_Essay" 
-                                        asp-route-id="@Model.ExamBankId">Thêm câu hỏi mới</a> 
-                                 </div>
+        <div class="">
+            <!-- Tab panes -->
+            <div class="tab-content mt-3">
+                <div class="tab-pane active" id="create" role="tabpanel" aria-labelledby="create-tab">
+                    <div class="row">
+                        <div class="col-12 col-md-4 mb-3 mb-md-0">
+                            <div class="bg-white p-3 rounded" style="
+                                box-shadow: rgba(50, 50, 93, 0.25) 0px 6px 12px -2px,
+                                  rgba(0, 0, 0, 0.3) 0px 3px 7px -3px;
+                              ">
+                                <div class="d-xl-flex justify-content-between align-items-center">
+                                    <h3 class="fs-5 mb-sm-0 fw-semibold">Danh mục câu hỏi</h3>
+                                    <a class="btn btn-primary"
+                                       asp-controller="Teacher"
+                                       asp-action="Exam_Bank_Add_Question_Essay"
+                                       asp-route-id="@Model.ExamBankId">Thêm câu hỏi mới</a>
+                                </div>
 
                                 @{
                                     bool coChuong = Model.ChapterList != null && Model.ChapterList.Any();
@@ -105,7 +113,7 @@
                                                         <div class="d-flex align-items-center gap-2">
                                                             <button type="button"
                                                                     class="btn btn-outline-primary question-button"
-                                                                    onclick="loadQuestion(@globalIndex)">
+                                                                    onclick="loadQuestionById('@cauHoi.QuestionId')">
                                                                 @(globalIndex + 1)
                                                             </button>
                                                             <button type="button"
@@ -132,8 +140,10 @@
                                         {
                                             var cauHoi = Model.QuestionList[i];
                                             <div class="d-flex align-items-center gap-2">
-                                                <button type="button" class="btn btn-outline-primary question-button" onclick="loadQuestion(@i)">
-                                                    @(i + 1)
+                                                <button type="button"
+                                                        class="btn btn-outline-primary question-button"
+                                                        onclick="loadQuestionById('@cauHoi.QuestionId')">
+                                                    @(globalIndex + 1)
                                                 </button>
                                                 <form asp-action="DeleteQuestion" asp-controller="Teacher" method="post" onsubmit="return confirm('Bạn có chắc muốn xóa câu hỏi này không?')">
                                                     <input type="hidden" name="maCauHoi" value="@cauHoi.QuestionId" />
@@ -149,15 +159,15 @@
 
 
 
-                             </div> 
-                         </div> 
-                         <div class="col-12 col-md-8"> 
-                             <div class="bg-white p-3 rounded" style=" 
-                                box-shadow: rgba(50, 50, 93, 0.25) 0px 6px 12px -2px, 
-                                  rgba(0, 0, 0, 0.3) 0px 3px 7px -3px; 
-                              "> 
-                                 <h3 class="fs-5 fw-semibold">Thêm câu hỏi mới</h3> 
-                                 <form asp-controller="Teacher" asp-action="Exam_Bank_Add_Question_Essay" method="post">
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-8">
+                            <div class="bg-white p-3 rounded" style="
+                                box-shadow: rgba(50, 50, 93, 0.25) 0px 6px 12px -2px,
+                                  rgba(0, 0, 0, 0.3) 0px 3px 7px -3px;
+                              ">
+                                <h3 class="fs-5 fw-semibold">Thêm câu hỏi mới</h3>
+                                <form asp-controller="Teacher" asp-action="Exam_Bank_Add_Question_Essay" method="post">
                                     <input type="hidden" name="ExamBankId" value="@Model.ExamBankId" />
                                     <input type="hidden" id="QuestionId" name="QuestionId" value="" />
 
@@ -188,95 +198,149 @@
                                         <textarea class="form-control" id="QuestionContent" name="QuestionContent" placeholder="Nhập câu hỏi . . . "></textarea>
                                     </div>
 
-                                    <!-- Nút submit --> 
-                                     <div> 
-                                         <button type="submit" class="btn btn-primary">Lưu câu hỏi</button> 
-                                     </div> 
-                                 </form> 
-                             </div> 
-                         </div> 
-                     </div> 
-                 </div> 
-             </div> 
-         </div> 
-     </div> 
- </div> 
+                                   
+                                    <div class="criteria-wrapper p-3 bg-white rounded shadow-sm mt-4">
+
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <h5 class="fw-bold m-0">Tiêu chí chấm điểm</h5>
+                                            <button type="button" id="btnAddCriteria"
+                                                    class="btn btn-primary rounded-circle"
+                                                    style="width:40px;height:40px;">
+                                                <i class="fa fa-plus"></i>
+                                            </button>
+                                        </div>
+
+                                        <div id="criteriaList" class="d-flex flex-column gap-2"></div>
+
+                                        <div class="border-top mt-3 pt-2">
+                                            <span class="fw-bold">Tổng phần trăm:</span>
+                                            <span id="criteriaTotal" class="fw-bold text-danger">0%</span>
+
+                                            <div id="criteriaError" class="text-danger fw-bold mt-1" style="display:none;">
+                                                Tổng % phải bằng 100%.
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Nút submit -->
+                                    <div>
+                                        <button type="submit" class="btn btn-primary" id="btnSaveQuestion">
+                                            Lưu câu hỏi
+                                        </button>
+
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 
 
 
- <!-- Modal xác nhận xóa câu hỏi --> 
- <div class="modal fade" id="deleteQuestionModal" tabindex="-1" aria-labelledby="deleteQuestionModalLabel" aria-hidden="true"> 
-     <div class="modal-dialog modal-dialog-centered"> 
-         <div class="modal-content"> 
-             <form method="post" asp-action="DeleteQuestion" asp-controller="Teacher"> 
-                 <div class="modal-header bg-danger text-white"> 
-                     <h5 class="modal-title text-white">Xác nhận xóa câu hỏi</h5> 
-                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button> 
-                 </div> 
-                 <div class="modal-body"> 
-                     <input type="hidden" id="macauhoiToDelete" name="maCauHoi" /> 
-                     <input type="hidden" id="manhdToDelete" name="MaNHD" /> 
-                     <p>Bạn có chắc chắn muốn xóa câu hỏi này khỏi ngân hàng đề?</p> 
-                 </div> 
-                 <div class="modal-footer"> 
-                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button> 
-                     <button type="submit" class="btn btn-danger">Xác nhận xóa</button> 
-                 </div> 
-             </form> 
-         </div> 
-     </div> 
- </div> 
+<!-- Modal xác nhận xóa câu hỏi -->
+<div class="modal fade" id="deleteQuestionModal" tabindex="-1" aria-labelledby="deleteQuestionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" asp-action="DeleteQuestion" asp-controller="Teacher">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title text-white">Xác nhận xóa câu hỏi</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="macauhoiToDelete" name="maCauHoi" />
+                    <input type="hidden" id="manhdToDelete" name="MaNHD" />
+                    <p>Bạn có chắc chắn muốn xóa câu hỏi này khỏi ngân hàng đề?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-danger">Xác nhận xóa</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
- @section Script 
- { 
-     <script src="~/lib/build/ckeditor.js"></script> 
-     <script> 
-         let answerCount = 0; 
-         let editors = {}; // Biến đếm số lượng đáp án 
+@section Script
+ {
+    <script src="~/lib/build/ckeditor.js"></script>
+    <script src="~/js/notification.js"></script>
+    <script>
 
-         document.addEventListener("DOMContentLoaded", () => { 
-             ClassicEditor.create(document.querySelector('#QuestionContent')).then(editor => { 
-                 editors['QuestionContent'] = editor; 
-             }).catch(console.error); 
-         }); 
+         let answerCount = 0;
+         let editors = {}; // Biến đếm số lượng đáp án
+        document.addEventListener("DOMContentLoaded", () => {
+            ClassicEditor.create(document.querySelector('#QuestionContent'), {
+                simpleUpload: {
+                    uploadUrl: '/Upload/UploadImage',
+                }
+            }).then(editor => {
+                    editors['QuestionContent'] = editor;
+                }).catch(console.error);
+        });
 
+    </script>
 
-     </script> 
+    <script>
 
-     <script> 
-         let questions = @Html.Raw(Json.Serialize(Model.QuestionDTOList)); 
+         let questions = @Html.Raw(Json.Serialize(Model.QuestionDTOList));
 
-         console.log(questions); 
+         console.log(questions);
 
-         function loadQuestion(index) { 
-             if (!questions || questions.length <= index) return; 
+        function loadQuestion(index) {
+            if (!questions || questions.length <= index) return;
 
-             let question = questions[index]; 
+            let question = questions[index];
 
-             // Gán giá trị cho các input 
-             if (editors['QuestionContent']) {
-                editors['QuestionContent'].setData(question.questionContent || "");
-            } 
+            if (editors['QuestionContent']) {
+                const contentData = question.questionContent || "";
+                editors['QuestionContent'].setData(contentData);
+            }
 
-             document.getElementById("QuestionId").value = question.questionId || "";
+            document.getElementById("QuestionId").value = question.questionId || "";
             document.getElementById("ChapterId").value = question.chapterId || "";
-            updateCLOOptions(); // Cập nhật danh sách CLO sau khi chọn chương 
+            updateCLOOptions();
 
-             setTimeout(() => {
+            setTimeout(() => {
                 document.getElementById("CLOId").value = question.cloId || "";
-            }) // Chờ 100ms để CLO dropdown cập nhật xong mới gán giá trị 
+            })
+
+            const criteriaList = document.getElementById("criteriaList");
+            criteriaList.innerHTML = "";
+            criteriaIndex = 0;
+
+            if (question.criteria && question.criteria.length > 0) {
+                question.criteria.forEach(c => {
+                    addCriteria(c.content, c.percent);
+                });
+            } else {
+                addCriteria("", 100);
+            }
+
+            updateTotal();
+        }
+
+
+        function loadQuestionById(id) {
+            if (!questions || !questions.length) return;
+
+            // So sánh kiểu an toàn (string hóa) để tránh lệch kiểu int/string/Guid
+            const idx = questions.findIndex(q => String(q.questionId) === String(id));
+            if (idx === -1) {
+                console.warn('Không tìm thấy câu hỏi với id:', id);
+                return;
+            }
+            loadQuestion(idx);
+        }
 
 
 
-            
-             } 
 
 
-
-
-
-     </script>
+    </script>
 
     <script>
 
@@ -302,133 +366,221 @@
             }
         }
     </script>
-    <script> 
-                 document.addEventListener("DOMContentLoaded", function () { 
-             const chuongGroup = document.getElementById("ChapterGroup"); 
-             const cloGroup = document.getElementById("CLOGroup"); 
+    <script>
 
-             const chuongSelect = document.getElementById("ChapterId");
-            const cloSelect = document.getElementById("CLOId");
+        document.addEventListener("DOMContentLoaded", function () {
+            const chuongGroup = document.getElementById("ChapterGroup");
+            const cloGroup = document.getElementById("CLOGroup");
 
-            const chapterList = @Html.Raw(Json.Serialize(Model.ChapterList)); 
+            const chuongSelect = document.getElementById("ChapterId");
+           const cloSelect = document.getElementById("CLOId");
 
-             if (!chapterList || chapterList.length === 0) { 
-                 if (chuongGroup) chuongGroup.style.display = "none"; 
-                 if (chuongSelect) chuongSelect.removeAttribute("required"); 
+           const chapterList = @Html.Raw(Json.Serialize(Model.ChapterList));
 
-                 if (cloGroup) cloGroup.style.display = "none"; 
-                 if (cloSelect) cloSelect.removeAttribute("required"); 
-             } else { 
-                 const hasAnyCLO = chapterList.some(ch => ch.clos && ch.clos.length > 0); 
-                 if (!hasAnyCLO) { 
-                     if (cloGroup) cloGroup.style.display = "none"; 
-                     if (cloSelect) cloSelect.removeAttribute("required"); 
-                 } 
-             } 
-         }); 
+            if (!chapterList || chapterList.length === 0) {
+                if (chuongGroup) chuongGroup.style.display = "none";
+                if (chuongSelect) chuongSelect.removeAttribute("required");
 
-     </script> 
+                if (cloGroup) cloGroup.style.display = "none";
+                if (cloSelect) cloSelect.removeAttribute("required");
+            } else {
+                const hasAnyCLO = chapterList.some(ch => ch.clos && ch.clos.length > 0);
+                if (!hasAnyCLO) {
+                    if (cloGroup) cloGroup.style.display = "none";
+                    if (cloSelect) cloSelect.removeAttribute("required");
+                }
+            }
+        });
 
-
-     <script> 
-         document.addEventListener("DOMContentLoaded", function () { 
-             const deleteButtons = document.querySelectorAll(".btn-open-delete-modal"); 
-             const inputMaCauHoi = document.getElementById("macauhoiToDelete"); 
-             const inputMaNHD = document.getElementById("manhdToDelete"); 
-
-             deleteButtons.forEach(button => { 
-                 button.addEventListener("click", () => { 
-                     const maCauHoi = button.getAttribute("data-macauhoi"); 
-                     const maNHD = button.getAttribute("data-manhd"); 
-
-                     inputMaCauHoi.value = maCauHoi; 
-                     inputMaNHD.value = maNHD; 
-                 }); 
-             }); 
-         }); 
-     </script> 
+    </script>
 
 
-     <script> 
-                 document.addEventListener("DOMContentLoaded", function () { 
-             // Kiểm tra thông điệp thành công 
-             const successMessage = @Html.Raw(Json.Serialize(TempData["SuccessMessage"])); 
-             if (successMessage) { 
-                 Toastify({ 
-                     text: successMessage, 
-                     duration: 4000, 
-                     close: true, 
-                     gravity: "bottom", 
-                     position: "right", 
-                     stopOnFocus: true, 
-                     style: { 
-                         background: "#28a745" // Màu xanh cho thông báo thành công 
-                     } 
-                 }).showToast(); 
-             } 
+    <script>
 
-             // Kiểm tra thông điệp lỗi 
-             const errorMessage = @Html.Raw(Json.Serialize(TempData["ErrorMessage"])); 
-             if (errorMessage) { 
-                 Toastify({ 
-                     text: errorMessage, 
-                     duration: 4000, 
-                     close: true, 
-                     gravity: "bottom", 
-                     position: "right", 
-                     stopOnFocus: true, 
-                     style: { 
-                         background: "#dc3545" // Màu đỏ cho thông báo lỗi 
-                     } 
-                 }).showToast(); 
-             } 
-         }); 
-     </script> 
-     <script> 
-         document.querySelector("form").addEventListener("submit", function (e) { 
-             // Đảm bảo tất cả nội dung CKEditor được cập nhật trước khi gửi 
-             for (let editorId in editors) { 
-                 if (editors[editorId]) { 
-                     editors[editorId].updateSourceElement(); 
-                 } 
-             } 
-         }); 
+        document.addEventListener("DOMContentLoaded", function () {
+            const deleteButtons = document.querySelectorAll(".btn-open-delete-modal");
+            const inputMaCauHoi = document.getElementById("macauhoiToDelete");
+            const inputMaNHD = document.getElementById("manhdToDelete");
+
+            deleteButtons.forEach(button => {
+                button.addEventListener("click", () => {
+                    const maCauHoi = button.getAttribute("data-macauhoi");
+                    const maNHD = button.getAttribute("data-manhd");
+
+                    inputMaCauHoi.value = maCauHoi;
+                    inputMaNHD.value = maNHD;
+                });
+            });
+        });
+    </script>
 
 
-     </script> 
-     <script> 
-         document.addEventListener("DOMContentLoaded", () => { 
-             const submitBtn = document.getElementById("submitBtn"); 
-             const inputs = document.querySelectorAll("#editExamForm input, #editExamForm select"); 
+    <script>
 
-             function checkChanges() { 
-                 let changed = false; 
+        document.addEventListener("DOMContentLoaded", function () {
+            const errorMessage = @Html.Raw(Json.Serialize(TempData["ErrorMessage"]));
+            if (errorMessage) {
+                Toastify({
+                    text: errorMessage,
+                    duration: 4000,
+                    close: true,
+                    gravity: "bottom",
+                    position: "right",
+                    stopOnFocus: true,
+                    style: {
+                        background: "#dc3545"
+                    }
+                }).showToast();
+            }
+        });
+    </script>
+    <script>
 
-                 inputs.forEach(input => { 
-                     const original = input.getAttribute("data-original"); 
-                     if (original !== null) { 
-                         if (input.tagName === "SELECT") { 
-                             if (input.value.toLowerCase() !== original.toLowerCase()) { 
-                                 changed = true; 
-                             } 
-                         } else { 
-                             if (input.value !== original) { 
-                                 changed = true; 
-                             } 
-                         } 
-                     } 
-                 }); 
+        document.querySelector("form").addEventListener("submit", function (e) {
+            for (let editorId in editors) {
+                if (editors[editorId]) {
+                    editors[editorId].updateSourceElement();
+                }
+            }
+        });
 
-                 submitBtn.disabled = !changed; 
-             } 
 
-             inputs.forEach(input => { 
-                 input.addEventListener("input", checkChanges); 
-                 input.addEventListener("change", checkChanges); 
-             }); 
+    </script>
+    <script>
 
-             checkChanges(); 
-         }); 
-     </script> 
+        document.addEventListener("DOMContentLoaded", () => {
+            const submitBtn = document.getElementById("submitBtn");
+            const inputs = document.querySelectorAll("#editExamForm input, #editExamForm select");
 
- } 
+            function checkChanges() {
+                let changed = false;
+
+                inputs.forEach(input => {
+                    const original = input.getAttribute("data-original");
+                    if (original !== null) {
+                        if (input.tagName === "SELECT") {
+                            if (input.value.toLowerCase() !== original.toLowerCase()) {
+                                changed = true;
+                            }
+                        } else {
+                            if (input.value !== original) {
+                                changed = true;
+                            }
+                        }
+                    }
+                });
+
+                submitBtn.disabled = !changed;
+            }
+
+            inputs.forEach(input => {
+                input.addEventListener("input", checkChanges);
+                input.addEventListener("change", checkChanges);
+            });
+
+            checkChanges();
+        });
+    </script>
+
+    <script>
+        let criteriaIndex = 0;
+        const list      = document.getElementById("criteriaList");
+        const totalText = document.getElementById("criteriaTotal");
+        const errorBox  = document.getElementById("criteriaError");
+        const submitBtn = document.getElementById("btnSaveQuestion");
+
+        document.getElementById("btnAddCriteria").addEventListener("click", () => {
+            addCriteria();
+        });
+
+        function addCriteria(content = "", percent = 0) {
+            const div = document.createElement("div");
+            div.classList.add("criteria-item");
+            div.setAttribute("data-index", criteriaIndex);
+
+            div.innerHTML = `
+                <div class="row align-items-center">
+                    <div class="col-8">
+                        <textarea class="form-control"
+                                  name="Criteria[${criteriaIndex}].Content"
+                                  placeholder="Nội dung tiêu chí">${content}</textarea>
+                    </div>
+
+                    <div class="col-2">
+                        <input type="number" min="0" max="100"
+                               class="form-control percent-input criteria-percent"
+                               name="Criteria[${criteriaIndex}].Percent"
+                               value="${percent}" required>
+                    </div>
+
+                    <div class="col-2 text-end">
+                        <button type="button" class="btn btn-danger btn-delete-criteria"
+                                onclick="removeCriteria(${criteriaIndex})">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            list.appendChild(div);
+            criteriaIndex++;
+            updateTotal();
+        }
+
+        function removeCriteria(i) {
+            const item = document.querySelector(`[data-index='${i}']`);
+            if (item) item.remove();
+            updateTotal();
+        }
+
+        function updateTotal() {
+            let total = 0;
+            let hasContent = false;
+
+            const allItems = document.querySelectorAll(".criteria-item");
+
+            allItems.forEach(item => {
+                const textarea = item.querySelector("textarea");
+                const percentInput = item.querySelector(".criteria-percent");
+
+                const content = (textarea?.value || "").trim();
+                const percent = parseInt(percentInput?.value || "0", 10) || 0;
+
+                total += percent;               
+                if (content !== "") hasContent = true;
+            });
+
+            totalText.textContent = total + "%";
+
+            if (!hasContent) {
+                totalText.classList.remove("text-danger");
+                errorBox.style.display = "none";
+                submitBtn.disabled = false;
+                return;
+            }
+
+            if (total !== 100) {
+                totalText.classList.add("text-danger");
+                errorBox.style.display = "block";
+                submitBtn.disabled = true;   
+            } else {
+                totalText.classList.remove("text-danger");
+                errorBox.style.display = "none";
+                submitBtn.disabled = false;   
+            }
+        }
+
+        document.addEventListener("input", e => {
+            if (e.target.classList.contains("criteria-percent") ||
+                (e.target.closest(".criteria-item") && e.target.tagName === "TEXTAREA")) {
+                updateTotal();
+            }
+        });
+
+        document.addEventListener("DOMContentLoaded", () => {
+            addCriteria("", 100);
+        });
+    </script>
+
+
+ }

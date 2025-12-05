@@ -54,22 +54,27 @@
                             @foreach (var cauHoi in Model.Questions)
                             {
                                 <div class="mb-4">
-                                    @{
-                                        cauHoi.QuestionContent = @cauHoi.QuestionContent.Replace("<p>", "").Replace("</p>", "");
-                                    }
-                                    <label for="tuLuan_@cauHoi.QuestionId" class="form-label">
-                                        <strong>Câu @stt:</strong> @cauHoi.QuestionContent
+                                    <label for="tuLuan_@cauHoi.QuestionId" class="form-label w-100">
+                                        <strong>Câu @stt:</strong>
+                                        <div class="question-content mt-2">
+                                            @Html.Raw(cauHoi.QuestionContent)
+                                        </div>
                                     </label>
+
                                     <textarea class="form-control" id="tuLuan_@cauHoi.QuestionId"
-                                              name="tuLuan_@cauHoi.QuestionId"
-                                              rows="5"></textarea>
+                                          name="tuLuan_@cauHoi.QuestionId"
+                                          rows="5"></textarea>
                                 </div>
                                 stt++;
                             }
                         </form>
-                        <div class="mb-3">
-                            <label for="formFile" class="form-label">Tải lên bài làm</label>
-                            <input class="form-control" type="file" id="formFile">
+                        <div class="mb-3 text-start">
+                            <label for="formFileModal" class="form-label">Tải lên bài làm (nếu có):</label>
+                            <input class="form-control"
+                                   type="file"
+                                   id="formFileModal"
+                                   name="uploadedFile"
+                                   form="form-nop-bai">
                         </div>
                     </div>
                     <div class="bullets text-center mb-3">
@@ -100,9 +105,14 @@
                     <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">
                         <i class="fa-solid fa-xmark me-1"></i> Hủy
                     </button>
-                    <form action="ExamResult_TL" method="post">
+
+                    <form asp-action="ExamResult_TL"
+                          method="post"
+                          enctype="multipart/form-data"
+                          id="form-nop-bai">
                         <input type="hidden" name="maDe" value="@Model.ExamId" />
                         <input type="hidden" name="maLop" value="@Model.ClassId" />
+
                         <button type="submit" class="btn btn-danger fw-bold px-4">
                             <i class="fa-solid fa-paper-plane me-1"></i> Nộp bài ngay
                         </button>
@@ -126,10 +136,26 @@
           document.getElementById("timer").innerText =
             `Thời gian còn lại: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
           timeLeft--;
+
           if (timeLeft < 0) {
             clearInterval(timerInterval);
-            alert("Hết thời gian làm bài!");
-            window.location.href="/Student/ExamResult_TL/@Model.ExamId";
+
+            // 1. Vô hiệu hóa mọi thứ
+            document.getElementById("btn-final-submit").disabled = true;
+            alert("Hết thời gian làm bài! Hệ thống sẽ tự động nộp bài của bạn.");
+
+            // 2. Chạy autoSave lần cuối để đảm bảo text được lưu
+            if(isEditorReady) autoSaveEssay();
+
+            // 3. Tìm form nộp bài (form trong modal)
+            const autoSubmitButton = document.querySelector(".modal-footer .btn-danger[type='submit']");
+
+            if (autoSubmitButton) {
+                // 4. Tự động submit form
+                autoSubmitButton.click();
+            } else {
+                alert("Lỗi: Không tìm thấy form nộp bài để tự động nộp.");
+            }
           }
         }
         timerInterval = setInterval(updateTimer, 1000);
@@ -185,115 +211,264 @@
         }
     </script>
 
-    <!--Nộp bài-->
+     <!--Nộp bài--> 
+      <script>  
+          document.getElementById("btn-final-submit").addEventListener("click", async function (e) {  
+            e.preventDefault(); // Ngăn submit ngay  
+
+            if (!isEditorReady) {  
+              alert("Đang khởi tạo bài làm. Vui lòng đợi...");  
+              return;  
+            }  
+
+            // 1) Thu thập lại dữ liệu hiện tại từ tất cả CKEditor  
+            const answers = {};  
+            document.querySelectorAll("textarea[id^='tuLuan_']").forEach(textarea => {  
+              const editorInstance = textarea.ckeditorInstance;  
+              const maCauHoi = textarea.id.split("_")[1];  
+              if (editorInstance) {  
+                answers[maCauHoi] = editorInstance.getData();  
+              }  
+            });  
+
+            // Helper: flush toàn bộ đáp án còn lại lên Hub (nếu có)  
+            async function flushAllAnswersToHub() {  
+              // Ưu tiên dùng hàm có sẵn  
+              if (window.ITExamEssay?.pushEssayDelta) {  
+                try { await window.ITExamEssay.pushEssayDelta(); } catch {}  
+                return;  
+              }  
+              // Fallback: tự gửi từng câu (có đủ EXAM_ID/CLASS_ID/STUDENT_ID/FULLNAME và connection)  
+              if (typeof connection === "object" && connection?.invoke) {  
+                const items = [];  
+                document.querySelectorAll("textarea[id^='tuLuan_']").forEach(textarea => {  
+                  const qid = textarea.id.split("_")[1];  
+                  const label = document.querySelector(`label[for='${textarea.id}']`);  
+                  let qContent = (label?.innerText || "").trim().replace(/^Câu\s+\d+\s*:\s*/i, "");  
+                  const html = textarea.ckeditorInstance ? textarea.ckeditorInstance.getData() : (textarea.value || "");  
+                  items.push({ qid, qContent, html, ansId: `essay:${qid}` });  
+                });  
+                for (const it of items) {  
+                  try {  
+                    await connection.invoke(  
+                      "SelectAnswer",  
+                      EXAM_ID ?? examId,           
+                      CLASS_ID ?? classId,  
+                      STUDENT_ID ?? studentId,  
+                      FULLNAME ?? studentName,  
+                      String(it.qid),  
+                      it.qContent || "",  
+                      String(it.ansId),  
+                      it.html || ""  
+                    );  
+                  } catch (err) { console.error("SelectAnswer (flush) error:", err); }  
+                }  
+              }  
+            }  
+
+            // 2) Gửi về Redis trước  
+            try {  
+              const resp = await fetch('/Student/SaveEssayAnswer', {  
+                method: 'POST',  
+                headers: { 'Content-Type': 'application/json' },  
+                body: JSON.stringify({  
+                  maDe: @Model.ExamId,  
+                  cauTraLoi: answers  
+                })  
+              });  
+              const data = await resp.json();  
+
+              if (!data?.success) {  
+                alert("Có lỗi khi lưu bài làm. Vui lòng thử lại.");  
+                return;  
+              }  
+            } catch (error) {  
+              alert("Không thể kết nối đến máy chủ.");  
+              console.error(error);  
+              return;  
+            }  
+
+            try {  
+              if (window.ITExamEssay?.sendExamStructureOnce) {  
+                try { await window.ITExamEssay.sendExamStructureOnce(true); } catch {}  
+              }  
+
+              await flushAllAnswersToHub();   
+
+              if (typeof connection === "object" && connection?.invoke) {  
+                try {  
+                  await connection.invoke(  
+                    "SubmitExam",  
+                    EXAM_ID ?? examId,  
+                    CLASS_ID ?? classId,  
+                    STUDENT_ID ?? studentId,  
+                    FULLNAME ?? studentName  
+                  );  
+                } catch (err) {  
+                  console.warn("SubmitExam hub error:", err);  
+                }  
+              }  
+            } finally {  
+              const form = e.target.closest("form");  
+              if (form) form.submit();  
+            }  
+          });  
+      </script>  
+
+      <!-- Upload file tự luận-->
     <script>
-        document.getElementById("btn-final-submit").addEventListener("click", async function (e) {
-          e.preventDefault(); // Ngăn submit ngay
 
-          if (!isEditorReady) {
-            alert("Đang khởi tạo bài làm. Vui lòng đợi...");
-            return;
-          }
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxSlibSTGempy47D9mvSPHLqxyOksCIssK965mSwEVR49EwjZ9M8AUyCtHzGsPDu8FP/exec";
 
-          // 1) Thu thập lại dữ liệu hiện tại từ tất cả CKEditor
-          const answers = {};
-          document.querySelectorAll("textarea[id^='tuLuan_']").forEach(textarea => {
-            const editorInstance = textarea.ckeditorInstance;
-            const maCauHoi = textarea.id.split("_")[1];
-            if (editorInstance) {
-              answers[maCauHoi] = editorInstance.getData();
-            }
-          });
-
-          // Helper: flush toàn bộ đáp án còn lại lên Hub (nếu có)
-          async function flushAllAnswersToHub() {
-            // Ưu tiên dùng hàm có sẵn
-            if (window.ITExamEssay?.pushEssayDelta) {
-              try { await window.ITExamEssay.pushEssayDelta(); } catch {}
-              return;
-            }
-            // Fallback: tự gửi từng câu (có đủ EXAM_ID/CLASS_ID/STUDENT_ID/FULLNAME và connection)
-            if (typeof connection === "object" && connection?.invoke) {
-              const items = [];
-              document.querySelectorAll("textarea[id^='tuLuan_']").forEach(textarea => {
-                const qid = textarea.id.split("_")[1];
-                const label = document.querySelector(`label[for='${textarea.id}']`);
-                let qContent = (label?.innerText || "").trim().replace(/^Câu\s+\d+\s*:\s*/i, "");
-                const html = textarea.ckeditorInstance ? textarea.ckeditorInstance.getData() : (textarea.value || "");
-                items.push({ qid, qContent, html, ansId: `essay:${qid}` });
-              });
-              for (const it of items) {
-                try {
-                  await connection.invoke(
-                    "SelectAnswer",
-                    EXAM_ID ?? examId,         // tương thích tên biến
-                    CLASS_ID ?? classId,
-                    STUDENT_ID ?? studentId,
-                    FULLNAME ?? studentName,
-                    String(it.qid),
-                    it.qContent || "",
-                    String(it.ansId),
-                    it.html || ""
-                  );
-                } catch (err) { console.error("SelectAnswer (flush) error:", err); }
-              }
-            }
-          }
-
-          // 2) Gửi về Redis trước
-          try {
-            const resp = await fetch('/Student/SaveEssayAnswer', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                maDe: @Model.ExamId,
-                cauTraLoi: answers
-              })
+        function readFileAsBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+                reader.readAsDataURL(file);
             });
-            const data = await resp.json();
+        }
 
-            if (!data?.success) {
-              alert("Có lỗi khi lưu bài làm. Vui lòng thử lại.");
-              return;
-            }
-          } catch (error) {
-            alert("Không thể kết nối đến máy chủ.");
-            console.error(error);
-            return;
-          }
+        document.querySelector(".modal-footer .btn-danger[type='submit']").addEventListener("click", async function (e) {
 
-          // 3) Sau khi lưu Redis thành công -> gửi Hub (flush answer deltas + SubmitExam)
-          try {
-            // gửi cấu trúc đề nếu bạn muốn đảm bảo (không bắt buộc khi submit):
-            if (window.ITExamEssay?.sendExamStructureOnce) {
-              try { await window.ITExamEssay.sendExamStructureOnce(true); } catch {}
+            e.preventDefault();
+
+            if (!isEditorReady) {
+                alert("Đang khởi tạo bài làm. Vui lòng đợi...");
+                return;
             }
 
-            await flushAllAnswersToHub(); // đẩy nốt phần còn lại vào log cá nhân
+            const submitButton = e.target;
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Đang nộp...';
 
-            if (typeof connection === "object" && connection?.invoke) {
-              // Báo submit lên Hub
-              try {
-                await connection.invoke(
-                  "SubmitExam",
-                  EXAM_ID ?? examId,
-                  CLASS_ID ?? classId,
-                  STUDENT_ID ?? studentId,
-                  FULLNAME ?? studentName
-                );
-              } catch (err) {
-                // không chặn việc nộp form nếu Hub lỗi
-                console.warn("SubmitExam hub error:", err);
-              }
+            const answers = {};
+            document.querySelectorAll("textarea[id^='tuLuan_']").forEach(textarea => {
+                const editorInstance = textarea.ckeditorInstance;
+                const maCauHoi = textarea.id.split("_")[1];
+                if (editorInstance) {
+                    answers[maCauHoi] = editorInstance.getData();
+                }
+            });
+
+            try {
+                submitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Đang lưu bài viết...';
+                const resp = await fetch('/Student/SaveEssayAnswer', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        maDe: @Model.ExamId,
+                        cauTraLoi: answers
+                    })
+                });
+                const data = await resp.json();
+
+                if (!data?.success) {
+                    alert("Có lỗi khi lưu bài làm. Vui lòng thử lại.");
+                    throw new Error("Lỗi lưu Redis"); 
+                }
+            } catch (error) {
+                alert("Không thể kết nối đến máy chủ để lưu bài. Vui lòng kiểm tra mạng và thử lại.");
+                console.error(error);
+                submitButton.disabled = false;
+                submitButton.innerHTML = '<i class="fa-solid fa-paper-plane me-1"></i> Nộp bài ngay';
+                return;
             }
-          } finally {
-            // 4) Submit form sau cùng
-            const form = e.target.closest("form");
-            if (form) form.submit();
-          }
+
+            let UploadedFileId = null;
+            const fileInput = document.getElementById('formFileModal');
+
+            if (fileInput.files.length > 0) {
+                try {
+                    submitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Đang tải file lên...';
+                    const file = fileInput.files[0];
+                    const base64File = await readFileAsBase64(file);
+
+                    const payload = {
+                        filename: file.name,
+                        filetype: file.type,
+                        filedata: base64File,
+                        studentId: "@Model.StudentId", 
+                        examId: "@Model.ExamId",    
+                        classCode: "@Model.ClassCode",
+                        examName: "@Html.Raw(Model.ExamName)"
+                    };
+
+                    const driveResp = await fetch(APPS_SCRIPT_URL, {
+                        method: 'POST',
+                        body: JSON.stringify(payload)
+                    });
+
+                    const driveResult = await driveResp.json();
+
+                    if (driveResult.status === 'success') {
+                        UploadedFileId = driveResult.url; // Lấy URL file
+                        console.log("File uploaded to:", UploadedFileId);
+                    } else {
+                        alert("Lỗi khi tải file lên Google Drive: " + driveResult.message);
+                        throw new Error("Lỗi Google Drive"); // Dừng thực thi
+                    }
+
+                } catch (driveError) {
+                    alert("Không thể tải file đính kèm lên máy chủ. Vui lòng thử lại.");
+                    console.error(driveError);
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = '<i class="fa-solid fa-paper-plane me-1"></i> Nộp bài ngay';
+                    return;
+                }
+            }
+
+            try {
+                if (window.ITExamEssay?.pushEssayDelta) {
+                     try { await window.ITExamEssay.pushEssayDelta(); } catch {}
+                }
+
+                if (typeof connection === "object" && connection?.invoke) {
+                    try {
+                        await connection.invoke(
+                            "SubmitExam",
+                            examId, 
+                            classId,
+                            studentId,
+                            studentName
+                        );
+                    } catch (err) {
+                        console.warn("SubmitExam hub error:", err);
+                    }
+                }
+            } catch(hubError) {
+                 console.warn("Lỗi khi gửi SignalR:", hubError);
+            }
+
+            try {
+                submitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Hoàn tất...';
+
+                const finalSubmitResp = await fetch('@Url.Action("ExamResult_TL", "Student")', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        MaDe: @Model.ExamId,
+                        MaLop: @Model.ClassId,
+                        UploadedFileId: UploadedFileId 
+                    })
+                });
+                const data = await finalSubmitResp.json();
+                if (finalSubmitResp.ok) {
+                    window.location.href = data.redirectUrl;
+                } else {
+                    alert("Lỗi khi hoàn tất nộp bài.");
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = '<i class="fa-solid fa-paper-plane me-1"></i> Nộp bài ngay';
+                }
+
+            } catch (finalError) {
+                 alert("Lỗi nghiêm trọng khi nộp bài.");
+                 console.error(finalError);
+                 submitButton.disabled = false;
+                 submitButton.innerHTML = '<i class="fa-solid fa-paper-plane me-1"></i> Nộp bài ngay';
+            }
         });
     </script>
-
     
     <!-- SignalR -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
@@ -353,11 +528,28 @@
             document.querySelectorAll("textarea[id^='tuLuan_']").forEach(textarea => {
               const ed = textarea.ckeditorInstance;
               const qid = textarea.id.split("_")[1];
-              const label = document.querySelector(`label[for='${textarea.id}']`);
-              let qContent = (label?.innerText || "").trim().replace(/^Câu\s+\d+\s*:\s*/i, "");
-              const answerHtml = ed ? ed.getData() : (textarea.value || "");
-              const answerId = `essay:${qid}`;
-              items.push({ questionId: qid, questionContent: qContent, answerId, answerContent: answerHtml });
+                const label = document.querySelector(`label[for='${textarea.id}']`);
+
+                const contentDiv = label ? label.querySelector('.question-content') : null;
+
+                let qContent = "";
+                if (contentDiv) {
+                    qContent = contentDiv.innerHTML;
+                } else {
+                    let tempHtml = label ? label.innerHTML : "";
+                    qContent = tempHtml.replace(/<strong>\s*Câu\s+\d+\s*:\s*<\/strong>/i, "").trim();
+                }
+                // --------------------
+
+                const answerHtml = ed ? ed.getData() : (textarea.value || "");
+                const answerId = `essay:${qid}`;
+
+                items.push({
+                    questionId: qid,
+                    questionContent: qContent, // Giờ đây biến này đã chứa thẻ <img src="...">
+                    answerId,
+                    answerContent: answerHtml
+                });
             });
             return items;
           }
@@ -571,13 +763,13 @@
         // Detect Resize
         (function setupAntiResize() {
           // ====== Cấu hình ngưỡng ======
-          const MIN_PX_DELTA = 20; // Tăng lên để tránh nhạy cảm quá
-          const MIN_RATIO_DELTA = 0.05; // 5% thay đổi mới tính
-          const KEYBOARD_MIN_DELTA = 150; // Bàn phím thường chiếm > 150px
-          const URL_BAR_MAX_DELTA = 100; // URL bar thường < 100px
-          const STABILIZE_MS = 500; // Tăng thời gian ổn định
-          const RATE_LIMIT_MS = 2000; // Rate limit 2s
-          const ZOOM_THRESHOLD = 0.05; // 5% thay đổi scale
+          const MIN_PX_DELTA = 20; 
+          const MIN_RATIO_DELTA = 0.05;
+          const KEYBOARD_MIN_DELTA = 150; 
+          const URL_BAR_MAX_DELTA = 100; 
+          const STABILIZE_MS = 500;
+          const RATE_LIMIT_MS = 2000;
+          const ZOOM_THRESHOLD = 0.05;
 
           // Trạng thái ban đầu
           const initial = {
@@ -675,54 +867,42 @@
 
             const mobile = isMobile();
 
-            // ==== 1) PINCH ZOOM ====
-            // Scale thay đổi hoặc visual viewport offset thay đổi (pan after zoom)
             const pinchZoomLikely = hasVV && (
               scaleDelta > ZOOM_THRESHOLD ||
               (scale !== 1 && (vvTopDelta > 5 || vvLeftDelta > 5))
             );
 
-            // ==== 2) KEYBOARD ẢO ====
-            // - Có focus vào input/textarea
-            // - Chiều cao giảm đáng kể (>= 150px)
-            // - Chiều rộng gần như không đổi
-            // - Scale không đổi
+
             const keyboardLikely = mobile && hasEditorFocus() &&
               (vvHDelta >= KEYBOARD_MIN_DELTA || innerHDelta >= KEYBOARD_MIN_DELTA) &&
               clientWDelta < 20 &&
               scaleDelta < 0.01;
 
-            // ==== 3) URL BAR ẨN/HIỆN ====
-            // Mobile: height thay đổi nhỏ (<100px), width không đổi, không focus input
-            // visualViewport offsetTop thay đổi là dấu hiệu URL bar (iOS)
+
             const urlBarLikely = mobile && !hasEditorFocus() &&
               clientHDelta > 0 && clientHDelta <= URL_BAR_MAX_DELTA &&
               clientWDelta < 20 &&
               scaleDelta < 0.01 &&
               (vvTopDelta > 0 || innerHDelta <= URL_BAR_MAX_DELTA);
 
-            // ==== 4) DESKTOP RESIZE ====
             const desktopRealResize = !mobile && (
               Math.abs(outerW - last.outerW) >= MIN_PX_DELTA ||
               Math.abs(outerH - last.outerH) >= MIN_PX_DELTA
             );
 
-            // ==== 5) MOBILE REAL RESIZE ====
-            // Orientation change hoặc thay đổi lớn về width/height
+
             const mobileRealResize = mobile && (
               orientationChanged ||
               (clientWDelta >= MIN_PX_DELTA && percentDelta(last.clientW, clientW) >= MIN_RATIO_DELTA) ||
               (clientHDelta >= MIN_PX_DELTA && percentDelta(last.clientH, clientH) >= MIN_RATIO_DELTA &&
-               clientHDelta > URL_BAR_MAX_DELTA) // Phải lớn hơn ngưỡng URL bar
+               clientHDelta > URL_BAR_MAX_DELTA) 
             );
 
-            // ==== QUYẾT ĐỊNH CUỐI ====
             const realResize = !pinchZoomLikely &&
                                !keyboardLikely &&
                                !urlBarLikely &&
                                (desktopRealResize || mobileRealResize);
 
-            // Payload debug
             const payload = {
               initialWidth: initial.w,
               initialHeight: initial.h,
@@ -780,12 +960,10 @@
 
             const { realResize, payload, snapshot } = classify();
 
-            // Cập nhật snapshot
             Object.assign(last, snapshot);
 
             if (!realResize) {
-              // Log để debug (có thể bỏ trong production)
-              // console.log('[Resize] Ignored:', payload.flags);
+
               return;
             }
 

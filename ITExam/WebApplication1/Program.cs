@@ -1,15 +1,15 @@
 ﻿using Hangfire;
-using ITExam.Filters;
 using ITExam.Hubs;
 using ITExam.Models;
 using ITExam.Services;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using StackExchange.Redis;
-using static ITExam.Services.EmailService;
-using Azure.Identity;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
+
+//lấy routingapi từ secrets
+builder.Services.Configure<RoutingAPI>(builder.Configuration.GetSection("RoutingApi"));
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddDbContext<ITExamDbContext>(options =>
@@ -23,8 +23,13 @@ builder.Services.AddStackExchangeRedisCache(options =>
 }); 
 
 builder.Services.AddHttpClient();
-builder.Services.AddSignalR();
+builder.Services.AddSignalR(options =>
+{
+    options.MaximumReceiveMessageSize = 512 * 1024;
+    options.EnableDetailedErrors = true;
+}); 
 
+builder.Services.AddHostedService<ITExam.Services.FileCleanupService>();
 builder.Services.AddTransient<EmailService>();
 
 builder.Services.AddHangfire(x =>
@@ -34,14 +39,13 @@ builder.Services.AddHangfire(x =>
 builder.Services.AddHangfireServer();
 
 builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
-    ConnectionMultiplexer.Connect(builder.Configuration.GetConnectionString("Redis")));
+    ConnectionMultiplexer.Connect(builder.Configuration.GetConnectionString("Redis")!));
 builder.Services.AddScoped<RedisService>();
 builder.Services.AddScoped<IRedisService, RedisService>();
 builder.Services.AddScoped<IClassCodeService, ClassCodeService>();
+builder.Services.AddMemoryCache();
 
-
-builder.Services.AddScoped<GeminiService>(sp =>
-    new GeminiService(sp.GetRequiredService<IHttpClientFactory>(), RoutingAPI.LLMApiUrl));
+builder.Services.AddScoped<GeminiService>();
 
 builder.Services.AddDistributedMemoryCache();
 
@@ -52,7 +56,6 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true; 
 });
 
-
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
@@ -60,7 +63,6 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<ITExamDbContext>();
     db.Database.Migrate();
 }
-
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

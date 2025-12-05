@@ -11,10 +11,10 @@ namespace ITExam.Models
 
         [Required(ErrorMessage = "Tên lớp học là bắt buộc")]
         [StringLength(200, ErrorMessage = "Tên lớp học không được vượt quá 200 ký tự")]
-        public string ClassName { get; set; }
+        public string ClassName { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Mã lớp học là bắt buộc")]
-        public string ClassCode { get; set; }
+        public string ClassCode { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Ngày tạo là bắt buộc")]
         [DataType(DataType.DateTime)]

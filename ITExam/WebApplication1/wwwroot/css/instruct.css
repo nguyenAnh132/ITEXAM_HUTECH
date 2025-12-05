@@ -1,0 +1,107 @@
+﻿/* Trang hướng dẫn ITExam */
+.navbar-brand h1 {
+    margin: 0;
+    text-transform: uppercase;
+    color: #2f66ff;
+    font-weight: 800;
+}
+
+/* thanh tìm kiếm */
+.guide-search .input-group .form-control {
+    padding: 0.75rem 1rem;
+}
+
+.guide-search .input-group .input-group-text {
+    background-color: #fff;
+}
+
+/* Accordion */
+.accordion-button {
+    font-weight: 600;
+}
+
+    .accordion-button:not(.collapsed) {
+        color: #1c4bfd;
+        background-color: #eef3ff;
+        box-shadow: inset 0 -1px 0 rgba(0,0,0,.125);
+    }
+
+.accordion-item {
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #e8ecfd;
+}
+
+    .accordion-item + .accordion-item {
+        margin-top: 12px;
+    }
+
+.section-title {
+    font-weight: 800;
+    color: #2f66ff;
+}
+
+.header-gap {
+    height: 88px;
+}
+
+.back-login {
+    margin-top: 28px;
+}
+
+/* Hình minh hoạ */
+.guide-img {
+    border-radius: 10px;
+    box-shadow: 0 6px 24px rgba(0,0,0,.08);
+    margin: 8px 0 18px 0;
+    max-width: 100%;
+    height: auto;
+}
+
+/* highlight kết quả tìm kiếm */
+#huongdanPage mark.hd-hit {
+    background: #fff3b0;
+    padding: 0 .15rem;
+    border-radius: .25rem;
+}
+
+/* trạng thái đang lọc: làm mờ phần không khớp (nhẹ) */
+#huongdanPage .hd-dim {
+    opacity: .35;
+    transition: opacity .15s ease;
+}
+
+
+/* Ẩn item khi lọc */
+#huongdanPage .d-none {
+    display: none !important;
+}
+
+
+.hd-hit {
+    outline: 2px solid #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59,130,246,.25);
+}
+
+
+/* khoảng cách chữ nhẹ cho eyebrow */
+.ls-08 {
+    letter-spacing: .08rem;
+}
+
+/* tiêu đề chính */
+.section-title {
+    color: #2f66ff;
+}
+
+
+/* nhóm tìm kiếm dưới tiêu đề */
+.guide-search .form-control {
+    border-top-left-radius: .5rem;
+    border-bottom-left-radius: .5rem;
+}
+
+.guide-search .btn {
+    border-top-right-radius: .5rem;
+    border-bottom-right-radius: .5rem;
+}

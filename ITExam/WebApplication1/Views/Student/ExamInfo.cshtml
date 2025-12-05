@@ -205,7 +205,7 @@
             const formData = new FormData(form);
 
             // Mở tab mới và gửi dữ liệu qua POST
-            const newWindow = window.open('', '_blank');
+            const newWindow = window.open('', '_self');
 
             // Tạo form gửi trong tab mới để POST dữ liệu (do window.open không hỗ trợ POST trực tiếp)
             const formHtml = `

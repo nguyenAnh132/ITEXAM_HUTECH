@@ -9,6 +9,8 @@
 # dotenv files
 .env
 >>>>>>> c8fe514 (Upload Project)
+wwwroot/uploads/*
+!wwwroot/uploads/.gitkeep
 
 # User-specific files
 *.rsuser

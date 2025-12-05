@@ -1,4 +1,4 @@
-﻿ @model IEnumerable<ITExam.Models.Exam>      
+﻿ @model IEnumerable<ITExam.ViewModels.Exam.NewVM.ExamListVM>      
  @{ 
      Layout = "_TeacherLayout"; 
      <!-- Nhap title --> 
@@ -68,7 +68,7 @@
                                      </div> 
                                      <div class="col-12 col-md-6 mb-1"> 
                                          <i class="fa-solid fa-circle-question text-white me-1"></i> 
-                                         @dt.ExamMatrices.Sum(item => item.QuestionCount) câu hỏi 
+                                         @dt.TotalQuestions câu hỏi 
                                      </div> 
                                  </div> 
                              </div> 
@@ -78,13 +78,14 @@
                                      <a asp-controller="Teacher" asp-action="Exam_Create_Matrix" asp-route-id="@dt.ExamId" 
                                          class="btn border-white text-white edit-class-btn"> 
                                          <i class="fa-regular fa-pen-to-square"></i> 
-                                     </a> 
+                                     </a>
 
-                                     <button type="button" 
-                                             class="btn border-white text-white btn-xoa-dethi" 
-                                             data-madt="@dt.ExamId"> 
-                                         <i class="fa-solid fa-trash-can"></i> 
-                                     </button> 
+                                    <button type="button"
+                                            class="btn border-white text-white btn-xoa-dethi"
+                                            data-madt="@dt.ExamId"
+                                            data-isused="@(dt.IsUsedInClass.ToString().ToLower())">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
 
                                  </div> 
                              </div> 
@@ -97,7 +98,23 @@
      </div> 
  </div> 
 
-
+<!--Modal thông báo không thể xóa đề thi-->
+<div class="modal fade" id="cannotDeleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger ">
+                <h5 class="modal-title text-white">Thông báo</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">Đề thi này đang được sử dụng trong lớp học. Bạn <strong>không thể xóa</strong>!</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Đã hiểu</button>
+            </div>
+        </div>
+    </div>
+</div>
 
  <div class="modal fade" 
       id="exampleModalToggle" 
@@ -111,21 +128,16 @@
                      Vui lòng chọn phương thức 
                  </h5> 
                  <button type="button" 
-                         class="btn-close bg-white" 
+                         class="btn-close btn-close-white" 
                          data-bs-dismiss="modal" 
                          aria-label="Close"></button> 
              </div> 
              <div class="modal-body d-flex justify-content-center gap-3"> 
-                 <a asp-controller="Teacher" asp-action="Exam_Create"> 
-                     <button type="button" class="btn btn-primary"> 
-                         Từ ngân hàng đề 
+                 <a asp-controller="Teacher" asp-action="Exam_Create">
+                    <button type="button" class="btn btn-outline-primary">
+                        Từ ngân hàng đề 
                      </button> 
                  </a> 
-                  <a href="./teacher-upload-file-exam.html">  
-                      <button type="button" class="btn btn-secondary">  
-                          Upload File  
-                      </button>  
-                  </a>  
              </div> 
          </div> 
      </div> 
@@ -134,66 +146,57 @@
  <!-- Modal xác nhận xóa đề thi --> 
  <div class="modal fade" id="deleteDeThiModal" tabindex="-1" aria-labelledby="deleteDeThiModalLabel" aria-hidden="true"> 
      <div class="modal-dialog modal-dialog-centered"> 
-         <div class="modal-content"> 
-             <form method="post" asp-action="XoaDeThi" asp-controller="Teacher"> 
-                 <div class="modal-header bg-danger text-white"> 
+         <div class="modal-content">
+            <form method="post" asp-action="DeleteExamOg" asp-controller="Teacher">
+                <div class="modal-header bg-danger"> 
                      <h5 class="modal-title text-white">Xác nhận xóa đề thi</h5> 
-                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button> 
+                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Đóng"></button> 
                  </div> 
                  <div class="modal-body">
                     <input type="hidden" name="examId" id="maDeToDelete" />
                     <p>Bạn có chắc chắn muốn xóa đề thi này? Mọi dữ liệu liên quan sẽ bị mất.</p> 
                  </div> 
-                 <div class="modal-footer"> 
-                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button> 
-                     <button type="submit" class="btn btn-danger">Xóa</button> 
+                 <div class="modal-footer">
+                    <button type="button" class="btn" style="background-color: #6c757d !important; border-color: #6c757d !important; color: white !important;" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-danger">Xóa</button> 
                  </div> 
              </form> 
          </div> 
      </div> 
  </div> 
 
- @section Script { 
-     <script> 
-         document.addEventListener("DOMContentLoaded", function () { 
-             const deleteButtons = document.querySelectorAll(".btn-xoa-dethi"); 
-             const inputMaDe = document.getElementById("maDeToDelete"); 
-             const modalElement = document.getElementById("deleteDeThiModal"); 
-             const deleteModal = new bootstrap.Modal(modalElement); 
+ @section Script {
+    <script src="~/js/notification.js"></script>
+     <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const deleteButtons = document.querySelectorAll(".btn-xoa-dethi");
+            const inputMaDe = document.getElementById("maDeToDelete");
 
-             deleteButtons.forEach(button => { 
-                 button.addEventListener("click", function () { 
-                     const maDe = button.getAttribute("data-madt"); 
-                     inputMaDe.value = maDe; 
+            const modalDeleteElement = document.getElementById("deleteDeThiModal");
+            const deleteModal = new bootstrap.Modal(modalDeleteElement);
 
-                     // Reset trạng thái hover (nếu cần) 
-                     document.querySelectorAll(".card-info-item.hovered")?.forEach(card => { 
-                         card.classList.remove("hovered"); 
-                     }); 
+            const modalWarningElement = document.getElementById("cannotDeleteModal");
+            const warningModal = new bootstrap.Modal(modalWarningElement);
 
-                     // Mở modal bằng JavaScript 
-                     deleteModal.show(); 
-                 }); 
-             }); 
-         }); 
+            deleteButtons.forEach(button => {
+                button.addEventListener("click", function () {
+                    const maDe = button.getAttribute("data-madt");
+                    const isUsed = button.getAttribute("data-isused") === "true";
 
-         document.addEventListener("DOMContentLoaded", function () { 
-             const message = @Html.Raw(Json.Serialize(TempData["SuccessMessage"])); 
-             if (message) { 
-                 Toastify({ 
-                     text: message, 
-                     duration: 4000, 
-                     close: true, 
-                     gravity: "top", 
-                     position: "right", 
-                     stopOnFocus: true, 
-                     style: { 
-                         background: "#28a745" 
-                     } 
-                 }).showToast(); 
-             } 
-         }); 
-         // Tìm kiếm đề thi 
+                    if (isUsed) {
+                        warningModal.show();
+                    } else {
+                        inputMaDe.value = maDe;
+                        document.querySelectorAll(".card-info-item.hovered")?.forEach(card => {
+                            card.classList.remove("hovered");
+                        });
+                        deleteModal.show();
+                    }
+                });
+            });
+        });
+
+     // Tìm kiếm đề thi 
      function searchItems(inputId, containerSelector) { 
      const keyword = document.getElementById(inputId).value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim(); 
      const container = document.querySelector(containerSelector); 

@@ -2,33 +2,62 @@
 using ITExam.Services;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using System.Collections.Concurrent;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace ITExam.Hubs
 {
+    public class ConnectionMapValue
+    {
+        public string ExamKey { get; set; } 
+        public string StudentId { get; set; }
+    }
+
     public class ExamMonitorHub : Hub
     {
-        // examKey = $"{examId}:{classId}" -> (studentId -> status)
-        private static readonly ConcurrentDictionary<string, ConcurrentDictionary<string, StudentStatus>> _examParticipants
-            = new();
-
-        // Lưu cấu hình AntiCheat theo exam
-        private static readonly ConcurrentDictionary<string, object> _antiCheatConfigs
-            = new();
-
-        // (Tùy chọn) cache điểm tạm theo exam:class -> (studentId -> score)
-        private static readonly ConcurrentDictionary<string, ConcurrentDictionary<string, double>> _studentScores
-            = new();
-
         private readonly ITExamDbContext _db;
         private readonly RedisService _redis;
+        private readonly IMemoryCache _cache;
 
-        public ExamMonitorHub(RedisService redis, ITExamDbContext db)
+        public ExamMonitorHub(RedisService redis, ITExamDbContext db, IMemoryCache cache)
         {
             _redis = redis;
             _db = db;
+            _cache = cache;
+        }
+
+        // === Helpers cho Cache ===
+        // Key cho danh sách thí sinh đang tham gia
+        private static string GetParticipantsCacheKey(string examKey) => $"participants:{examKey}";
+        // Key cho cấu hình anti-cheat
+        private static string GetAntiCheatCacheKey(string examId, string classId) => $"anticheat:{examId}:{classId}";
+        // Key cho danh sách điểm
+        private static string GetScoresCacheKey(string examKey) => $"scores:{examKey}";
+        // Thời gian hết hạn trượt
+        private static readonly TimeSpan CacheSlidingExpiration = TimeSpan.FromHours(3);
+        // Helper cho khóa map ngược
+        private static string GetConnectionMapKey(string connectionId) => $"conn_map:{connectionId}";
+
+        // Helper để lấy (hoặc tạo) danh sách thí sinh
+        private ConcurrentDictionary<string, StudentStatus> GetParticipants(string examKey)
+        {
+            return _cache.GetOrCreate(GetParticipantsCacheKey(examKey), entry =>
+            {
+                entry.SetSlidingExpiration(CacheSlidingExpiration);
+                return new ConcurrentDictionary<string, StudentStatus>();
+            });
+        }
+
+        // Helper để lấy (hoặc tạo) danh sách điểm
+        private ConcurrentDictionary<string, double> GetScores(string examKey)
+        {
+            return _cache.GetOrCreate(GetScoresCacheKey(examKey), entry =>
+            {
+                entry.SetSlidingExpiration(CacheSlidingExpiration);
+                return new ConcurrentDictionary<string, double>();
+            });
         }
 
         // ====== Models & helpers ======
@@ -53,18 +82,11 @@ namespace ITExam.Hubs
         private static string LogKey(string examId, string classId, string studentId) => $"ITExam_logs:{examId}:{classId}:{studentId}";
         private static string TabCountKey(string examId, string classId, string studentId) => $"ITExam_tabcount:{examId}:{classId}:{studentId}";
 
-        // (tùy chọn) API lưu điểm tạm vào memory cache
-        public static void SaveScore(string examId, string classId, string studentId, double score)
-        {
-            var key = ExamKey(examId, classId);
-            var map = _studentScores.GetOrAdd(key, _ => new ConcurrentDictionary<string, double>());
-            map[studentId] = score;
-        }
 
         private void UpdateStudentActivity(string examId, string classId, string studentId)
         {
             var keyp = ExamKey(examId, classId);
-            if (_examParticipants.TryGetValue(keyp, out var participants) &&
+            if (_cache.TryGetValue(GetParticipantsCacheKey(keyp), out ConcurrentDictionary<string, StudentStatus> participants) &&
                 participants.TryGetValue(studentId, out var status))
             {
                 status.IsActive = true;
@@ -88,8 +110,8 @@ namespace ITExam.Hubs
             await Groups.AddToGroupAsync(Context.ConnectionId, GroupName(examId, classId));
 
             var keyp = ExamKey(examId, classId);
-            var participants = _examParticipants.GetOrAdd(keyp, _ => new ConcurrentDictionary<string, StudentStatus>());
-
+            //var participants = _examParticipants.GetOrAdd(keyp, _ => new ConcurrentDictionary<string, StudentStatus>());
+            var participants = GetParticipants(keyp);
             // Phục hồi TabLeaveCount từ Redis (nếu có)
             int currentTabCount = 0;
             var tabStr = await _redis.GetStringAsync(TabCountKey(examId, classId, studentId));
@@ -109,6 +131,14 @@ namespace ITExam.Hubs
                 LastActivityAt = DateTime.UtcNow
             };
             participants[studentId] = status;
+            // Cập nhật map ngược ConnectionId -> (ExamKey, StudentId)
+            var mapKey = GetConnectionMapKey(Context.ConnectionId);
+            var mapValue = new ConnectionMapValue { ExamKey = keyp, StudentId = studentId };
+
+            _cache.Set(mapKey, mapValue, new MemoryCacheEntryOptions
+            {
+                SlidingExpiration = CacheSlidingExpiration // Dùng chung thời gian hết hạn
+            });
 
             // Thông báo cho giám sát
             await Clients.Group(GroupName(examId, classId)).SendAsync("StudentJoined", new
@@ -125,7 +155,8 @@ namespace ITExam.Hubs
                 $"[JOIN] [{DateTime.Now:HH:mm:ss}] {studentName} đã tham gia bài thi");
 
             // Gửi lại AntiCheat config cho client mới vào nếu có
-            if (_antiCheatConfigs.TryGetValue(examId, out var config))
+            var antiCheatKey = GetAntiCheatCacheKey(examId, classId);
+            if (_cache.TryGetValue(antiCheatKey, out var config))
                 await Clients.Caller.SendAsync("ReceiveAntiCheatConfig", config);
         }
 
@@ -136,23 +167,25 @@ namespace ITExam.Hubs
                 throw new HubException("Thiếu tham số bắt buộc");
 
             var keyp = ExamKey(examId, classId);
-            if (_examParticipants.TryGetValue(keyp, out var participants) &&
+            if (_cache.TryGetValue(GetParticipantsCacheKey(keyp), out ConcurrentDictionary<string, StudentStatus> participants) &&
                 participants.TryGetValue(studentId, out var status) &&
                 status.IsConnected)
             {
-                UpdateStudentActivity(examId, classId, studentId);
-
-                var redisKey = $"ITExam_examStructure:{examId}:{classId}:{studentId}";
-                await _redis.SetStringAsync(redisKey, JsonSerializer.Serialize(examStructure));
-
-                await Clients.Group(GroupName(examId, classId)).SendAsync("StudentSentExamStructure", new
                 {
-                    examId,
-                    studentId,
-                    studentName,
-                    timestamp = DateTime.UtcNow,
-                    structure = examStructure
-                });
+                    UpdateStudentActivity(examId, classId, studentId);
+
+                    var redisKey = $"ITExam_examStructure:{examId}:{classId}:{studentId}";
+                    await _redis.SetStringAsync(redisKey, JsonSerializer.Serialize(examStructure));
+
+                    await Clients.Group(GroupName(examId, classId)).SendAsync("StudentSentExamStructure", new
+                    {
+                        examId,
+                        studentId,
+                        studentName,
+                        timestamp = DateTime.UtcNow,
+                        structure = examStructure
+                    });
+                }
             }
         }
 
@@ -164,7 +197,7 @@ namespace ITExam.Hubs
                 throw new HubException("Thiếu tham số");
 
             var keyp = ExamKey(examId, classId);
-            if (_examParticipants.TryGetValue(keyp, out var participants) &&
+            if (_cache.TryGetValue(GetParticipantsCacheKey(keyp), out ConcurrentDictionary<string, StudentStatus> participants) &&
                 participants.TryGetValue(studentId, out var status) &&
                 status.IsConnected)
             {
@@ -194,9 +227,8 @@ namespace ITExam.Hubs
                 throw new HubException("Thiếu tham số");
 
             var keyp = ExamKey(examId, classId);
-            if (_examParticipants.TryGetValue(keyp, out var participants) &&
-                participants.TryGetValue(studentId, out var status) &&
-                status.IsConnected)
+            var participants = GetParticipants(keyp);
+            if (participants.TryGetValue(studentId, out var status) && status.IsConnected)
             {
                 status.IsActive = isActive;
                 status.LastActivityAt = DateTime.UtcNow;
@@ -233,7 +265,7 @@ namespace ITExam.Hubs
             var keyp = ExamKey(examId, classId);
             int tabLeaveCount = 0;
 
-            if (_examParticipants.TryGetValue(keyp, out var participants) &&
+            if (_cache.TryGetValue(GetParticipantsCacheKey(keyp), out ConcurrentDictionary<string, StudentStatus> participants) &&
                 participants.TryGetValue(studentId, out var status))
             {
                 status.IsActive = false;
@@ -241,6 +273,8 @@ namespace ITExam.Hubs
                 status.LastActivityAt = DateTime.UtcNow;
                 tabLeaveCount = status.TabLeaveCount;
             }
+
+            _cache.Remove(GetConnectionMapKey(Context.ConnectionId));
 
             await Clients.Group(GroupName(examId, classId)).SendAsync("StudentSubmittedExam", new
             {
@@ -262,7 +296,7 @@ namespace ITExam.Hubs
                 throw new HubException("Missing required parameters");
 
             var keyp = ExamKey(examId, classId);
-            if (_examParticipants.TryGetValue(keyp, out var participants) &&
+            if (_cache.TryGetValue(GetParticipantsCacheKey(keyp), out ConcurrentDictionary<string, StudentStatus> participants) &&
                 participants.TryGetValue(studentId, out var status))
             {
                 status.IsActive = false;
@@ -292,7 +326,7 @@ namespace ITExam.Hubs
 
             // 1) Phát lại trạng thái runtime (đang connected/disconnected)
             var keyp = ExamKey(examId, classId);
-            if (_examParticipants.TryGetValue(keyp, out var participants))
+            if (_cache.TryGetValue(GetParticipantsCacheKey(keyp), out ConcurrentDictionary<string, StudentStatus> participants))
             {
                 foreach (var st in participants.Values)
                 {
@@ -372,18 +406,18 @@ namespace ITExam.Hubs
                 }
             }
 
-            // 3) (tùy chọn) phát thêm điểm từ cache memory nếu có
             var memKey = ExamKey(examId, classId);
-            if (_studentScores.TryGetValue(memKey, out var scoreMap))
+            if (_cache.TryGetValue(GetScoresCacheKey(memKey), out ConcurrentDictionary<string, double> scoreMap))
             {
                 foreach (var kv in scoreMap)
                 {
+                    // (Chỉ gửi nếu DB chưa gửi, hoặc để ghi đè)
                     await Clients.Caller.SendAsync("StudentScoreUpdated", new
                     {
                         ExamId = examId,
                         ClassId = classId,
                         StudentId = kv.Key,
-                        StudentName = "",
+                        StudentName = "", // Tên có thể không quan trọng ở đây
                         Score = kv.Value
                     });
                 }
@@ -394,7 +428,7 @@ namespace ITExam.Hubs
         public async Task SendRemainingTime(string examId, string classId, string studentId, int timeLeft, int answeredCount, int totalQuestions)
         {
             var keyp = ExamKey(examId, classId);
-            if (_examParticipants.TryGetValue(keyp, out var participants) &&
+            if (_cache.TryGetValue(GetParticipantsCacheKey(keyp), out ConcurrentDictionary<string, StudentStatus> participants) &&
                 participants.TryGetValue(studentId, out var status) &&
                 status.IsConnected)
             {
@@ -415,7 +449,10 @@ namespace ITExam.Hubs
             if (string.IsNullOrWhiteSpace(examId))
                 throw new HubException("Missing examId parameter");
 
-            _antiCheatConfigs[examId] = config;
+            _cache.Set(GetAntiCheatCacheKey(examId, classId), config, new MemoryCacheEntryOptions
+            {
+                SlidingExpiration = CacheSlidingExpiration
+            });
             await Clients.Group(GroupName(examId, classId)).SendAsync("ReceiveAntiCheatConfig", config);
         }
 
@@ -457,7 +494,11 @@ namespace ITExam.Hubs
             }
 
             await _db.SaveChangesAsync();
-            _examParticipants.TryRemove(ExamKey(examId, classId), out _);
+            // DỌN DẸP IMemoryCache
+            var examKey = ExamKey(examId, classId);
+            _cache.Remove(GetParticipantsCacheKey(examKey));
+            _cache.Remove(GetScoresCacheKey(examKey));
+            _cache.Remove(GetAntiCheatCacheKey(examId,classId));
         }
 
         // ====== Connection lifecycle ======
@@ -469,61 +510,55 @@ namespace ITExam.Hubs
 
         public override async Task OnDisconnectedAsync(Exception? exception)
         {
-            try
+            var mapKey = GetConnectionMapKey(Context.ConnectionId);
+
+            if (_cache.TryGetValue(mapKey, out ConnectionMapValue mapValue))
             {
-                Console.WriteLine($"[Disconnected] ConnectionId={Context.ConnectionId}");
+                var keyp = mapValue.ExamKey;
+                var studentId = mapValue.StudentId;
 
-                foreach (var examEntry in _examParticipants)
+                var keyParts = keyp.Split(':');
+                var examId = keyParts.Length > 0 ? keyParts[0] : null;
+                var classId = keyParts.Length > 1 ? keyParts[1] : null;
+
+                if (!string.IsNullOrEmpty(studentId) && !string.IsNullOrEmpty(examId) && !string.IsNullOrEmpty(classId))
                 {
-                    string? sid = null, sname = null, classId = null, examId = null;
+                    string sname = studentId; 
 
-                    foreach (var kv in examEntry.Value)
+                    if (_cache.TryGetValue(GetParticipantsCacheKey(keyp), out ConcurrentDictionary<string, StudentStatus> participants) &&
+                        participants.TryGetValue(studentId, out var status))
                     {
-                        var st = kv.Value;
-                        if (st.ConnectionId == Context.ConnectionId)
+                        if (status.IsConnected)
                         {
-                            st.IsActive = false;
-                            st.IsConnected = false;
-                            st.LastActivityAt = DateTime.UtcNow;
+                            status.IsActive = false;
+                            status.IsConnected = false;
+                            status.LastActivityAt = DateTime.UtcNow;
+                            sname = status.StudentName; // Lấy tên thật
 
-                            sid = st.StudentId;
-                            sname = st.StudentName;
-                            classId = st.ClassId;
-                            examId = st.ExamId;
-                            break;
+                            await Clients.Group(GroupName(examId, classId)).SendAsync("StudentDisconnected", new
+                            {
+                                ExamId = examId,
+                                StudentId = studentId,
+                                StudentName = sname,
+                                DisconnectedAt = DateTime.UtcNow
+                            });
+
+                            await _redis.AddLogAsync(LogKey(examId, classId, studentId),
+                                $"[DISCONNECT] [{DateTime.Now:HH:mm:ss}] {sname} ngắt kết nối (đột ngột)");
                         }
                     }
-
-                    if (sid != null && examId != null && classId != null)
-                    {
-                        await Clients.Group(GroupName(examId, classId)).SendAsync("StudentDisconnected", new
-                        {
-                            ExamId = examId,
-                            StudentId = sid,
-                            StudentName = sname,
-                            DisconnectedAt = DateTime.UtcNow
-                        });
-
-                        await _redis.AddLogAsync(LogKey(examId, classId, sid),
-                            $"[DISCONNECT] [{DateTime.Now:HH:mm:ss}] {sname} ngắt kết nối");
-                    }
                 }
+
+                _cache.Remove(mapKey);
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error in OnDisconnectedAsync: {ex.Message}");
-            }
-            finally
-            {
-                await base.OnDisconnectedAsync(exception!);
-            }
+            await base.OnDisconnectedAsync(exception);
         }
 
         /// Gửi IP/UA & log thay đổi thiết bị/mạng
         public async Task SendClientInfo(string examId, string classId, string studentId, string studentName, string ip, string userAgent)
         {
             var keyp = ExamKey(examId, classId);
-            if (!_examParticipants.TryGetValue(keyp, out var participants) ||
+            if (!_cache.TryGetValue(GetParticipantsCacheKey(keyp), out ConcurrentDictionary<string, StudentStatus> participants) ||
                 !participants.TryGetValue(studentId, out var status))
                 return;
 

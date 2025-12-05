@@ -154,23 +154,10 @@
     </div>
     <!-- Feature End -->
 </div>
+<script src="~/js/notification.js"></script>
+
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
-                const message = @Html.Raw(Json.Serialize(TempData["SuccessMessage"]));
-                if (message) {
-                    Toastify({
-                        text: message,
-                        duration: 4000,
-                        close: true,
-                        gravity: "bottom",
-                        position: "right",
-                        stopOnFocus: true,
-                        style: {
-                            background: "#28a745"
-                        }
-                    }).showToast();
-                }
-            });
+    
     // Chuyển danh sách từ server sang JavaScript
         var danhSachDeThi = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.DanhSachDeThi));
 

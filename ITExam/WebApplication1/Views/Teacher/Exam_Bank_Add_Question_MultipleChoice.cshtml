@@ -1,85 +1,148 @@
-﻿ @using ITExam.ViewModels.ExamBank 
+﻿ @using ITExam.ViewModels.ExamBank
   @model CreateQuestionVM
 
-  @{  
-      Layout = "_TeacherLayout";  
-      <!-- Nhap title -->  
-      ViewData["Title"] = "Soạn câu hỏi ngân hàng đề";  
-  }  
-  @section Style {  
-      <!-- FontAwesome 6.2.0 CSS -->  
-      <link rel="stylesheet"  
-            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css"  
-            integrity="sha512-xh6O/CkQoPOWDdYTDqeRdPCVd1SpvCA9XXcUnZS2FmJNp1coAFzvtCN9BmamE+4aHK8yyUHUSCcJHgXloTyT2A=="  
-            crossorigin="anonymous"  
-            referrerpolicy="no-referrer" />  
-     <link rel="stylesheet" href="~/css/teacher-exam-add-question-multiplechoice.css" /> 
-  } 
- <div class="container-fluid p-0"> 
-     <div class="pt-3 py-lg-0 px-lg-5 px-3"> 
-         <form id="editExamForm" method="post" asp-action="EditExamBank" asp-controller="Teacher" class="m-1"> 
-             <div class="bg-white p-3 rounded shadow mb-3"> 
-                 <input type="hidden" name="MaNHD" value="@Model.ExamBankId" /> 
+@{
+    Layout = "_TeacherLayout";
+    <!-- Nhap title -->
+    ViewData["Title"] = "Soạn câu hỏi ngân hàng đề";
+}
+@section Style {
+    <!-- FontAwesome 6.2.0 CSS -->
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css"
+          integrity="sha512-xh6O/CkQoPOWDdYTDqeRdPCVd1SpvCA9XXcUnZS2FmJNp1coAFzvtCN9BmamE+4aHK8yyUHUSCcJHgXloTyT2A=="
+          crossorigin="anonymous"
+          referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="~/css/teacher-exam-add-question-multiplechoice.css" />
+  }
+<div class="container-fluid p-0">
+    <div class="pt-3 py-lg-0 px-lg-5 px-3">
+        <div class="row mx-0 justify-content-center pt-2">
+            <div class="col-lg-6">
+                <div class="section-title text-center position-relative mb-4">
+                    <h2 class="display-4">Chi tiết NHĐ</h2>
+                    <h6 class="d-inline-block position-relative text-secondary text-uppercase pb-2">Môn học: @Model.SubjectName </h6>
+                </div>
+            </div>
+        </div>
+        <form id="editExamForm" method="post" asp-action="EditExamBank" asp-controller="Teacher" class="m-1">
+            <div class="bg-white p-3 rounded shadow mb-3">
+                <input type="hidden" name="MaNHD" value="@Model.ExamBankId" />
 
-                 <div class="modal-body row"> 
-                     <div class="mb-2 col-lg-9"> 
-                         <label class="form-label fw-bold">Tên ngân hàng đề</label> 
-                         <input name="TenNHD" class="form-control fs-6" 
-                                id="tenNHDInput" 
-                                value="@Model.ExamBankName" 
-                                data-original="@Model.ExamBankName" /> 
-                     </div> 
-                     <div class="mb-2 col-lg-3"> 
-                         <label class="form-label fw-bold">Trạng thái hiển thị</label> 
-                         <select name="TrangThai" class="form-select fs-6" id="trangThaiSelect" data-original="@Model.IsActive.ToString().ToLower()"> 
-                             <option value="true" selected="@Model.IsActive">Công khai</option> 
-                             <option value="false" selected="@(Model.IsActive == false)">Riêng tư</option> 
-                         </select> 
-                     </div> 
-                 </div> 
+                <div class="modal-body row">
+                    <div class="mb-2 col-lg-9">
+                        <label class="form-label fw-bold">Tên ngân hàng đề</label>
+                        <input name="TenNHD" class="form-control fs-6"
+                               id="tenNHDInput"
+                               value="@Model.ExamBankName"
+                               data-original="@Model.ExamBankName" />
+                    </div>
+                    <div class="mb-2 col-lg-3">
+                        <label class="form-label fw-bold">Trạng thái hiển thị</label>
+                        <select name="TrangThai" class="form-select fs-6" id="trangThaiSelect" data-original="@Model.IsActive.ToString().ToLower()">
+                            <option value="true" selected="@Model.IsActive">Công khai</option>
+                            <option value="false" selected="@(Model.IsActive == false)">Riêng tư</option>
+                        </select>
+                    </div>
+                </div>
 
-                 <div class="modal-footer row p-2"> 
-                     <button type="submit" class="btn btn-primary" id="submitBtn" disabled> 
-                         Cập nhật thông tin 
-                     </button> 
-                 </div> 
-             </div> 
-         </form> 
+                <div class="modal-footer row p-2">
+                    <button type="submit" class="btn btn-primary" id="submitBtn" disabled>
+                        Cập nhật thông tin
+                    </button>
+                </div>
+            </div>
+        </form>
 
-          <div class=" ">  
-              <!-- Nav tabs --> 
-             <ul class="nav nav-tabs pt-3 d-flex justify-content-between px-2 border-0" id="myTab" role="tablist"> 
-                 <li class="nav-item border-bottom" role="presentation"> 
-                     <button class="nav-link active border rounded fw-bold" style="color:#646cff ;box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;" id="create-tab" data-bs-toggle="tab" data-bs-target="#create" type="button" 
-                             role="tab" aria-controls="create" aria-selected="false">  
-                          Soạn câu hỏi  
-                      </button> 
-                 </li> 
-                     <a class="btn btn-danger asp-controller="Teacher" asp-action="ExamBank">Trở về</a> 
-             </ul>  
-             
-          </div>  
+        <div class=" ">
+            <!-- Nav tabs -->
+            <ul class="nav nav-tabs pt-3 d-flex justify-content-between px-2 border-0" id="myTab" role="tablist">
+                <li class="nav-item border-bottom" role="presentation">
+                    <button class="nav-link active border rounded fw-bold" style="color:#646cff ;box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;" id="create-tab" data-bs-toggle="tab" data-bs-target="#create" type="button"
+                            role="tab" aria-controls="create" aria-selected="false">
+                        Soạn câu hỏi
+                    </button>
+                </li>
+                <a class="btn btn-danger asp-controller="Teacher" asp-action="ExamBank">Trở về</a>
+            </ul>
 
-          <div class="">  
-              <!-- Tab panes -->  
-              <div class="tab-content mt-3">  
-                  <div class="tab-pane active" id="create" role="tabpanel" aria-labelledby="create-tab">  
-                      <div class="row">  
-                          <div class="col-12 col-md-4 mb-3 mb-md-0">  
-                              <div class="bg-white p-3 rounded" style="  
-                                box-shadow: rgba(50, 50, 93, 0.25) 0px 6px 12px -2px,  
-                                  rgba(0, 0, 0, 0.3) 0px 3px 7px -3px;  
-                              "> 
-                                 <div class="d-xl-flex justify-content-between align-items-center"> 
-                                     <a class="btn btn-primary mb-1" 
-                                        asp-controller="ApiQuestion" 
-                                        asp-action="Index" 
-                                        asp-route-id="@Model.ExamBankId">Tạo câu hỏi với AI</a> 
-                                     <a class="btn btn-primary" 
-                                        asp-controller="Teacher" 
-                                        asp-action="Exam_Bank_Add_Question_MultipleChoice" 
-                                        asp-route-id="@Model.ExamBankId">Thêm câu hỏi mới</a> 
-                                 </div> 
+        </div>
+
+        <div class="">
+            <!-- Tab panes -->
+            <div class="tab-content mt-3">
+                <div class="tab-pane active" id="create" role="tabpanel" aria-labelledby="create-tab">
+                    <div class="row">
+                        <div class="col-12 col-md-4 mb-3 mb-md-0">
+                            <div class="bg-white p-3 rounded" style="
+                                box-shadow: rgba(50, 50, 93, 0.25) 0px 6px 12px -2px,
+                                  rgba(0, 0, 0, 0.3) 0px 3px 7px -3px;
+                              ">
+                                <div class="d-xl-flex justify-content-between align-items-center">
+                                    <a class="btn btn-primary mb-1"
+                                       asp-controller="ApiQuestion"
+                                       asp-action="Index"
+                                       asp-route-id="@Model.ExamBankId">Tạo câu hỏi với AI</a>
+                                    <a class="btn btn-primary"
+                                       asp-controller="Teacher"
+                                       asp-action="Exam_Bank_Add_Question_MultipleChoice"
+                                       asp-route-id="@Model.ExamBankId">Thêm câu hỏi mới</a>
+                                </div>
+
+                                <hr />
+
+                                <div class="card shadow-sm border-0 rounded-3">
+                                    <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+                                        <h5 class="card-title fw-bold text-primary">
+                                            <i class="fas fa-file-word me-2"></i>Import câu hỏi từ file Word
+                                        </h5>
+                                    </div>
+                                    <div class="card-body p-4">
+                                        <div class="alert alert-light  border-4 border-info shadow-sm" role="alert">
+                                            <div class="d-flex">
+                                                <div class="me-3 text-info"><i class="fas fa-info-circle fa-2x"></i></div>
+                                                <div>
+                                                    <p class="mb-1 fw-bold">Quy định định dạng file:</p>
+                                                    <p class="mb-1 small text-muted">
+                                                        Vui lòng tải file theo đúng <a href="javascript:void(0)"
+                                                                                       class="fw-bold text-decoration-none text-primary"
+                                                                                       data-bs-toggle="modal"
+                                                                                       data-bs-target="#modalPreviewMau">
+                                                            <i class="fas fa-eye me-1"></i> Xem mẫu
+                                                        </a>.
+                                                    </p>
+                                                    <p class="mb-0  text-muted">
+                                                        Đáp án đúng được xác định bằng:
+                                                        <span class="badge bg-secondary">In Đậm</span>,
+                                                        <span class="badge bg-secondary text-decoration-underline">Gạch Chân</span>, hoặc
+                                                        <span class="badge bg-danger">Màu Đỏ</span>.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <form asp-action="Exam_Bank_Import_From_Word_Formatted" method="post" enctype="multipart/form-data">
+                                            <input type="hidden" asp-for="ExamBankId" />
+
+                                            <div class="upload-container text-center mb-4">
+                                                <input type="file" name="wordFile" id="fileInput" class="file-input" accept=".docx" required onchange="updateFileName(this)" />
+                                                <label for="fileInput" class="upload-label">
+                                                    <div class="icon-upload mb-3">
+                                                        <i class="fas fa-cloud-upload-alt fa-3x text-primary opacity-50"></i>
+                                                    </div>
+                                                    <h6 class="fw-bold text-dark" id="uploadText">Click để chọn file hoặc Kéo thả vào đây</h6>
+                                                    <p class="text-muted small mb-0">Hỗ trợ định dạng: .docx</p>
+                                                </label>
+                                            </div>
+
+                                            <div class="d-grid">
+                                                <button type="submit" class="btn btn-primary btn-lg rounded-pill shadow-sm hover-elevate">
+                                                    <i class="fas fa-magic me-2"></i> Tải lên và Xử lý
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
 
                                 @{
                                     bool coChuong = Model.ChapterList != null && Model.ChapterList.Any();
@@ -106,7 +169,7 @@
                                                         <div class="d-flex align-items-center gap-2">
                                                             <button type="button"
                                                                     class="btn btn-outline-primary question-button"
-                                                                    onclick="loadQuestion(@globalIndex)">
+                                                                    onclick="loadQuestionById('@cauHoi.QuestionId')">
                                                                 @(globalIndex + 1)
                                                             </button>
                                                             <button type="button"
@@ -133,7 +196,9 @@
                                         {
                                             var cauHoi = Model.QuestionList[i];
                                             <div class="d-flex align-items-center gap-2">
-                                                <button type="button" class="btn btn-outline-primary question-button" onclick="loadQuestion(@i)">
+                                                <button type="button"
+                                                        class="btn btn-outline-primary question-button"
+                                                        onclick="loadQuestionById('@cauHoi.QuestionId')">
                                                     @(i + 1)
                                                 </button>
                                                 <form asp-action="DeleteQuestion" asp-controller="Teacher" method="post" onsubmit="return confirm('Bạn có chắc muốn xóa câu hỏi này không?')">
@@ -151,77 +216,77 @@
 
 
 
-                            </div>  
-                          </div>  
-                          <div class="col-12 col-md-8">  
-                              <div class="bg-white p-3 rounded" style="  
-                                box-shadow: rgba(50, 50, 93, 0.25) 0px 6px 12px -2px,  
-                                  rgba(0, 0, 0, 0.3) 0px 3px 7px -3px;  
-                              ">  
-                                  <h3 class="fs-5 fw-semibold">Thêm câu hỏi mới</h3> 
-                                 <form asp-controller="Teacher" asp-action="Exam_Bank_Add_Question_MultipleChoice" method="post"> 
-                                     <input type="hidden" name="ExamBankId" value="@Model.ExamBankId" /> 
-                                     <input type="hidden" id="QuestionId" name="QuestionId" value="" />  
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-8">
+                            <div class="bg-white p-3 rounded" style="
+                                box-shadow: rgba(50, 50, 93, 0.25) 0px 6px 12px -2px,
+                                  rgba(0, 0, 0, 0.3) 0px 3px 7px -3px;
+                              ">
+                                <h3 class="fs-5 fw-semibold">Thêm câu hỏi mới</h3>
+                                <form asp-controller="Teacher" asp-action="Exam_Bank_Add_Question_MultipleChoice" method="post">
+                                    <input type="hidden" name="ExamBankId" value="@Model.ExamBankId" />
+                                    <input type="hidden" id="QuestionId" name="QuestionId" value="" />
 
-                                      <!--    Loại câu hỏi -->  
-                                      <div class="mb-3">  
-                                          <label for="QuestionType" class="form-label">Loại câu hỏi</label>  
-                                          <select class="form-select" id="QuestionType" name="QuestionType" required onchange="updateAnswerType()">  
-                                              <option value="1" selected>Một đáp án</option>  
-                                              <option value="2">Nhiều đáp án</option>  
-                                              <option value="3">Đúng sai</option>  
-                                              <option value="4">Điền từ</option>  
-                                          </select>  
-                                      </div> 
-                                     <!--    CHƯƠNG --> 
-                                     <div class="mb-3" id="ChapterGroup"> 
-                                         <label for="Chapter" class="form-label">Chương</label>
+                                    <!--    Loại câu hỏi -->
+                                    <div class="mb-3">
+                                        <label for="QuestionType" class="form-label">Loại câu hỏi</label>
+                                        <select class="form-select" id="QuestionType" name="QuestionType" required onchange="updateAnswerType()">
+                                            <option value="1" selected>Một đáp án</option>
+                                            <option value="2">Nhiều đáp án</option>
+                                            <option value="3">Đúng sai</option>
+                                            <option value="4">Điền từ</option>
+                                        </select>
+                                    </div>
+                                    <!--    CHƯƠNG -->
+                                    <div class="mb-3" id="ChapterGroup">
+                                        <label for="Chapter" class="form-label">Chương</label>
                                         <select class="form-select" id="ChapterId" name="ChapterId" required onchange="updateCLOOptions()">
-                                            <option value="">-- Chọn chương --</option> 
-                                             @foreach (var Chapter in Model.ChapterList) 
-                                             { 
-                                                 <option value="@Chapter.Id">@Chapter.Title</option> 
-                                             } 
-                                         </select> 
-                                     </div> 
+                                            <option value="">-- Chọn chương --</option>
+                                            @foreach (var Chapter in Model.ChapterList)
+                                            {
+                                                <option value="@Chapter.Id">@Chapter.Title</option>
+                                            }
+                                        </select>
+                                    </div>
 
-                                     <!--    CLO --> 
-                                     <div class="mb-3" id="CLOGroup"> 
-                                         <label for="CLO" class="form-label">CLO</label>
+                                    <!--    CLO -->
+                                    <div class="mb-3" id="CLOGroup">
+                                        <label for="CLO" class="form-label">CLO</label>
                                         <select class="form-select" id="CLOId" name="CLOId" required>
-                                            <option value="">-- Chọn CLO --</option> 
-                                         </select> 
-                                     </div> 
+                                            <option value="">-- Chọn CLO --</option>
+                                        </select>
+                                    </div>
 
 
-                                     <!-- Nội dung câu hỏi -->  
-                                      <div class="mb-3">  
-                                          <label for="QuestionContent" class="form-label fs-5 fw-semibold">Soạn câu hỏi</label>  
-                                          <textarea  class="form-control" id="QuestionContent" name="QuestionContent" placeholder="Nhập câu hỏi . . . "></textarea> 
-                                      </div>  
+                                    <!-- Nội dung câu hỏi -->
+                                    <div class="mb-3">
+                                        <label for="QuestionContent" class="form-label fs-5 fw-semibold">Soạn câu hỏi</label>
+                                        <textarea class="form-control" id="QuestionContent" name="QuestionContent" placeholder="Nhập câu hỏi . . . "></textarea>
+                                    </div>
 
-                                      <!-- Nút thêm đáp án (ẩn khi chọn đúng/sai) -->  
-                                      <button type="button" class="btn btn-primary rounded-circle my-2" id="addAnswerButton" onclick="addAnswer()">  
-                                          <i class="fa-solid fa-plus"></i>  
-                                      </button>  
+                                    <!-- Nút thêm đáp án (ẩn khi chọn đúng/sai) -->
+                                    <button type="button" class="btn btn-primary rounded-circle my-2" id="addAnswerButton" onclick="addAnswer()">
+                                        <i class="fa-solid fa-plus"></i>
+                                    </button>
 
-                                      <div id="answersContainer">  
-                                          <!-- Các đáp án sẽ được thêm vào đây -->  
-                                      </div>  
+                                    <div id="answersContainer">
+                                        <!-- Các đáp án sẽ được thêm vào đây -->
+                                    </div>
 
-                                      <!-- Nút submit -->  
-                                      <div>  
-                                          <button type="submit" class="btn btn-primary">Lưu câu hỏi</button>  
-                                      </div>  
-                                  </form>  
-                              </div>  
-                          </div>  
-                      </div>  
-                  </div>  
-              </div>  
-          </div> 
-     </div> 
- </div>
+                                    <!-- Nút submit -->
+                                    <div>
+                                        <button type="submit" class="btn btn-primary">Lưu câu hỏi</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 
 
@@ -231,9 +296,9 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <form method="post" asp-action="DeleteQuestion" asp-controller="Teacher">
-                <div class="modal-header bg-danger text-white">
+                <div class="modal-header bg-danger">
                     <h5 class="modal-title text-white">Xác nhận xóa câu hỏi</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Đóng"></button>
                 </div>
                 <div class="modal-body">
                     <input type="hidden" id="macauhoiToDelete" name="maCauHoi" />
@@ -242,7 +307,7 @@
                     <p id="relatedInfo"></p> <!-- Hiển thị thông tin liên quan -->
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn" style="background-color: #6c757d !important; border-color: #6c757d !important; color: white !important;" data-bs-dismiss="modal">Hủy</button>
                     <button type="submit" class="btn btn-danger">Xác nhận xóa</button>
                 </div>
             </form>
@@ -250,81 +315,104 @@
     </div>
 </div>
 
+<div class="modal fade" id="modalPreviewMau" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
 
- @section Script 
-  { 
-     <script src="~/lib/build/ckeditor.js"></script> 
-     <script> 
-         let answerCount = 0; 
-         let editors = {}; // Biến đếm số lượng đáp án 
-         function addAnswer(answerText = "", isCorrect = false) { 
-             const container = document.getElementById("answersContainer"); 
-             const questionType = document.getElementById("QuestionType").value; 
-             const inputType = questionType === "2" ? "checkbox" : "radio"; 
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold text-white" id="modalLabel">
+                    <i class="fas fa-file-word me-2"></i>Mẫu định dạng file Word
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
 
-             const index = answerCount++; 
-             const editorId = `editor_answer_${index}`; 
-             const html = ` 
-                 <div class="mb-3 p-1 border" id="answer_${index}"> 
-                     <input type="hidden" id="hiddenCorrectAnswers_${index}" name="CorrectAnswers[${index}]" value="${isCorrect}" /> 
-                     <input type="${inputType}" name="selectedAnswer" id="checkboxCorrectAnswers_${index}" ${isCorrect ? 'checked' : ''} onchange="updateHiddenInput(${index})" /> 
-                     <label class="mx-2 form-label fs-5 fw-semibold">Đáp án ${index + 1}</label> 
-                     <textarea class="form-control ckeditor-choice" id="${editorId}" name="ChoiceContents[${index}]">${answerText}</textarea> 
-                     <button type="button" class="btn btn-danger my-2" onclick="removeAnswer(${index})">Xóa</button> 
-                 </div> 
-             `; 
-             container.insertAdjacentHTML("beforeend", html); 
+            <div class="modal-body bg-light text-center p-0">
+                <img src=~/img/upload_example.png
+                     class="img-fluid w-100"
+                     alt="Mẫu file import"
+                     style="object-fit: contain; max-height: 70vh;">
+            </div>
 
-             ClassicEditor.create(document.getElementById(editorId), { 
-                 simpleUpload:{ 
-                     uploadUrl: '/Upload/UploadImage' 
-                 } 
-             }).then(editor => { 
-                 editors[editorId] = editor; 
-             }).catch(error => console.error(error)); 
-         } 
-         //document.addEventListener("DOMContentLoaded", () => { 
-         //     ClassicEditor.create(document.querySelector('#QuestionContent'), { 
-         //         simpleUpload: { 
-         //             uploadUrl: '/Upload/UploadImage', 
-         //         } 
-         //     }).then(editor => { 
-         //             editors['QuestionContent'] = editor; 
-         //         }).catch(console.error); 
-         // }); 
+            <div class="modal-footer bg-white d-flex justify-content-between">
+                <span class="text-muted small">
+                    <i class="fas fa-info-circle"></i> Hãy soạn thảo giống hình bên trên để hệ thống đọc chính xác.
+                </span>
+                <div>
+                    <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Đóng</button>
+                </div>
+            </div>
 
-         function removeAnswer(index) { 
-             const div = document.getElementById(`answer_${index}`); 
-             if (!div) return; 
+        </div>
+    </div>
+</div>
 
-             const editorId = `editor_answer_${index}`; 
-             if (editors[editorId]) { 
-                 editors[editorId].destroy().then(() => { 
-                     delete editors[editorId]; 
-                     div.remove(); 
-                     reindexAnswers(); 
-                 }); 
-             } else { 
-                 div.remove(); 
-                 reindexAnswers(); 
-             } 
-         } 
+@section Script
+ {
+    <script src="~/lib/build/ckeditor.js"></script>
+    <script src="~/js/notification.js"></script>
+    <script>
 
-         function reindexAnswers() { 
-             const container = document.getElementById("answersContainer"); 
-             const children = Array.from(container.children); 
+         let answerCount = 0;
+         let editors = {}; // Biến đếm số lượng đáp án
+         function addAnswer(answerText = "", isCorrect = false) {
+             const container = document.getElementById("answersContainer");
+             const questionType = document.getElementById("QuestionType").value;
+             const inputType = questionType === "2" ? "checkbox" : "radio";
 
-             answerCount = 0; 
-             editors = {}; // Reset lại 
-             container.innerHTML = ""; 
+             const index = answerCount++;
+             const editorId = `editor_answer_${index}`;
+             const html = `
+                 <div class="mb-3 p-1 border" id="answer_${index}">
+                     <input type="hidden" id="hiddenCorrectAnswers_${index}" name="CorrectAnswers[${index}]" value="${isCorrect}" />
+                     <input type="${inputType}" name="selectedAnswer" id="checkboxCorrectAnswers_${index}" ${isCorrect ? 'checked' : ''} onchange="updateHiddenInput(${index})" />
+                     <label class="mx-2 form-label fs-5 fw-semibold">Đáp án ${index + 1}</label>
+                     <textarea class="form-control ckeditor-choice" id="${editorId}" name="ChoiceContents[${index}]">${answerText}</textarea>
+                     <button type="button" class="btn btn-danger my-2" onclick="removeAnswer(${index})">Xóa</button>
+                 </div>
+             `;
+             container.insertAdjacentHTML("beforeend", html);
 
-             children.forEach((child, i) => { 
-                 const textarea = child.querySelector("textarea"); 
-                 const inputVal = textarea.value; 
-                 const isChecked = child.querySelector("input[type=radio], input[type=checkbox]").checked; 
+             ClassicEditor.create(document.getElementById(editorId), {
+                 simpleUpload:{
+                     uploadUrl: '/Upload/UploadImage'
+                 }
+             }).then(editor => {
+                 editors[editorId] = editor;
+             }).catch(error => console.error(error));
+         }
 
-                 addAnswer(inputVal, isChecked); 
-             }); 
+         function removeAnswer(index) {
+             const div = document.getElementById(`answer_${index}`);
+             if (!div) return;
+
+             const editorId = `editor_answer_${index}`;
+             if (editors[editorId]) {
+                 editors[editorId].destroy().then(() => {
+                     delete editors[editorId];
+                     div.remove();
+                     reindexAnswers();
+                 });
+             } else {
+                 div.remove();
+                 reindexAnswers();
+             }
+         }
+
+         function reindexAnswers() {
+             const container = document.getElementById("answersContainer");
+             const children = Array.from(container.children);
+
+             answerCount = 0;
+             editors = {}; // Reset lại
+             container.innerHTML = "";
+
+             children.forEach((child, i) => {
+                 const textarea = child.querySelector("textarea");
+                 const inputVal = textarea.value;
+                 const isChecked = child.querySelector("input[type=radio], input[type=checkbox]").checked;
+
+                 addAnswer(inputVal, isChecked);
+             });
          }
 
         function updateAnswerType() {
@@ -405,63 +493,64 @@
             }
         }
 
-         function updateHiddenInput(index) { 
-             const questionType = document.getElementById('QuestionType').value; 
+         function updateHiddenInput(index) {
+             const questionType = document.getElementById('QuestionType').value;
 
-             if (questionType === "1") { // Một đáp án đúng 
-                 // Reset hết hidden về false 
-                 const hiddenInputs = document.querySelectorAll('[id^="hiddenCorrectAnswers_"]'); 
-                 hiddenInputs.forEach(input => input.value = "false"); 
+             if (questionType === "1") { // Một đáp án đúng
+                 // Reset hết hidden về false
+                 const hiddenInputs = document.querySelectorAll('[id^="hiddenCorrectAnswers_"]');
+                 hiddenInputs.forEach(input => input.value = "false");
 
-                 // Gán true cho đáp án vừa chọn 
-                 const selectedInput = document.getElementById(`checkboxCorrectAnswers_${index}`); 
-                 const hiddenInput = document.getElementById(`hiddenCorrectAnswers_${index}`); 
-                 if (selectedInput && hiddenInput && selectedInput.checked) { 
-                     hiddenInput.value = "true"; 
-                 } 
-             } 
-             else if (questionType === "2") { // Nhiều đáp án đúng 
-                 const checkbox = document.getElementById(`checkboxCorrectAnswers_${index}`); 
-                 const hidden = document.getElementById(`hiddenCorrectAnswers_${index}`); 
-                 if (checkbox && hidden) { 
-                     hidden.value = checkbox.checked ? "true" : "false"; 
-                 } 
-             } 
-             else if (questionType === "3") { // Đúng/Sai 
-                 updateHiddenInputYesNo(index); 
-             } 
-         } 
-
-
-         document.addEventListener("DOMContentLoaded", () => { 
-             ClassicEditor.create(document.querySelector('#QuestionContent'), { 
-                 simpleUpload: { 
-                     uploadUrl: '/Upload/UploadImage', 
-                 } 
-             }).then(editor => { 
-                     editors['QuestionContent'] = editor; 
-                 }).catch(console.error); 
-         }); 
+                 // Gán true cho đáp án vừa chọn
+                 const selectedInput = document.getElementById(`checkboxCorrectAnswers_${index}`);
+                 const hiddenInput = document.getElementById(`hiddenCorrectAnswers_${index}`);
+                 if (selectedInput && hiddenInput && selectedInput.checked) {
+                     hiddenInput.value = "true";
+                 }
+             }
+             else if (questionType === "2") { // Nhiều đáp án đúng
+                 const checkbox = document.getElementById(`checkboxCorrectAnswers_${index}`);
+                 const hidden = document.getElementById(`hiddenCorrectAnswers_${index}`);
+                 if (checkbox && hidden) {
+                     hidden.value = checkbox.checked ? "true" : "false";
+                 }
+             }
+             else if (questionType === "3") { // Đúng/Sai
+                 updateHiddenInputYesNo(index);
+             }
+         }
 
 
-         function updateHiddenInputYesNo(index) { 
-             // Reset hết hidden inputs về false 
-             const hiddenInputs = document.querySelectorAll('[id^="hiddenCorrectAnswers_"]'); 
-             hiddenInputs.forEach(input => input.value = "false"); 
+         document.addEventListener("DOMContentLoaded", () => {
+             ClassicEditor.create(document.querySelector('#QuestionContent'), {
+                 simpleUpload: {
+                     uploadUrl: '/Upload/UploadImage',
+                 }
+             }).then(editor => {
+                     editors['QuestionContent'] = editor;
+                 }).catch(console.error);
+         });
 
-             // Gán true cho cái được chọn 
-             const selectedInput = document.querySelector('input[name="selectedAnswer"]:checked'); 
-             if (selectedInput) { 
-                 const selectedIndex = selectedInput.id.split("_").pop(); // lấy số index từ id 
-                 const hiddenInput = document.getElementById(`hiddenCorrectAnswers_${selectedIndex}`); 
-                 if (hiddenInput) hiddenInput.value = "true"; 
-             } 
-         } 
 
-     </script> 
+         function updateHiddenInputYesNo(index) {
+             // Reset hết hidden inputs về false
+             const hiddenInputs = document.querySelectorAll('[id^="hiddenCorrectAnswers_"]');
+             hiddenInputs.forEach(input => input.value = "false");
 
-     <script> 
-         let questions = @Html.Raw(Json.Serialize(Model.QuestionDTOList)); 
+             // Gán true cho cái được chọn
+             const selectedInput = document.querySelector('input[name="selectedAnswer"]:checked');
+             if (selectedInput) {
+                 const selectedIndex = selectedInput.id.split("_").pop(); // lấy số index từ id
+                 const hiddenInput = document.getElementById(`hiddenCorrectAnswers_${selectedIndex}`);
+                 if (hiddenInput) hiddenInput.value = "true";
+             }
+         }
+
+    </script>
+
+    <script>
+
+         let questions = @Html.Raw(Json.Serialize(Model.QuestionDTOList));
 
          console.log(questions);
 
@@ -496,20 +585,27 @@
 
         // Cập nhật sự kiện submit form để bao gồm validation
         document.addEventListener("DOMContentLoaded", function() {
-            const form = document.querySelector("form[asp-action='Exam_Bank_Add_Question_MultipleChoice']");
+            const form = document.querySelector("form[asp-action='Exam_Bank_Add_Question_MultipleChoice']") || document.querySelector("#editExamForm"); 
+
             if (form) {
                 form.addEventListener("submit", function(e) {
-                    // Đảm bảo tất cả nội dung CKEditor được cập nhật trước khi gửi
+
+                    const btnSubmit = form.querySelector('button[type="submit"]');
+
                     for (let editorId in editors) {
                         if (editors[editorId]) {
                             editors[editorId].updateSourceElement();
                         }
                     }
 
-                    // Kiểm tra validation cho câu hỏi điền từ
-                    if (!validateFillInBlankQuestion()) {
-                        e.preventDefault();
+                    if (typeof validateFillInBlankQuestion === "function" && !validateFillInBlankQuestion()) {
+                        e.preventDefault(); 
                         return false;
+                    }
+                    if(btnSubmit) {
+
+                         btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang lưu...';
+                         btnSubmit.style.pointerEvents = 'none';
                     }
                 });
             }
@@ -522,7 +618,8 @@
 
             // Gán giá trị cho các input
             if (editors['QuestionContent']) {
-                editors['QuestionContent'].setData(question.questionContent || "");
+                const contentData = question.questionContent || "";
+                editors['QuestionContent'].setData(contentData);
             }
 
             document.getElementById("QuestionType").value = question.questionType || "";
@@ -596,188 +693,208 @@
                 }
             }
         }
-         function addAnswerFromData(answerHtml, isCorrect, index) { 
-             const container = document.getElementById('answersContainer'); 
-             const questionType = document.getElementById('QuestionType').value; 
-             const inputType = questionType === "2" ? "checkbox" : "radio"; 
+        function loadQuestionById(id) {
+            if (!questions || !questions.length) return;
 
-             const editorId = `editor_answer_${index}`; 
-             const html = ` 
-                 <div class="mb-3 p-1 border" id="answer_${index}"> 
-                     <input type="hidden" id="hiddenCorrectAnswers_${index}" name="CorrectAnswers[${index}]" value="${isCorrect}" /> 
-                     <input type="${inputType}" name="selectedAnswer" id="checkboxCorrectAnswers_${index}" ${isCorrect ? 'checked' : ''} onchange="updateHiddenInput(${index})" /> 
-                     <label class="mx-2 form-label fs-5 fw-semibold">Đáp án ${index + 1}</label> 
-                     <textarea class="form-control ckeditor-choice" id="${editorId}" name="ChoiceContents[${index}]"></textarea> 
-                     <button type="button" class="btn btn-danger my-2" onclick="removeAnswer(${index})">Xóa</button> 
-                 </div> 
-             `; 
-             container.insertAdjacentHTML("beforeend", html); 
+            // So sánh kiểu an toàn (string hóa) để tránh lệch kiểu int/string/Guid
+            const idx = questions.findIndex(q => String(q.questionId) === String(id));
+            if (idx === -1) {
+                console.warn('Không tìm thấy câu hỏi với id:', id);
+                return;
+            }
+            loadQuestion(idx);
+        }
 
-             ClassicEditor.create(document.getElementById(editorId), { 
-                 simpleUpload: { 
-                     uploadUrl: '/Upload/UploadImage'  
-                 } 
-             }).then(editor => { 
-                 editors[editorId] = editor; 
-                 editor.setData(answerHtml || ""); // Gán nội dung HTML vào editor 
-             }).catch(error => console.error(error)); 
+         function addAnswerFromData(answerHtml, isCorrect, index) {
+             const container = document.getElementById('answersContainer');
+             const questionType = document.getElementById('QuestionType').value;
+             const inputType = questionType === "2" ? "checkbox" : "radio";
 
-             answerCount++; 
-         } 
+             const editorId = `editor_answer_${index}`;
+             const html = `
+                 <div class="mb-3 p-1 border" id="answer_${index}">
+                     <input type="hidden" id="hiddenCorrectAnswers_${index}" name="CorrectAnswers[${index}]" value="${isCorrect}" />
+                     <input type="${inputType}" name="selectedAnswer" id="checkboxCorrectAnswers_${index}" ${isCorrect ? 'checked' : ''} onchange="updateHiddenInput(${index})" />
+                     <label class="mx-2 form-label fs-5 fw-semibold">Đáp án ${index + 1}</label>
+                     <textarea class="form-control ckeditor-choice" id="${editorId}" name="ChoiceContents[${index}]"></textarea>
+                     <button type="button" class="btn btn-danger my-2" onclick="removeAnswer(${index})">Xóa</button>
+                 </div>
+             `;
+             container.insertAdjacentHTML("beforeend", html);
 
+             ClassicEditor.create(document.getElementById(editorId), {
+                 simpleUpload: {
+                     uploadUrl: '/Upload/UploadImage'
+                 }
+             }).then(editor => {
+                 editors[editorId] = editor;
+                 editor.setData(answerHtml || ""); // Gán nội dung HTML vào editor
+             }).catch(error => console.error(error));
 
-
-     </script> 
-
-     <script> 
-         // Dữ liệu chương và CLO từ Razor -> JS 
-         const chapterData = @Html.Raw(Json.Serialize(Model.ChapterList)); 
-
-         function updateCLOOptions() { 
-             const ChapterId = document.getElementById("ChapterId").value; 
-             const cloSelect = document.getElementById("CLOId"); 
-
-             // Xóa các option hiện tại 
-             cloSelect.innerHTML = '<option value="">-- Chọn CLO --</option>'; 
-
-             const Chapter = chapterData.find(c => c.id == ChapterId); 
-
-             if (Chapter && Chapter.clos && Chapter.clos.length > 0) { 
-                 Chapter.clos.forEach(clo => { 
-                     const opt = document.createElement("option"); 
-                     opt.value = clo.id; 
-                     opt.text = clo.title + " - " + clo.description; 
-                     cloSelect.appendChild(opt); 
-                 }); 
-             } 
-         } 
-     </script> 
-     <script> 
-            document.addEventListener("DOMContentLoaded", function () { 
-             const ChapterGroup = document.getElementById("ChapterGroup"); 
-             const cloGroup = document.getElementById("CLOGroup"); 
-
-             const ChapterSelect = document.getElementById("ChapterId"); 
-             const cloSelect = document.getElementById("CLOId"); 
-
-             const chapterList = @Html.Raw(Json.Serialize(Model.ChapterList)); 
-
-             if (!chapterList || chapterList.length === 0) { 
-                 if (ChapterGroup) ChapterGroup.style.display = "none"; 
-                 if (ChapterSelect) ChapterSelect.removeAttribute("required"); 
-
-                 if (cloGroup) cloGroup.style.display = "none"; 
-                 if (cloSelect) cloSelect.removeAttribute("required"); 
-             } else { 
-                 const hasAnyCLO = chapterList.some(ch => ch.clos && ch.clos.length > 0); 
-                 if (!hasAnyCLO) { 
-                     if (cloGroup) cloGroup.style.display = "none"; 
-                     if (cloSelect) cloSelect.removeAttribute("required"); 
-                 } 
-             } 
-         }); 
-
-     </script> 
+             answerCount++;
+         }
 
 
-     <script> 
-         document.addEventListener("DOMContentLoaded", function () { 
-             const deleteButtons = document.querySelectorAll(".btn-open-delete-modal"); 
-             const inputMaCauHoi = document.getElementById("macauhoiToDelete"); 
-             const inputMaNHD = document.getElementById("manhdToDelete"); 
 
-             deleteButtons.forEach(button => { 
-                 button.addEventListener("click", () => { 
-                     const maCauHoi = button.getAttribute("data-macauhoi"); 
-                     const maNHD = button.getAttribute("data-manhd"); 
+    </script>
 
-                     inputMaCauHoi.value = maCauHoi; 
-                     inputMaNHD.value = maNHD; 
-                 }); 
-             }); 
-         }); 
-     </script> 
+    <script>
 
+        // Dữ liệu chương và CLO từ Razor -> JS
+        const chapterData = @Html.Raw(Json.Serialize(Model.ChapterList));
 
-     <script> 
-                 document.addEventListener("DOMContentLoaded", function () { 
-             // Kiểm tra thông điệp thành công 
-             const successMessage = @Html.Raw(Json.Serialize(TempData["SuccessMessage"])); 
-             if (successMessage) { 
-                 Toastify({ 
-                     text: successMessage, 
-                     duration: 4000, 
-                     close: true, 
-                     gravity: "bottom", 
-                     position: "right", 
-                     stopOnFocus: true, 
-                     style: { 
-                         background: "#28a745" // Màu xanh cho thông báo thành công 
-                     } 
-                 }).showToast(); 
-             } 
+        function updateCLOOptions() {
+            const ChapterId = document.getElementById("ChapterId").value;
+            const cloSelect = document.getElementById("CLOId");
 
-             // Kiểm tra thông điệp lỗi 
-             const errorMessage = @Html.Raw(Json.Serialize(TempData["ErrorMessage"])); 
-             if (errorMessage) { 
-                 Toastify({ 
-                     text: errorMessage, 
-                     duration: 4000, 
-                     close: true, 
-                     gravity: "bottom", 
-                     position: "right", 
-                     stopOnFocus: true, 
-                     style: { 
-                         background: "#dc3545" // Màu đỏ cho thông báo lỗi 
-                     } 
-                 }).showToast(); 
-             } 
-         }); 
-     </script> 
-     <script> 
-         document.querySelector("form").addEventListener("submit", function (e) { 
-             // Đảm bảo tất cả nội dung CKEditor được cập nhật trước khi gửi 
-             for (let editorId in editors) { 
-                 if (editors[editorId]) { 
-                     editors[editorId].updateSourceElement(); 
-                 } 
-             } 
-         }); 
+            // Xóa các option hiện tại
+            cloSelect.innerHTML = '<option value="">-- Chọn CLO --</option>';
+
+            const Chapter = chapterData.find(c => c.id == ChapterId);
+
+            if (Chapter && Chapter.clos && Chapter.clos.length > 0) {
+                Chapter.clos.forEach(clo => {
+                    const opt = document.createElement("option");
+                    opt.value = clo.id;
+                    opt.text = clo.title + " - " + clo.description;
+                    cloSelect.appendChild(opt);
+                });
+            }
+        }
+    </script>
+    <script>
+
+           document.addEventListener("DOMContentLoaded", function () {
+            const ChapterGroup = document.getElementById("ChapterGroup");
+            const cloGroup = document.getElementById("CLOGroup");
+
+            const ChapterSelect = document.getElementById("ChapterId");
+            const cloSelect = document.getElementById("CLOId");
+
+            const chapterList = @Html.Raw(Json.Serialize(Model.ChapterList));
+
+            if (!chapterList || chapterList.length === 0) {
+                if (ChapterGroup) ChapterGroup.style.display = "none";
+                if (ChapterSelect) ChapterSelect.removeAttribute("required");
+
+                if (cloGroup) cloGroup.style.display = "none";
+                if (cloSelect) cloSelect.removeAttribute("required");
+            } else {
+                const hasAnyCLO = chapterList.some(ch => ch.clos && ch.clos.length > 0);
+                if (!hasAnyCLO) {
+                    if (cloGroup) cloGroup.style.display = "none";
+                    if (cloSelect) cloSelect.removeAttribute("required");
+                }
+            }
+        });
+
+    </script>
 
 
-     </script> 
-     <script> 
-         document.addEventListener("DOMContentLoaded", () => { 
-             const submitBtn = document.getElementById("submitBtn"); 
-             const inputs = document.querySelectorAll("#editExamForm input, #editExamForm select"); 
+    <script>
 
-             function checkChanges() { 
-                 let changed = false; 
+        document.addEventListener("DOMContentLoaded", function () {
+            const deleteButtons = document.querySelectorAll(".btn-open-delete-modal");
+            const inputMaCauHoi = document.getElementById("macauhoiToDelete");
+            const inputMaNHD = document.getElementById("manhdToDelete");
 
-                 inputs.forEach(input => { 
-                     const original = input.getAttribute("data-original"); 
-                     if (original !== null) { 
-                         if (input.tagName === "SELECT") { 
-                             if (input.value.toLowerCase() !== original.toLowerCase()) { 
-                                 changed = true; 
-                             } 
-                         } else { 
-                             if (input.value !== original) { 
-                                 changed = true; 
-                             } 
-                         } 
-                     } 
-                 }); 
+            deleteButtons.forEach(button => {
+                button.addEventListener("click", () => {
+                    const maCauHoi = button.getAttribute("data-macauhoi");
+                    const maNHD = button.getAttribute("data-manhd");
 
-                 submitBtn.disabled = !changed; 
-             } 
+                    inputMaCauHoi.value = maCauHoi;
+                    inputMaNHD.value = maNHD;
+                });
+            });
+        });
+    </script>
 
-             inputs.forEach(input => { 
-                 input.addEventListener("input", checkChanges); 
-                 input.addEventListener("change", checkChanges); 
-             }); 
 
-             checkChanges(); 
-         }); 
-     </script> 
- } 
+    <script>
+
+        document.addEventListener("DOMContentLoaded", function () {
+            // Kiểm tra thông điệp lỗi
+            const errorMessage = @Html.Raw(Json.Serialize(TempData["ErrorMessage"]));
+            if (errorMessage) {
+                Toastify({
+                    text: errorMessage,
+                    duration: 4000,
+                    close: true,
+                    gravity: "bottom",
+                    position: "right",
+                    stopOnFocus: true,
+                    style: {
+                        background: "#dc3545" // Màu đỏ cho thông báo lỗi
+                    }
+                }).showToast();
+            }
+        });
+    </script>
+    <script>
+
+        document.querySelector("form").addEventListener("submit", function (e) {
+            // Đảm bảo tất cả nội dung CKEditor được cập nhật trước khi gửi
+            for (let editorId in editors) {
+                if (editors[editorId]) {
+                    editors[editorId].updateSourceElement();
+                }
+            }
+        });
+
+
+    </script>
+    <script>
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const submitBtn = document.getElementById("submitBtn");
+            const inputs = document.querySelectorAll("#editExamForm input, #editExamForm select");
+
+            function checkChanges() {
+                let changed = false;
+
+                inputs.forEach(input => {
+                    const original = input.getAttribute("data-original");
+                    if (original !== null) {
+                        if (input.tagName === "SELECT") {
+                            if (input.value.toLowerCase() !== original.toLowerCase()) {
+                                changed = true;
+                            }
+                        } else {
+                            if (input.value !== original) {
+                                changed = true;
+                            }
+                        }
+                    }
+                });
+
+                submitBtn.disabled = !changed;
+            }
+
+            inputs.forEach(input => {
+                input.addEventListener("input", checkChanges);
+                input.addEventListener("change", checkChanges);
+            });
+
+            checkChanges();
+        });
+    </script>
+    <script>
+        function updateFileName(input) {
+            var uploadText = document.getElementById('uploadText');
+            var icon = document.querySelector('.icon-upload i');
+
+            if (input.files && input.files.length > 0) {
+                var fileName = input.files[0].name;
+                uploadText.innerHTML = `<span class="text-success"><i class="fas fa-check-circle"></i> Đã chọn: ${fileName}</span>`;
+                uploadText.classList.add('text-success');
+
+                icon.className = "fas fa-file-word fa-3x text-primary";
+            } else {
+                uploadText.innerHTML = "Click để chọn file hoặc Kéo thả vào đây";
+                uploadText.classList.remove('text-success');
+                icon.className = "fas fa-cloud-upload-alt fa-3x text-primary opacity-50";
+            }
+        }
+    </script>
+ }

@@ -1,17 +1,18 @@
-﻿using ITExam.ExternalModels.Subject;
-using ITExam.Services;
-using System.Net.Http.Headers;
-using System.Net.Http;
-using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json.Linq;
-using Newtonsoft.Json;
-using ITExam.Models;
-using Microsoft.EntityFrameworkCore;
-using ITExam.ViewModels.ExamBank;
-using ITExam.ExternalModels;
-using System.Collections.Generic;
-using Microsoft.Extensions.Caching.Distributed;
+﻿using ITExam.ExternalModels;
+using ITExam.ExternalModels.Subject;
 using ITExam.Filters;
+using ITExam.Models;
+using ITExam.Services;
+using ITExam.ViewModels.ExamBank;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Net.Http.Headers;
 
 namespace ITExam.Controllers
 {
@@ -23,13 +24,15 @@ namespace ITExam.Controllers
         private readonly GeminiService _geminiService;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IRedisService _redis;
+        private readonly RoutingAPI _routingApi;
 
-        public ApiQuestionController(IHttpClientFactory httpClientFactory, ITExamDbContext context, GeminiService geminiService, IRedisService redis)
+        public ApiQuestionController(IHttpClientFactory httpClientFactory, ITExamDbContext context, GeminiService geminiService, IRedisService redis, IOptions<RoutingAPI> routingOptions)
         {
             _httpClientFactory = httpClientFactory;
             _context = context;
             _geminiService = geminiService;
             _redis = redis;
+            _routingApi = routingOptions.Value;
         }
 
         public async Task<IActionResult> Index(int id)
@@ -65,7 +68,7 @@ namespace ITExam.Controllers
             var access_token = Request.Cookies["access_token"];
             var client = _httpClientFactory.CreateClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", access_token);
-            var response = await client.GetAsync(RoutingAPI.GetSubjectUrl);
+            var response = await client.GetAsync(_routingApi.GetSubjectUrl);
             if (!response.IsSuccessStatusCode) return null;
 
             var json = await response.Content.ReadAsStringAsync();
@@ -104,9 +107,10 @@ namespace ITExam.Controllers
                     string prompt = $"Tạo cho tôi {cloInput.QuestionCount} câu hỏi trắc nghiệm (gồm 4 lựa chọn, chỉ có 1 đáp án đúng) về chuyên đề sau:\n" +
                                     $"- Môn học: {subject.Name}\n" +
                                     $"- Nội dung chính thuộc Chương: {chapter.Title}\n" +
-                                    $"- Câu hỏi phải đánh giá được Chuẩn đầu ra (CLO): [{clo.Title}] {clo.Description}\n" +
+                                    $"- Các chương sẽ có 4 mức độ CLO. Câu hỏi phải đánh giá được Chuẩn đầu ra (CLO): [{clo.Title}]\n" +
                                     $"Yêu cầu câu hỏi phải phù hợp và trực tiếp liên quan đến CLO đã nêu." +
-                                    $"Yêu cầu thêm là: " + requests;
+                                    $"Yêu cầu thêm là: " + requests +
+                                    $"Nếu trong yêu cầu thêm có chứa yêu cầu về số lượng thì bỏ qua, chỉ lấy số lượng của dòng đầu tiên đã nêu";
                     try
                     {
                         var questionsFromAI = await _geminiService.GetQuestionsFromGeminiAsync(prompt);

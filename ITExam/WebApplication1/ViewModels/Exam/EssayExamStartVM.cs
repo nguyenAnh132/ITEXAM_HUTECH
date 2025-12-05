@@ -12,6 +12,7 @@
         public List<EssayQuestionVM>? Questions { get; set; } // DanhSachCauHoi
         public int ClassId { get; set; }                 // MaLop
         public string ClassName { get; set; }            // TenLop
+        public string ClassCode { get; set; }
     }
 
     public class EssayQuestionVM

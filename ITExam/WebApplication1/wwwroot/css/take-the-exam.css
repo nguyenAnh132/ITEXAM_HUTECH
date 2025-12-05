@@ -239,20 +239,49 @@
     object-fit: contain;
 }
 
-@media (max-width: 768px) {
-    .options-area img,
-    .question-container img {
-        width: 230px;
-        max-width: 500px;
-        height: auto;
-        display: block;
-        margin: 10px auto;
-        border-radius: 12px;
-        object-fit: contain;
-    }
-}
-
 .form-check{
     padding: 0px;
 }
 
+.question-content {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+}
+
+    .question-content img,
+    .quiz-app img { 
+        display: block;
+        max-width: 100% !important; 
+        height: auto !important;
+        margin: 10px auto;
+        border-radius: 8px; 
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+        object-fit: contain;
+    }
+
+    .question-content figure.image {
+        display: block;
+        margin: 10px auto;
+        max-width: 100%;
+        text-align: center;
+    }
+
+
+.options-area img,
+.question-container img {
+    width: auto; 
+    max-width: 100%;
+    height: auto;
+}
+
+@media (max-width: 768px) {
+    .question-content img,
+    .quiz-app img {
+        max-width: 100% !important;
+        border-radius: 5px;
+    }
+}
+.ck-powered-by {
+    display: none !important;
+}

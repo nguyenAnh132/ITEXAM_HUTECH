@@ -19,6 +19,12 @@ namespace ITExam.Models
         public DateTime StartTime { get; set; }
 
         [DataType(DataType.DateTime)]
+        public DateTime EndTime { get; set; }
+
+        [MaxLength(100)]
+        public string? HangfireJobId { get; set; }
+
+        [DataType(DataType.DateTime)]
         public DateTime? SubmitTime { get; set; }
 
         [Required(ErrorMessage = "Thời gian làm bài là bắt buộc")]
@@ -36,6 +42,8 @@ namespace ITExam.Models
         [ForeignKey("Class")]
         public int ClassId { get; set; }
 
+        [Column(TypeName = "varchar(max)")] // Tùy chọn: Giới hạn độ dài trong CSDL
+        public string? UploadedFileId { get; set; }
         public Exam Exam { get; set; }
         public Class Class { get; set; }
         public User User { get; set; }

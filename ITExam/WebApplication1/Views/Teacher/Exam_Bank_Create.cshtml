@@ -17,7 +17,7 @@
 
  <div class="container-fluid p-0"> 
      <div class="pt-3 py-lg-0 px-lg-5 px-3"> 
-          <h2 class="my-2">Tạo ngân hàng đề mới</h2>  nb 
+          <h2 class="my-2">Tạo ngân hàng đề mới</h2>
           <div class="p-2">  
               <!-- Nav tabs -->  
               <ul class="nav nav-tabs d-flex justify-content-between px-2 pt-3 border-bottom-0" id="myTab" role="tablist">  
@@ -48,7 +48,7 @@
                                           <div class="mb-3 col-12">  
                                               <label for="" class="form-label">Tên ngân hàng đề</label>  
                                               <input asp-for="ExamBankName" type="text" class="form-control"  aria-describedby="helpId"  
-                                                     placeholder="Ví dụ: Lập trình hướng đối tượng" />  
+                                                     placeholder="Ví dụ: Lập trình hướng đối tượng" required/>  
                                           </div> 
 
                                          <div class="mb-3 col-12"> 
@@ -67,20 +67,22 @@
                                                   <option selected value="Trắc nghiệm">Trắc nghiệm</option>  
                                                   <option value="Tự luận">Tự luận</option>  
                                               </select>  
-                                          </div> 
+                                          </div>
                                          <div class="mb-3 col-12"> 
-                                             <label for="MaMonHoc" class="form-label">Môn học</label> 
-                                             <select asp-for="SubjectId" class="form-select"> 
-                                                 @foreach (var subject in (List<CreateExamBankVM>)ViewBag.Subjects) 
-                                                 { 
-                                                     <option value="@subject.SubjectId">@subject.SubjectCode - @subject.SubjectName</option> 
-                                                 } 
-                                             </select> 
-                                             <span class="text-danger" asp-validation-for="SubjectId"></span> 
+                                             <label for="MaMonHoc" class="form-label">Môn học</label>
+                                            <select asp-for="SubjectId" class="form-select" id="subjectSelect">
+                                                @foreach (var subject in (List<CreateExamBankVM>)ViewBag.Subjects)
+                                                {
+                                                    <option value="@subject.SubjectId"
+                                                            data-subjectname="@subject.SubjectName">
+                                                        @subject.SubjectCode - @subject.SubjectName
+                                                    </option>
+                                                }
+                                            </select>
+                                            <span class="text-danger" asp-validation-for="SubjectId"></span> 
+                                            <input type="hidden" id="SubjectName" name="SubjectName" />
                                          </div> 
                                       </div> 
-                                    
-
 
                                       <div class="my-3 d-flex justify-content-end">  
                                           <button data-bs-toggle="modal"  
@@ -99,4 +101,22 @@
          </div> 
      </div> 
  </div> 
+
+ @section Script{
+    <script>
+        const ddl = document.getElementById("subjectSelect");
+        const hdName = document.getElementById("SubjectName");
+
+        ddl.addEventListener("change", function () {
+            const selected = this.options[this.selectedIndex];
+            const name = selected.dataset.subjectname;
+            hdName.value = name;
+        });
+        window.addEventListener("DOMContentLoaded", () => {
+            const selected = ddl.options[ddl.selectedIndex];
+            hdName.value = selected.dataset.subjectname;
+        });
+    </script>
+
+ }
 

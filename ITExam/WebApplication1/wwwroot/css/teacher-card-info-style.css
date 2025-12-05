@@ -67,4 +67,23 @@ body.modal-open .card-info-item:hover .card-info-text {
 }
 
 
+/* Giới hạn tất cả ảnh trong vùng đề thi */
+img {
+    max-width: 100%;
+    height: auto !important; /* Giữ tỷ lệ ảnh tự nhiên */
+    object-fit: contain;
+    display: block;
+    margin: 0 auto;
+}
 
+/* Đảm bảo figure không bị tràn */
+figure {
+    max-width: 100%;
+    overflow: hidden;
+    margin: 0;
+}
+
+img[style*="aspect-ratio"] {
+    aspect-ratio: auto !important;
+    width: 100% !important;
+}

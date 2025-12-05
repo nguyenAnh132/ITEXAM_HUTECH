@@ -1,4 +1,6 @@
-﻿namespace ITExam.ExternalModels.Subject
+﻿using ITExam.ViewModels.ExamBank;
+
+namespace ITExam.ExternalModels.Subject
 {
     public class SubjectDto
     {
@@ -30,5 +32,6 @@
         public string? QuestionType { get; set; }
         public int CloId { get; set; }
         public int ChapterId { get; set; }
+        public List<EssayCriterionVM>? Criteria { get; set; }
     }
 }

@@ -12,5 +12,6 @@ namespace ITExam.ViewModels.Class
         public int TeacherId { get; set; }
         public int StudentCount { get; set; }
         public int ExamCount { get; set; }
+        public string LecturerName { get; set; }
     }
 }

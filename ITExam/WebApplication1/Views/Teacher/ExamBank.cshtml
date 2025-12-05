@@ -46,7 +46,7 @@
                 </div>
             </div>
             <!-- Nav tabs -->
-            <ul class="nav nav-tabs mx-3 pt-2 pb-3 border-bottom-0" id="myTab" role="tablist">
+            <ul class="nav nav-tabs mx-3 pt-2 pb-3 border-bottom-0 flex-nowrap" id="myTab" role="tablist">
                 <li class="nav-item mr-2" role="presentation">
                     <button class="nav-link active  rounded fw-bold"
                             id="public-tab"
@@ -139,27 +139,15 @@
                                         <h5 class="text-center fw-semibold mb-2 text-white" title="@nh.ExamBankName">@ExamBankName</h5>
                                         <div class="d-flex justify-content-between small border-top border-light pt-2 mt-2 px-1">
                                             <div class=" text-white small">
-                                                <div class="mb-1">
-                                                    <i class="fa fa-book me-2"></i>@nh.ExamType
+                                                <div class="mb-1 d-flex justify-content-between gap-1">
+                                                    <i class="fa fa-book"></i> @nh.ExamType
+                                                    <i class="fa-solid fa-user-graduate ms-3"></i>@nh.LecturerName
                                                 </div>
                                             </div>
                                         </div>
 
                                         <div class="w-100 bg-transparent rounded mt-3 mb-3 text-center p-2">
                                             <div class="d-flex justify-content-center flex-wrap gap-2">
-                                                <a asp-controller="Teacher"
-                                                   asp-action="@((nh.ExamType == "Trắc nghiệm") ? "Exam_Bank_Add_Question_MultipleChoice" : "Exam_Bank_Add_Question_Essay")"
-                                                   asp-route-id="@nh.ExamBankId"
-                                                   class="btn border-white text-white btn-sm">
-                                                    <i class="fa-regular fa-pen-to-square me-1"></i>Sửa
-                                                </a>
-
-                                                <button type="button"
-                                                        class="btn border-white text-white btn-sm btn-xoa-nhd"
-                                                        data-id="@nh.ExamBankId">
-                                                    <i class="fa-solid fa-trash-can me-1"></i>Xóa
-                                                </button>
-
                                                 <a asp-controller="Teacher"
                                                    asp-action="Exam_Bank_Detail"
                                                    asp-route-id="@nh.ExamBankId"
@@ -192,57 +180,28 @@
                         Vui lòng chọn cách tạo ngân hàng đề
                     </h5>
                     <button type="button"
-                            class="btn-close bg-white"
+                            class="btn-close btn-close-white"
                             data-bs-dismiss="modal"
                             aria-label="Close"></button>
                 </div>
                 <div class="modal-body d-flex justify-content-center gap-3">
                     <a asp-controller="Teacher" asp-action="Exam_Bank_Create">
-                        <button type="button" class="btn btn-primary">
+                        <button type="button" class="btn btn-outline-primary">
                             Soạn thủ công
                         </button>
                     </a>
-                    @*<a href="./teacher-upload-file-exam.html">
-                        <button type="button" class="btn btn-secondary">
-                            Upload File
-                        </button>
-                    </a>*@
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Modal xác nhận xóa ngân hàng đề 
-    <div class="modal fade" id="deleteNHDModal" tabindex="-1" aria-labelledby="deleteNHDModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <form method="post" asp-action="XoaNganHangDe" asp-controller="Teacher">
-                    <div class="modal-header bg-danger text-white">
-                        <h5 class="modal-title text-white" id="deleteNHDModalLabel">Xác nhận xóa</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
-                    </div>
-                    <div class="modal-body">
-                        <input type="hidden" name="MaNHD" id="deleteExamBankIdInput" />
-                        <p>
-                            ⚠️ Bạn có chắc chắn muốn xóa ngân hàng đề này không?<br />
-                            <span class="text-danger">Toàn bộ câu hỏi, đáp án và đề thi liên quan sẽ bị xóa.</span>
-                        </p>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                        <button type="submit" class="btn btn-danger">Xác nhận xóa</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>-->
     <!-- Modal xác nhận xóa ngân hàng đề -->
     <div class="modal fade" id="deleteNHDModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
-                <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title">Xác nhận xóa ngân hàng đề</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <div class="modal-header bg-danger">
+                    <h5 class="modal-title text-white">Xác nhận xóa ngân hàng đề</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body" id="deleteNHDModalBody">
                     <!-- Nội dung động sẽ được JS đổ vào -->
@@ -333,7 +292,6 @@
                             list += `
                                 <li class="list-group-item d-flex justify-content-between align-items-center">
                                     <span>${e.examName} (Ngày tạo: ${new Date(e.createdDate).toLocaleDateString()})</span>
-                                    <button class="btn btn-sm btn-danger" onclick="deleteExam(${e.examId}, ${maNHD})">Xóa đề</button>
                                 </li>`;
                         });
                         list += "</ul>";
@@ -350,22 +308,6 @@
                     // Hiển thị modal
                     new bootstrap.Modal(document.getElementById("deleteNHDModal")).show();
                 });
-        }
-
-        function deleteExam(examId, maNHD) {
-            if (!confirm("Bạn có chắc chắn muốn xóa đề thi này không?")) return;
-            fetch('/Teacher/DeleteExamByExamBank', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: `examId=${examId}`
-            }).then(res => {
-                if (res.ok) {
-                    alert("Đã xóa đề thi!");
-                    showDeleteModal(maNHD); // load lại danh sách
-                } else {
-                    alert("Xóa đề thi thất bại!");
-                }
-            });
         }
                     document.addEventListener("DOMContentLoaded", function () {
             const buttons = document.querySelectorAll(".btn-xoa-nhd");

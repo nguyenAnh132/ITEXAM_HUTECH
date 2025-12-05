@@ -21,6 +21,9 @@ namespace ITExam.Models
         public DbSet<StudentAnswer> StudentAnswers { get; set; }
         public DbSet<ExamMatrix> ExamMatrices { get; set; }
         public DbSet<ActivityLog> ActivityLogs { get; set; }
+        public DbSet<EssayCriterion> EssayCriterias { get; set; }
+        public DbSet<EssayGradingResult> EssayGradingResults { get; set; }
+        public DbSet<EssayGradingDetail> EssayGradingDetails { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
