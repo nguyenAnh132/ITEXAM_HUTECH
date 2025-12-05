@@ -39,6 +39,10 @@
     @{
         var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
         var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+
+        var classActions = new[] { "Class", "ClassDetail" };
+
+        var historyActions = new[] { "Exam_History_Detail", "List_History_Detail" };
     }
     <div class="container-fluid p-0">
         <nav class="navbar navbar-expand-lg bg-white navbar-light py-3 py-lg-0 px-lg-5">
@@ -56,12 +60,12 @@
                     </a>
 
                     <a asp-controller="Student" asp-action="Class"
-                       class="nav-item nav-link @(currentController == "Student" && currentAction == "Class" ? "active" : "")">
+                       class="nav-item nav-link @(currentController == "Student" && classActions.Contains(currentAction) ? "active" : "")">
                         Lớp học tham gia
                     </a>
 
                     <a asp-controller="Student" asp-action="List_History_Detail"
-                       class="nav-item nav-link @(currentController == "Student" && currentAction == "List_History_Detail" ? "active" : "")">
+                       class="nav-item nav-link @(currentController == "Student" && historyActions.Contains(currentAction) ? "active" : "")">
                         Lịch sử làm bài
                     </a>
 
