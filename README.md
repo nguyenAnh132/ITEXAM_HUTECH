@@ -56,7 +56,7 @@ This structure improves maintainability, scalability, and code organization.
 ## Installation
 ### Clone the repository
 
-git clone https://github.com/yourusername/itexam.git
+https://github.com/nguyenAnh132/ITEXAM_HUTECH.git
 
 ### Open project
 
