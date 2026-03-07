@@ -9,7 +9,7 @@ namespace ITExam.Services
 {
     public class EmailService
     {
-        public static string adminEmail = "itexamhutech@gmail.com";
+        public static string adminEmail = "example@gmail.com";
         public async Task SendAddExamNotification(string emailTo, string content, bool isBodyHtml)
         {
             var message = new MimeMessage();
@@ -23,7 +23,7 @@ namespace ITExam.Services
             using (var client = new SmtpClient())
             {
                 await client.ConnectAsync("smtp.gmail.com", 587, MailKit.Security.SecureSocketOptions.StartTls);
-                await client.AuthenticateAsync(adminEmail, "pyhw xrix aqjs ukxu");
+                await client.AuthenticateAsync(adminEmail, "example");
 
                 await client.SendAsync(message); 
 
