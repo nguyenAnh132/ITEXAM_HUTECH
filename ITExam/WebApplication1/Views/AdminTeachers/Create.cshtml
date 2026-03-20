@@ -1,0 +1,53 @@
+@using ITExam.ViewModels.Admin
+@model TeacherCreateVM
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Thêm giảng viên";
+}
+
+<div class="container-fluid px-4 py-4">
+    <h2>Thêm giảng viên</h2>
+
+    <form asp-controller="AdminTeachers" asp-action="Create" method="post">
+        @Html.AntiForgeryToken()
+
+        <div class="row">
+            <div class="col-12 col-md-6 mb-3">
+                <label class="form-label fw-bold">Username</label>
+                <input asp-for="Username" class="form-control" />
+                <span asp-validation-for="Username" class="text-danger"></span>
+            </div>
+            <div class="col-12 col-md-6 mb-3">
+                <label class="form-label fw-bold">Họ tên</label>
+                <input asp-for="FullName" class="form-control" />
+                <span asp-validation-for="FullName" class="text-danger"></span>
+            </div>
+
+            <div class="col-12 col-md-6 mb-3">
+                <label class="form-label fw-bold">Email (tuỳ chọn)</label>
+                <input asp-for="Email" class="form-control" />
+                <span asp-validation-for="Email" class="text-danger"></span>
+            </div>
+
+            <div class="col-12 col-md-6 mb-3">
+                <label class="form-label fw-bold">Khoa (tuỳ chọn)</label>
+                <input asp-for="Faculty" class="form-control" />
+                <span asp-validation-for="Faculty" class="text-danger"></span>
+            </div>
+
+            <div class="col-12 col-md-6 mb-3">
+                <label class="form-label fw-bold">Mật khẩu</label>
+                <input asp-for="Password" type="password" class="form-control" />
+                <span asp-validation-for="Password" class="text-danger"></span>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Tạo</button>
+            <a asp-controller="AdminTeachers" asp-action="Index" class="btn btn-secondary">Quay lại</a>
+        </div>
+    </form>
+</div>
+
+<partial name="~/Views/Shared/_ValidationScriptsPartial.cshtml" />
+

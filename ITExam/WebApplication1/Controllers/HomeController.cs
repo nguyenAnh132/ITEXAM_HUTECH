@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
@@ -14,12 +14,14 @@ using ITExam.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.WebUtilities; // <-- để dùng QueryHelpers
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
+using ITExam.Filters;
 using WebApplication1.Models;
 
 namespace WebApplication1.Controllers
 {
+    [CheckToken(redirectToLoginSuccessOnValid: true, redirectToLogoutOnInvalid: false)]
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;

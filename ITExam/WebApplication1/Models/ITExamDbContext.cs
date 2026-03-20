@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Reflection.Emit;
 using Microsoft.EntityFrameworkCore;
 
@@ -24,6 +24,11 @@ namespace ITExam.Models
         public DbSet<EssayCriterion> EssayCriterias { get; set; }
         public DbSet<EssayGradingResult> EssayGradingResults { get; set; }
         public DbSet<EssayGradingDetail> EssayGradingDetails { get; set; }
+
+        // Internal academic structure (replaces external education/get-subjects)
+        public DbSet<Subject> Subjects { get; set; }
+        public DbSet<SubjectChapter> SubjectChapters { get; set; }
+        public DbSet<SubjectClo> SubjectClos { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -114,6 +119,19 @@ namespace ITExam.Models
                 .WithMany(u => u.ActivityLogs)
                 .HasForeignKey(al => al.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // Subject hierarchy - cascade delete (admin can re-seed)
+            modelBuilder.Entity<SubjectChapter>()
+                .HasOne(ch => ch.Subject)
+                .WithMany(s => s.Chapters)
+                .HasForeignKey(ch => ch.SubjectId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<SubjectClo>()
+                .HasOne(c => c.Chapter)
+                .WithMany(ch => ch.Clos)
+                .HasForeignKey(c => c.ChapterId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

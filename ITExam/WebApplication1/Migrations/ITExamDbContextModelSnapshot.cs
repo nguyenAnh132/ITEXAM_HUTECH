@@ -453,6 +453,79 @@ namespace ITExam.Migrations
                     b.ToTable("StudentAnswer");
                 });
 
+            modelBuilder.Entity("ITExam.Models.Subject", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Subject");
+                });
+
+            modelBuilder.Entity("ITExam.Models.SubjectChapter", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("SubjectId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubjectId");
+
+                    b.ToTable("SubjectChapter");
+                });
+
+            modelBuilder.Entity("ITExam.Models.SubjectClo", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ChapterId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChapterId");
+
+                    b.ToTable("SubjectClo");
+                });
+
             modelBuilder.Entity("ITExam.Models.User", b =>
                 {
                     b.Property<int>("UserId")
@@ -482,6 +555,10 @@ namespace ITExam.Migrations
                         .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("PasswordHash")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
 
                     b.Property<string>("Role")
                         .IsRequired()
@@ -708,6 +785,28 @@ namespace ITExam.Migrations
                     b.Navigation("QuestionBank");
                 });
 
+            modelBuilder.Entity("ITExam.Models.SubjectChapter", b =>
+                {
+                    b.HasOne("ITExam.Models.Subject", "Subject")
+                        .WithMany("Chapters")
+                        .HasForeignKey("SubjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Subject");
+                });
+
+            modelBuilder.Entity("ITExam.Models.SubjectClo", b =>
+                {
+                    b.HasOne("ITExam.Models.SubjectChapter", "Chapter")
+                        .WithMany("Clos")
+                        .HasForeignKey("ChapterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Chapter");
+                });
+
             modelBuilder.Entity("ITExam.Models.Class", b =>
                 {
                     b.Navigation("ClassDetails");
@@ -743,6 +842,16 @@ namespace ITExam.Migrations
                     b.Navigation("EssayCriteria");
 
                     b.Navigation("StudentAnswers");
+                });
+
+            modelBuilder.Entity("ITExam.Models.Subject", b =>
+                {
+                    b.Navigation("Chapters");
+                });
+
+            modelBuilder.Entity("ITExam.Models.SubjectChapter", b =>
+                {
+                    b.Navigation("Clos");
                 });
 
             modelBuilder.Entity("ITExam.Models.User", b =>

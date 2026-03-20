@@ -1,0 +1,86 @@
+@using ITExam.Models
+@model IEnumerable<SubjectChapter>
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Quản lý chương/CLO";
+    var subjectId = (int)ViewData["SubjectId"]!;
+    var subjectName = (string)ViewData["SubjectName"]!;
+}
+
+<div class="container-fluid px-4 py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2>Quản lý chương/CLO</h2>
+            <div class="text-muted">Môn: <b>@subjectName</b></div>
+        </div>
+        <a asp-controller="AdminSubjects" asp-action="Index" class="btn btn-secondary">Quay lại</a>
+    </div>
+
+    <div class="bg-white rounded shadow p-3 mb-4">
+        <h4 class="mb-3">Thêm chương</h4>
+        <form asp-controller="AdminSubjects" asp-action="CreateChapter" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="SubjectId" value="@subjectId" />
+            <div class="row align-items-end">
+                <div class="col-12 col-md-8 mb-3">
+                    <label class="form-label fw-bold">Tiêu đề chương</label>
+                    <input name="Title" class="form-control" required />
+                </div>
+                <div class="col-12 col-md-4 mb-3">
+                    <button type="submit" class="btn btn-primary w-100">Thêm</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="bg-white rounded shadow p-3">
+        <h4 class="mb-3">Danh sách chương</h4>
+
+        @if (!Model.Any())
+        {
+            <div class="text-muted">Chưa có chương.</div>
+        }
+        else
+        {
+            <table class="table table-striped align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Tên chương</th>
+                        <th>Số CLO</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var ch in Model)
+                {
+                    <tr>
+                        <td>@ch.Title</td>
+                        <td>@(ch.Clos?.Count ?? 0)</td>
+                        <td>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <a class="btn btn-sm btn-info"
+                                   asp-controller="AdminSubjects" asp-action="Clos" asp-route-chapterId="@ch.Id">
+                                    Quản lý CLO
+                                </a>
+                                <a class="btn btn-sm btn-warning"
+                                   asp-controller="AdminSubjects" asp-action="EditChapter" asp-route-chapterId="@ch.Id">
+                                    Sửa
+                                </a>
+                                <form asp-controller="AdminSubjects" asp-action="DeleteChapter" method="post" style="display:inline;">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="chapterId" value="@ch.Id" />
+                                    <button type="submit" class="btn btn-sm btn-danger"
+                                            onclick="return confirm('Xóa chương @ch.Title?');">
+                                        Xóa
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+

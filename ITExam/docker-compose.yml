@@ -1,0 +1,52 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: itexam_sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: ${SA_PASSWORD}
+    volumes:
+      - sql_data:/var/opt/mssql
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: itexam_redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+
+  web:
+    build:
+      context: .
+      dockerfile: WebApplication1/Dockerfile
+    container_name: itexam_web
+    depends_on:
+      - sqlserver
+      - redis
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+
+
+      ConnectionStrings__SQL: "Server=sqlserver,1433;Database=ITExamHUTECHDB;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True;Encrypt=False;"
+      ConnectionStrings__Redis: "redis:6379"
+
+      Jwt__SigningKey: ${JWT_SIGNING_KEY}
+      Jwt__Issuer: ${JWT_ISSUER}
+      Jwt__Audience: ${JWT_AUDIENCE}
+
+      RoutingApi__LLMApiUrl: ${LLM_API_URL}
+      RoutingApi__AppScriptUrl: ${APPS_SCRIPT_URL}
+      RoutingApi__AdminEmail: ${ADMIN_EMAIL}
+      RoutingApi__AdminEmailPass: ${ADMIN_EMAIL_PASS}
+
+    ports:
+      - "${APP_PORT:-8080}:5000"
+    volumes:
+      - uploads:/app/wwwroot/uploads
+    restart: unless-stopped
+
+volumes:
+  sql_data:
+  redis_data:
+  uploads:

@@ -1,6 +1,7 @@
 ﻿using Hangfire;
 using ITExam.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 namespace ITExam.Controllers
 {
@@ -8,10 +9,12 @@ namespace ITExam.Controllers
     public class FeedbackController : Controller
     {
         private readonly EmailService _emailService;
+        private readonly RoutingAPI _routingAPI;
 
-        public FeedbackController(EmailService emailService)
+        public FeedbackController(EmailService emailService, IOptions<RoutingAPI> routingOptions)
         {
             _emailService = emailService;
+            _routingAPI = routingOptions.Value;
         }
 
         [HttpPost("send")]
@@ -97,7 +100,7 @@ namespace ITExam.Controllers
             </body>
             </html>";
             BackgroundJob.Enqueue(() =>
-                _emailService.SendAddExamNotification(EmailService.adminEmail, html, true)
+                _emailService.SendAddExamNotification(_routingAPI.AdminEmail, html, true)
             );
 
             return Ok(new { message = "Gửi thành công!" });

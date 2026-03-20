@@ -1,0 +1,87 @@
+@using ITExam.Models
+@model IEnumerable<SubjectClo>
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Quản lý CLO";
+    var subjectName = (string)ViewData["SubjectName"]!;
+    var chapterTitle = (string)ViewData["ChapterTitle"]!;
+    var chapterId = (int)ViewData["ChapterId"]!;
+}
+
+<div class="container-fluid px-4 py-4">
+    <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+            <h2>Quản lý CLO</h2>
+            <div class="text-muted">
+                Môn: <b>@subjectName</b> | Chương: <b>@chapterTitle</b>
+            </div>
+        </div>
+        <a asp-controller="AdminSubjects" asp-action="Chapters" asp-route-subjectId="@ViewData["SubjectId"]" class="btn btn-secondary">
+            Quay lại chương
+        </a>
+    </div>
+
+    <div class="bg-white rounded shadow p-3 mb-4">
+        <h4 class="mb-3">Thêm CLO</h4>
+        <form asp-controller="AdminSubjects" asp-action="CreateClo" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="ChapterId" value="@chapterId" />
+            <div class="mb-3">
+                <label class="form-label fw-bold">Tiêu đề CLO</label>
+                <input name="Title" class="form-control" required />
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">Mô tả (tuỳ chọn)</label>
+                <textarea name="Description" class="form-control" rows="2"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Thêm</button>
+        </form>
+    </div>
+
+    <div class="bg-white rounded shadow p-3">
+        <h4 class="mb-3">Danh sách CLO</h4>
+
+        @if (!Model.Any())
+        {
+            <div class="text-muted">Chưa có CLO.</div>
+        }
+        else
+        {
+            <table class="table table-striped align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Tiêu đề</th>
+                        <th>Mô tả</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var c in Model)
+                {
+                    <tr>
+                        <td>@c.Title</td>
+                        <td>@c.Description</td>
+                        <td>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <a class="btn btn-sm btn-warning" asp-controller="AdminSubjects" asp-action="EditClo" asp-route-cloId="@c.Id">
+                                    Sửa
+                                </a>
+                                <form asp-controller="AdminSubjects" asp-action="DeleteClo" method="post" style="display:inline;">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="cloId" value="@c.Id" />
+                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Xóa CLO @c.Title?');">
+                                        Xóa
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+
+<partial name="~/Views/Shared/_ValidationScriptsPartial.cshtml" />
+

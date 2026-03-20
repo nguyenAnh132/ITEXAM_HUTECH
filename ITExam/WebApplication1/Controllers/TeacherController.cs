@@ -1,4 +1,4 @@
-﻿using Hangfire;
+using Hangfire;
 using ITExam.ExternalModels.Subject;
 using ITExam.Filters;
 using ITExam.Models;
@@ -34,8 +34,9 @@ namespace ITExam.Controllers
         private readonly RoutingAPI _routingApi;
         private readonly IMemoryCache _cache;
         private readonly IRedisService _redisService;
+        private readonly ISubjectService _subjectService;
 
-        public TeacherController(IHttpClientFactory httpClientFactory, ITExamDbContext context, IClassCodeService classCodeService, ILogger<TeacherController> logger, IOptions<RoutingAPI> routingOptions, IMemoryCache cache, IRedisService redisService)
+        public TeacherController(IHttpClientFactory httpClientFactory, ITExamDbContext context, IClassCodeService classCodeService, ILogger<TeacherController> logger, IOptions<RoutingAPI> routingOptions, IMemoryCache cache, IRedisService redisService, ISubjectService subjectService)
         {
             _httpClientFactory = httpClientFactory;
             _context = context;
@@ -44,6 +45,7 @@ namespace ITExam.Controllers
             _routingApi = routingOptions.Value;
             _cache = cache;
             _redisService = redisService;
+            _subjectService = subjectService;
         }
 
 
@@ -550,17 +552,7 @@ namespace ITExam.Controllers
             }
 
             var subjectId = exam.SubjectId;
-            var access_token = Request.Cookies["access_token"];
-            var client = _httpClientFactory.CreateClient();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", access_token);
-            var response = await client.GetAsync(_routingApi.GetSubjectUrl);
-            if (!response.IsSuccessStatusCode)
-                return StatusCode((int)response.StatusCode, "Không thể lấy danh sách môn học.");
-            var json = await response.Content.ReadAsStringAsync();
-            var root = JsonConvert.DeserializeObject<JObject>(json);
-            var dataToken = root!["data"];
-            var subjectList = dataToken!.ToObject<List<SubjectDto>>();
-            var subject = subjectList!.FirstOrDefault(s => s.Id == subjectId);
+            var subject = await _subjectService.GetSubjectByIdAsync(subjectId);
             var subjectName = subject?.Name;
 
             var questionBanks = await _context.QuestionBanks
@@ -1309,26 +1301,8 @@ namespace ITExam.Controllers
 
             // 2. Logic cũ: Gọi API lấy Chapter/CLO
             int subjectId = history.Exam.ExamBank.SubjectId;
-            var access_token = Request.Cookies["access_token"];
-            var client = _httpClientFactory.CreateClient();
-            if (!string.IsNullOrEmpty(access_token))
-            {
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", access_token);
-            }
-
-            var response = await client.GetAsync(_routingApi.GetSubjectUrl);
-
-            List<ChapterDto> listChaptersApi = new List<ChapterDto>();
-
-            if (response.IsSuccessStatusCode)
-            {
-                var json = await response.Content.ReadAsStringAsync();
-                var root = JsonConvert.DeserializeObject<JObject>(json);
-                var dataToken = root!["data"];
-                var subjectList = dataToken!.ToObject<List<SubjectDto>>();
-                var monHoc = subjectList!.FirstOrDefault(s => s.Id == subjectId);
-                if (monHoc != null) listChaptersApi = monHoc.Chapters ?? new List<ChapterDto>();
-            }
+            var subject = await _subjectService.GetSubjectByIdAsync(subjectId);
+            List<ChapterDto> listChaptersApi = subject?.Chapters ?? new List<ChapterDto>();
 
             // 3. Logic cũ: Lấy Matrix để tính MaxScore
             var matrices = await _context.ExamMatrices
@@ -1546,17 +1520,7 @@ namespace ITExam.Controllers
                 return NotFound("Không tìm thấy ngân hàng đề.");
 
             int subjectId = examBank.SubjectId;
-            var access_token = Request.Cookies["access_token"];
-            var client = _httpClientFactory.CreateClient();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", access_token);
-            var response = await client.GetAsync(_routingApi.GetSubjectUrl);
-            if (!response.IsSuccessStatusCode)
-                return StatusCode((int)response.StatusCode, "Không thể lấy dữ liệu môn học.");
-            var json = await response.Content.ReadAsStringAsync();
-            var root = JsonConvert.DeserializeObject<JObject>(json);
-            var dataToken = root!["data"];
-            var subjectList = dataToken!.ToObject<List<SubjectDto>>();
-            var monHoc = subjectList!.FirstOrDefault(s => s.Id == subjectId);
+            var monHoc = await _subjectService.GetSubjectByIdAsync(subjectId);
             if (monHoc == null) return NotFound();
             var danhSachChuong = monHoc?.Chapters ?? new List<ChapterDto>();
 
@@ -1603,18 +1567,8 @@ namespace ITExam.Controllers
         [HttpGet]
         public async Task<IActionResult> Exam_Bank_Create()
         {
-            string access_token = Request.Cookies["access_token"]!;
-            var client = _httpClientFactory.CreateClient();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", access_token);
-            var response = await client.GetAsync(_routingApi.GetSubjectUrl);
-            if (!response.IsSuccessStatusCode)
-                return StatusCode((int)response.StatusCode, "Không thể lấy danh sách môn học.");
-            var json = await response.Content.ReadAsStringAsync();
-            var root = JsonConvert.DeserializeObject<JObject>(json);
-            var dataToken = root!["data"];
-
-            var subjectList = dataToken!.ToObject<List<SubjectDto>>();
-            ViewBag.Subjects = subjectList!.Select(s => new CreateExamBankVM
+            var subjectList = await _subjectService.GetSubjectsAsync();
+            ViewBag.Subjects = subjectList.Select(s => new CreateExamBankVM
             {
                 SubjectId = s.Id,
                 SubjectCode = s.Code,
@@ -1707,20 +1661,7 @@ namespace ITExam.Controllers
 
             int subjectId = examBank.SubjectId;
 
-            var access_token = Request.Cookies["access_token"];
-            var client = _httpClientFactory.CreateClient();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", access_token);
-            var response = await client.GetAsync(_routingApi.GetSubjectUrl);
-            if (!response.IsSuccessStatusCode)
-            {
-                return StatusCode((int)response.StatusCode, "Không thể lấy dữ liệu môn học.");
-            }
-            var json = await response.Content.ReadAsStringAsync();
-            var root = JsonConvert.DeserializeObject<JObject>(json);
-            var dataToken = root!["data"];
-            var subjectList = dataToken!.ToObject<List<SubjectDto>>();
-
-            var subject = subjectList!.FirstOrDefault(s => s.Id == subjectId);
+            var subject = await _subjectService.GetSubjectByIdAsync(subjectId);
             if (subject == null)
                 return NotFound("Không tìm thấy môn học.");
 
@@ -1801,20 +1742,7 @@ namespace ITExam.Controllers
 
             int subjectId = examBank.SubjectId;
 
-            var access_token = Request.Cookies["access_token"];
-            var client = _httpClientFactory.CreateClient();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", access_token);
-            var response = await client.GetAsync(_routingApi.GetSubjectUrl);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                return StatusCode((int)response.StatusCode, "Không thể lấy dữ liệu môn học.");
-            }
-
-            var json = await response.Content.ReadAsStringAsync();
-            var root = JsonConvert.DeserializeObject<JObject>(json);
-            var subjectList = root!["data"]!.ToObject<List<SubjectDto>>();
-            var subject = subjectList!.FirstOrDefault(s => s.Id == subjectId);
+            var subject = await _subjectService.GetSubjectByIdAsync(subjectId);
             model.ChapterList = subject?.Chapters ?? new List<ChapterDto>();
 
             var luaChonList = new List<object>();
@@ -1896,21 +1824,7 @@ namespace ITExam.Controllers
             try
             {
                 int subjectId = examBank.SubjectId;
-                var access_token = Request.Cookies["access_token"];
-                var client = _httpClientFactory.CreateClient();
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", access_token);
-                var response = await client.GetAsync(_routingApi.GetSubjectUrl);
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    TempData["ErrorMessage"] = "Lỗi API: Không thể lấy dữ liệu môn học.";
-                    return RedirectToAction("Exam_Bank_Add_Question_MultipleChoice", new { id = examBankId });
-                }
-
-                var json = await response.Content.ReadAsStringAsync();
-                var root = JsonConvert.DeserializeObject<JObject>(json);
-                var subjectList = root!["data"]!.ToObject<List<SubjectDto>>();
-                var subject = subjectList!.FirstOrDefault(s => s.Id == subjectId);
+                var subject = await _subjectService.GetSubjectByIdAsync(subjectId);
 
                 if (subject == null)
                 {
@@ -2211,22 +2125,7 @@ namespace ITExam.Controllers
 
             int subjectId = examBank.SubjectId;
 
-            var access_token = Request.Cookies["access_token"];
-            var client = _httpClientFactory.CreateClient();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", access_token);
-            var response = await client.GetAsync(_routingApi.GetSubjectUrl);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                return StatusCode((int)response.StatusCode, "Không thể lấy dữ liệu môn học.");
-            }
-
-            var json = await response.Content.ReadAsStringAsync();
-            var root = JsonConvert.DeserializeObject<JObject>(json);
-            var dataToken = root!["data"];
-            var subjectList = dataToken!.ToObject<List<SubjectDto>>();
-
-            var subject = subjectList!.FirstOrDefault(s => s.Id == subjectId);
+            var subject = await _subjectService.GetSubjectByIdAsync(subjectId);
             if (subject == null)
                 return NotFound("Không tìm thấy môn học.");
 

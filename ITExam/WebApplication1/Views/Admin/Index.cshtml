@@ -1,0 +1,43 @@
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Dashboard Admin";
+}
+
+<div class="container-fluid px-4 py-4">
+    <div class="row">
+        <div class="col-12 col-lg-6 mb-4">
+            <div class="bg-white rounded shadow p-4">
+                <h2 class="mb-3">Chào mừng Admin</h2>
+                <p class="mb-2">
+                    Xin chào: <b>@(ViewData["AdminFullName"] ?? "Admin")</b>
+                </p>
+                <div class="mt-4">
+                    <div class="d-flex justify-content-between border-bottom pb-2 mb-2">
+                        <span>Giảng viên</span>
+                        <b>@ViewData["TeacherCount"]</b>
+                    </div>
+                    <div class="d-flex justify-content-between border-bottom pb-2 mb-2">
+                        <span>Sinh viên</span>
+                        <b>@ViewData["StudentCount"]</b>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Môn học</span>
+                        <b>@ViewData["SubjectCount"]</b>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-lg-6">
+            <div class="bg-white rounded shadow p-4">
+                <h3 class="mb-3">Menu nhanh</h3>
+                <div class="d-grid gap-2">
+                    <a asp-controller="AdminTeachers" asp-action="Index" class="btn btn-primary">Quản lý giảng viên</a>
+                    <a asp-controller="AdminStudents" asp-action="Index" class="btn btn-primary">Quản lý sinh viên</a>
+                    <a asp-controller="AdminSubjects" asp-action="Index" class="btn btn-primary">Quản lý môn học</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

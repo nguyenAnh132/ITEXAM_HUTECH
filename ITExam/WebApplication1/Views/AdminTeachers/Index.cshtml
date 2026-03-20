@@ -1,0 +1,57 @@
+@using ITExam.Models
+@model IEnumerable<User>
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Quản lý giảng viên";
+}
+
+<div class="container-fluid px-4 py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Danh sách giảng viên</h2>
+        <a asp-controller="AdminTeachers" asp-action="Create" class="btn btn-primary">Thêm giảng viên</a>
+    </div>
+
+    <div class="table-responsive bg-white rounded shadow p-3">
+        <table class="table table-striped align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Username</th>
+                    <th>Họ tên</th>
+                    <th>Email</th>
+                    <th>Khoa</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var t in Model)
+            {
+                <tr>
+                    <td>@t.UserId</td>
+                    <td>@t.Username</td>
+                    <td>@t.FullName</td>
+                    <td>@t.Email</td>
+                    <td>@t.Faculty</td>
+                    <td>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <a asp-controller="AdminTeachers" asp-action="Edit" asp-route-userId="@t.UserId" class="btn btn-sm btn-warning">Sửa</a>
+                            <form asp-controller="AdminTeachers" asp-action="Delete" method="post" style="display:inline;">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="userId" value="@t.UserId" />
+                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Xóa giảng viên @t.Username?');">
+                                    Xóa
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+        @if (!Model.Any())
+        {
+            <div class="text-center text-muted py-4">Không có giảng viên.</div>
+        }
+    </div>
+</div>
+

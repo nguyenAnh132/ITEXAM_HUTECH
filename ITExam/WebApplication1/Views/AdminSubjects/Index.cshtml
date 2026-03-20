@@ -1,0 +1,58 @@
+@using ITExam.Models
+@model IEnumerable<Subject>
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Quản lý môn học";
+}
+
+<div class="container-fluid px-4 py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Danh sách môn học</h2>
+        <a asp-controller="AdminSubjects" asp-action="Create" class="btn btn-primary">Thêm môn học</a>
+    </div>
+
+    <div class="table-responsive bg-white rounded shadow p-3">
+        <table class="table table-striped align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Tên môn</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var s in Model)
+            {
+                <tr>
+                    <td>@s.Code</td>
+                    <td>@s.Name</td>
+                    <td>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <a class="btn btn-sm btn-info" asp-controller="AdminSubjects" asp-action="Chapters" asp-route-subjectId="@s.Id">
+                                Quản lý chương/CLO
+                            </a>
+                            <a class="btn btn-sm btn-warning" asp-controller="AdminSubjects" asp-action="Edit" asp-route-subjectId="@s.Id">
+                                Sửa
+                            </a>
+                            <form asp-controller="AdminSubjects" asp-action="Delete" method="post" style="display:inline;">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="subjectId" value="@s.Id" />
+                                <button type="submit" class="btn btn-sm btn-danger"
+                                        onclick="return confirm('Xóa môn @s.Code?');">
+                                    Xóa
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+
+        @if (!Model.Any())
+        {
+            <div class="text-center text-muted py-4">Chưa có môn học nào.</div>
+        }
+    </div>
+</div>
+

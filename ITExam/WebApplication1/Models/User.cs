@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -30,6 +30,11 @@ namespace ITExam.Models
         [Required(ErrorMessage = "Vai trò là bắt buộc")]
         [MaxLength(50, ErrorMessage = "Vai trò không được vượt quá 50 ký tự")]
         public string Role { get; set; }
+
+        // Internal auth: store hashed password (never store plaintext password).
+        // Nullable for backward compatibility (existing users may not have been migrated yet).
+        [MaxLength(2000)]
+        public string? PasswordHash { get; set; }
 
         [Required(ErrorMessage = "AccessToken là bắt buộc")]
         [MaxLength(500)]

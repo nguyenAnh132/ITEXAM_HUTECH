@@ -1,0 +1,60 @@
+@using ITExam.Models
+@model IEnumerable<User>
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Quản lý sinh viên";
+}
+
+<div class="container-fluid px-4 py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Danh sách sinh viên</h2>
+        <a asp-controller="AdminStudents" asp-action="Create" class="btn btn-primary">Thêm sinh viên</a>
+    </div>
+
+    <div class="table-responsive bg-white rounded shadow p-3">
+        <table class="table table-striped align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Tài khoản</th>
+                    <th>Họ tên</th>
+                    <th>Email</th>
+                    <th>Khoa</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var s in Model)
+            {
+                <tr>
+                    <td>@s.UserId</td>
+                    <td>@s.Username</td>
+                    <td>@s.FullName</td>
+                    <td>@s.Email</td>
+                    <td>@s.Faculty</td>
+                    <td>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <a asp-controller="AdminStudents" asp-action="Edit" asp-route-userId="@s.UserId" class="btn btn-sm btn-warning">
+                                Sửa
+                            </a>
+                            <form asp-controller="AdminStudents" asp-action="Delete" method="post" style="display:inline;">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="userId" value="@s.UserId" />
+                                <button type="submit" class="btn btn-sm btn-danger"
+                                        onclick="return confirm('Xóa sinh viên @s.Username?');">
+                                    Xóa
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+        @if (!Model.Any())
+        {
+            <div class="text-center text-muted py-4">Không có sinh viên.</div>
+        }
+    </div>
+</div>
+

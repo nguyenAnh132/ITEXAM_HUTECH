@@ -1,4 +1,4 @@
-﻿using ITExam.ExternalModels;
+using ITExam.ExternalModels;
 using ITExam.ExternalModels.Subject;
 using ITExam.Filters;
 using ITExam.Models;
@@ -11,8 +11,6 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
-using System.Net.Http;
-using System.Net.Http.Headers;
 
 namespace ITExam.Controllers
 {
@@ -22,17 +20,15 @@ namespace ITExam.Controllers
     {
         private readonly ITExamDbContext _context;
         private readonly GeminiService _geminiService;
-        private readonly IHttpClientFactory _httpClientFactory;
         private readonly IRedisService _redis;
-        private readonly RoutingAPI _routingApi;
+        private readonly ISubjectService _subjectService;
 
-        public ApiQuestionController(IHttpClientFactory httpClientFactory, ITExamDbContext context, GeminiService geminiService, IRedisService redis, IOptions<RoutingAPI> routingOptions)
+        public ApiQuestionController(ITExamDbContext context, GeminiService geminiService, IRedisService redis, ISubjectService subjectService)
         {
-            _httpClientFactory = httpClientFactory;
             _context = context;
             _geminiService = geminiService;
             _redis = redis;
-            _routingApi = routingOptions.Value;
+            _subjectService = subjectService;
         }
 
         public async Task<IActionResult> Index(int id)
@@ -63,19 +59,9 @@ namespace ITExam.Controllers
             };
             return View(viewModel);
         }
-        private async Task<SubjectDto> GetSubjectByIdAsync(int masubject)
+        private async Task<SubjectDto?> GetSubjectByIdAsync(int masubject)
         {
-            var access_token = Request.Cookies["access_token"];
-            var client = _httpClientFactory.CreateClient();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", access_token);
-            var response = await client.GetAsync(_routingApi.GetSubjectUrl);
-            if (!response.IsSuccessStatusCode) return null;
-
-            var json = await response.Content.ReadAsStringAsync();
-            var root = JsonConvert.DeserializeObject<JObject>(json);
-            var dataToken = root["data"];
-            var subjectList = dataToken.ToObject<List<SubjectDto>>();
-            return subjectList.FirstOrDefault(s => s.Id == masubject);
+            return await _subjectService.GetSubjectByIdAsync(masubject);
         }
 
 

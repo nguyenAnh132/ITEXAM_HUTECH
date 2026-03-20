@@ -1,63 +1,75 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using ITExam.Models;
-using System.Net.Http;
-using System.Text.Json;
-using ITExam.Services;
-using Microsoft.Extensions.Options;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace ITExam.Filters
 {
     public class CheckTokenAttribute : ActionFilterAttribute
     {
+        private readonly bool _redirectToLoginSuccessOnValid;
+        private readonly bool _redirectToLogoutOnInvalid;
+
+        /// <summary>
+        /// Default behavior keeps the original intent:
+        /// - if token/user is invalid => redirect to Logout
+        /// - if token/user is valid   => do nothing
+        ///
+        /// You can override it for public pages (login/index):
+        /// - if token/user is valid   => redirect to LoginSuccess...
+        /// - if token/user is invalid => do not redirect (let the page show)
+        /// </summary>
+        public CheckTokenAttribute(bool redirectToLoginSuccessOnValid = false, bool redirectToLogoutOnInvalid = true)
+        {
+            _redirectToLoginSuccessOnValid = redirectToLoginSuccessOnValid;
+            _redirectToLogoutOnInvalid = redirectToLogoutOnInvalid;
+        }
+
         public override void OnActionExecuting(ActionExecutingContext context)
         {
-            var services = context.HttpContext.RequestServices;
-            var httpClientFactory = context.HttpContext.RequestServices.GetService<IHttpClientFactory>();
             var _context = context.HttpContext.RequestServices.GetService<ITExamDbContext>();
-            var routingOptions = services.GetService<IOptions<RoutingAPI>>();
-            var routingConfig = routingOptions?.Value;
-            if (routingConfig == null)
+            if (_context == null)
             {
-                throw new Exception("RoutingAPI configuration is missing.");
-            }
-
-            var access_token = context.HttpContext.Request.Cookies["access_token"];
-
-            if (string.IsNullOrEmpty(access_token))
-            {
-                context.Result = new RedirectToActionResult("Logout", "Auth", null);
+                if (_redirectToLogoutOnInvalid)
+                    context.Result = new RedirectToActionResult("Logout", "Auth", null);
                 return;
             }
 
-            var user = _context.Users.SingleOrDefault(us => us.AccessToken == access_token);
+            var identity = context.HttpContext.User?.Identity;
+            if (identity == null || !identity.IsAuthenticated)
+            {
+                if (_redirectToLogoutOnInvalid)
+                    context.Result = new RedirectToActionResult("Logout", "Auth", null);
+                return;
+            }
+
+            var userIdStr = context.HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(userIdStr, out var userId))
+            {
+                if (_redirectToLogoutOnInvalid)
+                    context.Result = new RedirectToActionResult("Logout", "Auth", null);
+                return;
+            }
+
+            var user = _context.Users.AsNoTracking().FirstOrDefault(u => u.UserId == userId);
             if (user == null)
             {
-                context.Result = new RedirectToActionResult("Logout", "Auth", null);
+                if (_redirectToLogoutOnInvalid)
+                    context.Result = new RedirectToActionResult("Logout", "Auth", null);
                 return;
             }
 
-            var client = httpClientFactory.CreateClient();
-            var formData = new Dictionary<string, string>
-            {
-                { "access_token", access_token },
-                { "user_id", user.UserId.ToString() },
-                { "platform_auth", "itexam" }
-            };
+            if (!_redirectToLoginSuccessOnValid)
+                return; // token/user is valid, but for protected pages we do nothing
 
-            var request = new HttpRequestMessage(HttpMethod.Post, routingConfig.CheckTokenUrl)
-            {
-                Content = new FormUrlEncodedContent(formData)
-            };
-
-            var response = client.SendAsync(request).Result;
-            var responseContent = response.Content.ReadAsStringAsync().Result;
-
-            using var doc = JsonDocument.Parse(responseContent);
-            if (doc.RootElement.TryGetProperty("success", out var successElement) && successElement.GetBoolean() == false)
-            {
-                context.Result = new RedirectToActionResult("Logout", "Auth", null);
-            }
+            var role = user.Role?.Trim()?.ToLower();
+            // Redirect authenticated users away from public pages like /login and /home.
+            context.Result = role == "teacher"
+                ? new RedirectToActionResult("LoginSuccessTeacher", "Auth", null)
+                : role == "admin"
+                    ? new RedirectToActionResult("Index", "Admin", null)
+                    : new RedirectToActionResult("LoginSuccessStudent", "Auth", null);
         }
     }
 }

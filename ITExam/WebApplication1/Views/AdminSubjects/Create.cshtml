@@ -1,0 +1,47 @@
+@using ITExam.ViewModels.Admin
+@model SubjectCreateVM
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Tạo môn học";
+}
+
+<div class="container-fluid px-4 py-4">
+    <h2>Tạo môn học</h2>
+
+    <form asp-controller="AdminSubjects" asp-action="Create" method="post">
+        @Html.AntiForgeryToken()
+        <div class="row">
+            <div class="col-12 col-md-6 mb-3">
+                <label class="form-label fw-bold">Mã môn</label>
+                <input asp-for="Code" class="form-control" />
+                <span asp-validation-for="Code" class="text-danger"></span>
+            </div>
+            <div class="col-12 col-md-6 mb-3">
+                <label class="form-label fw-bold">Tên môn</label>
+                <input asp-for="Name" class="form-control" />
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 mt-2">
+            <button type="submit" class="btn btn-primary">Tạo</button>
+            <a asp-controller="AdminSubjects" asp-action="Index" class="btn btn-secondary">Quay lại</a>
+        </div>
+
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="text-danger mt-3">
+                @foreach (var state in ViewData.ModelState.Values)
+                {
+                    foreach (var err in state.Errors)
+                    {
+                        <div>@err.ErrorMessage</div>
+                    }
+                }
+            </div>
+        }
+    </form>
+</div>
+
+<partial name="~/Views/Shared/_ValidationScriptsPartial.cshtml" />
+
